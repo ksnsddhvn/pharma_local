@@ -52,7 +52,7 @@ class OpeningStockService {
       final productId = await db.productsDao.insertProduct(
         ProductsCompanion.insert(
           name: name,
-          composition: Value(composition),
+          composition: composition ?? '',
           category: Value(category),
         ),
       );

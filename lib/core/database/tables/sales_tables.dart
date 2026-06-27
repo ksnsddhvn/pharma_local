@@ -8,16 +8,19 @@ enum PaymentMode { cash, upi, credit, card }
 class SalesInvoices extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get invoiceNumber => text()(); // e.g. "PL-2025-0001"
-  TextColumn get customerName => text().nullable()();
-  TextColumn get customerPhone => text().nullable()();
-  TextColumn get doctorName =>
-      text().nullable()(); // mandatory for Schedule H items
+  TextColumn get customerName => text()();
+  TextColumn get customerMobile => text()();
+  TextColumn get doctorName => text()();
+  TextColumn get doctorPlace => text()(); // Clinic/Hospital locality tracking
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();
   RealColumn get subtotal => real()(); // before GST
   RealColumn get totalGst => real()();
   RealColumn get totalDiscount => real().withDefault(const Constant(0.0))();
   RealColumn get totalAmount => real()(); // final billed amount
+  RealColumn get amountPaid => real().withDefault(const Constant(0.0))(); // Tracks partial clearings
+  RealColumn get creditBalanceAdded => real().withDefault(const Constant(0.0))(); // Outstanding debt logged from this bill
+  TextColumn get customerNotes => text().nullable()(); // Custom follow-up payment text reminders
   TextColumn get paymentMode =>
       textEnum<PaymentMode>().withDefault(const Constant('cash'))();
 }
@@ -31,8 +34,8 @@ class SalesInvoiceItems extends Table {
   IntColumn get productId => integer()(); // denormalised
   TextColumn get productName => text()(); // denormalised for receipts
   TextColumn get batchNumber => text()(); // denormalised for receipts
-  IntColumn get quantity => integer()();
-  RealColumn get mrp => real()();
+  IntColumn get totalTabletsSold => integer()(); // Tracks individual pill counts cut from strips
+  RealColumn get mrpPerTablet => real()();
   RealColumn get gstPercentage => real()();
   RealColumn get discountPercent => real().withDefault(const Constant(0.0))();
   RealColumn get lineTotal => real()(); // qty * mrp * (1 - discount)

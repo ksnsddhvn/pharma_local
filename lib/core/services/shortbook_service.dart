@@ -28,7 +28,7 @@ class ShortbookService {
         result.add(ShortbookItem(
           product: product,
           currentStock: stock,
-          threshold: product.minStockThreshold,
+          threshold: product.minStockThreshold.toDouble(),
         ));
       }
     }

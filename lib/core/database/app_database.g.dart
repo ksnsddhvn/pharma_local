@@ -41,9 +41,9 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
   late final GeneratedColumn<String> composition = GeneratedColumn<String>(
     'composition',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _hsnCodeMeta = const VerificationMeta(
     'hsnCode',
@@ -81,15 +81,14 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
     'minStockThreshold',
   );
   @override
-  late final GeneratedColumn<double> minStockThreshold =
-      GeneratedColumn<double>(
-        'min_stock_threshold',
-        aliasedName,
-        false,
-        type: DriftSqlType.double,
-        requiredDuringInsert: false,
-        defaultValue: const Constant(5.0),
-      );
+  late final GeneratedColumn<int> minStockThreshold = GeneratedColumn<int>(
+    'min_stock_threshold',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(10),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -131,6 +130,8 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
           _compositionMeta,
         ),
       );
+    } else if (isInserting) {
+      context.missing(_compositionMeta);
     }
     if (data.containsKey('hsn_code')) {
       context.handle(
@@ -176,7 +177,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
       composition: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}composition'],
-      ),
+      )!,
       hsnCode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}hsn_code'],
@@ -192,7 +193,7 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
         data['${effectivePrefix}rack_location'],
       ),
       minStockThreshold: attachedDatabase.typeMapping.read(
-        DriftSqlType.double,
+        DriftSqlType.int,
         data['${effectivePrefix}min_stock_threshold'],
       )!,
     );
@@ -212,15 +213,15 @@ class $ProductsTable extends Products with TableInfo<$ProductsTable, Product> {
 class Product extends DataClass implements Insertable<Product> {
   final int id;
   final String name;
-  final String? composition;
+  final String composition;
   final String? hsnCode;
   final ProductCategory category;
   final String? rackLocation;
-  final double minStockThreshold;
+  final int minStockThreshold;
   const Product({
     required this.id,
     required this.name,
-    this.composition,
+    required this.composition,
     this.hsnCode,
     required this.category,
     this.rackLocation,
@@ -231,9 +232,7 @@ class Product extends DataClass implements Insertable<Product> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
-    if (!nullToAbsent || composition != null) {
-      map['composition'] = Variable<String>(composition);
-    }
+    map['composition'] = Variable<String>(composition);
     if (!nullToAbsent || hsnCode != null) {
       map['hsn_code'] = Variable<String>(hsnCode);
     }
@@ -245,7 +244,7 @@ class Product extends DataClass implements Insertable<Product> {
     if (!nullToAbsent || rackLocation != null) {
       map['rack_location'] = Variable<String>(rackLocation);
     }
-    map['min_stock_threshold'] = Variable<double>(minStockThreshold);
+    map['min_stock_threshold'] = Variable<int>(minStockThreshold);
     return map;
   }
 
@@ -253,9 +252,7 @@ class Product extends DataClass implements Insertable<Product> {
     return ProductsCompanion(
       id: Value(id),
       name: Value(name),
-      composition: composition == null && nullToAbsent
-          ? const Value.absent()
-          : Value(composition),
+      composition: Value(composition),
       hsnCode: hsnCode == null && nullToAbsent
           ? const Value.absent()
           : Value(hsnCode),
@@ -275,13 +272,13 @@ class Product extends DataClass implements Insertable<Product> {
     return Product(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      composition: serializer.fromJson<String?>(json['composition']),
+      composition: serializer.fromJson<String>(json['composition']),
       hsnCode: serializer.fromJson<String?>(json['hsnCode']),
       category: $ProductsTable.$convertercategory.fromJson(
         serializer.fromJson<String>(json['category']),
       ),
       rackLocation: serializer.fromJson<String?>(json['rackLocation']),
-      minStockThreshold: serializer.fromJson<double>(json['minStockThreshold']),
+      minStockThreshold: serializer.fromJson<int>(json['minStockThreshold']),
     );
   }
   @override
@@ -290,28 +287,28 @@ class Product extends DataClass implements Insertable<Product> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
-      'composition': serializer.toJson<String?>(composition),
+      'composition': serializer.toJson<String>(composition),
       'hsnCode': serializer.toJson<String?>(hsnCode),
       'category': serializer.toJson<String>(
         $ProductsTable.$convertercategory.toJson(category),
       ),
       'rackLocation': serializer.toJson<String?>(rackLocation),
-      'minStockThreshold': serializer.toJson<double>(minStockThreshold),
+      'minStockThreshold': serializer.toJson<int>(minStockThreshold),
     };
   }
 
   Product copyWith({
     int? id,
     String? name,
-    Value<String?> composition = const Value.absent(),
+    String? composition,
     Value<String?> hsnCode = const Value.absent(),
     ProductCategory? category,
     Value<String?> rackLocation = const Value.absent(),
-    double? minStockThreshold,
+    int? minStockThreshold,
   }) => Product(
     id: id ?? this.id,
     name: name ?? this.name,
-    composition: composition.present ? composition.value : this.composition,
+    composition: composition ?? this.composition,
     hsnCode: hsnCode.present ? hsnCode.value : this.hsnCode,
     category: category ?? this.category,
     rackLocation: rackLocation.present ? rackLocation.value : this.rackLocation,
@@ -375,11 +372,11 @@ class Product extends DataClass implements Insertable<Product> {
 class ProductsCompanion extends UpdateCompanion<Product> {
   final Value<int> id;
   final Value<String> name;
-  final Value<String?> composition;
+  final Value<String> composition;
   final Value<String?> hsnCode;
   final Value<ProductCategory> category;
   final Value<String?> rackLocation;
-  final Value<double> minStockThreshold;
+  final Value<int> minStockThreshold;
   const ProductsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -392,12 +389,13 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   ProductsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
-    this.composition = const Value.absent(),
+    required String composition,
     this.hsnCode = const Value.absent(),
     this.category = const Value.absent(),
     this.rackLocation = const Value.absent(),
     this.minStockThreshold = const Value.absent(),
-  }) : name = Value(name);
+  }) : name = Value(name),
+       composition = Value(composition);
   static Insertable<Product> custom({
     Expression<int>? id,
     Expression<String>? name,
@@ -405,7 +403,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
     Expression<String>? hsnCode,
     Expression<String>? category,
     Expression<String>? rackLocation,
-    Expression<double>? minStockThreshold,
+    Expression<int>? minStockThreshold,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -421,11 +419,11 @@ class ProductsCompanion extends UpdateCompanion<Product> {
   ProductsCompanion copyWith({
     Value<int>? id,
     Value<String>? name,
-    Value<String?>? composition,
+    Value<String>? composition,
     Value<String?>? hsnCode,
     Value<ProductCategory>? category,
     Value<String?>? rackLocation,
-    Value<double>? minStockThreshold,
+    Value<int>? minStockThreshold,
   }) {
     return ProductsCompanion(
       id: id ?? this.id,
@@ -462,7 +460,7 @@ class ProductsCompanion extends UpdateCompanion<Product> {
       map['rack_location'] = Variable<String>(rackLocation.value);
     }
     if (minStockThreshold.present) {
-      map['min_stock_threshold'] = Variable<double>(minStockThreshold.value);
+      map['min_stock_threshold'] = Variable<int>(minStockThreshold.value);
     }
     return map;
   }
@@ -2154,20 +2152,20 @@ class $SalesInvoicesTable extends SalesInvoices
   late final GeneratedColumn<String> customerName = GeneratedColumn<String>(
     'customer_name',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
-  static const VerificationMeta _customerPhoneMeta = const VerificationMeta(
-    'customerPhone',
+  static const VerificationMeta _customerMobileMeta = const VerificationMeta(
+    'customerMobile',
   );
   @override
-  late final GeneratedColumn<String> customerPhone = GeneratedColumn<String>(
-    'customer_phone',
+  late final GeneratedColumn<String> customerMobile = GeneratedColumn<String>(
+    'customer_mobile',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _doctorNameMeta = const VerificationMeta(
     'doctorName',
@@ -2176,9 +2174,20 @@ class $SalesInvoicesTable extends SalesInvoices
   late final GeneratedColumn<String> doctorName = GeneratedColumn<String>(
     'doctor_name',
     aliasedName,
-    true,
+    false,
     type: DriftSqlType.string,
-    requiredDuringInsert: false,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _doctorPlaceMeta = const VerificationMeta(
+    'doctorPlace',
+  );
+  @override
+  late final GeneratedColumn<String> doctorPlace = GeneratedColumn<String>(
+    'doctor_place',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
   );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
@@ -2237,6 +2246,41 @@ class $SalesInvoicesTable extends SalesInvoices
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _amountPaidMeta = const VerificationMeta(
+    'amountPaid',
+  );
+  @override
+  late final GeneratedColumn<double> amountPaid = GeneratedColumn<double>(
+    'amount_paid',
+    aliasedName,
+    false,
+    type: DriftSqlType.double,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0.0),
+  );
+  static const VerificationMeta _creditBalanceAddedMeta =
+      const VerificationMeta('creditBalanceAdded');
+  @override
+  late final GeneratedColumn<double> creditBalanceAdded =
+      GeneratedColumn<double>(
+        'credit_balance_added',
+        aliasedName,
+        false,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(0.0),
+      );
+  static const VerificationMeta _customerNotesMeta = const VerificationMeta(
+    'customerNotes',
+  );
+  @override
+  late final GeneratedColumn<String> customerNotes = GeneratedColumn<String>(
+    'customer_notes',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   late final GeneratedColumnWithTypeConverter<PaymentMode, String> paymentMode =
       GeneratedColumn<String>(
@@ -2252,13 +2296,17 @@ class $SalesInvoicesTable extends SalesInvoices
     id,
     invoiceNumber,
     customerName,
-    customerPhone,
+    customerMobile,
     doctorName,
+    doctorPlace,
     createdAt,
     subtotal,
     totalGst,
     totalDiscount,
     totalAmount,
+    amountPaid,
+    creditBalanceAdded,
+    customerNotes,
     paymentMode,
   ];
   @override
@@ -2295,21 +2343,38 @@ class $SalesInvoicesTable extends SalesInvoices
           _customerNameMeta,
         ),
       );
+    } else if (isInserting) {
+      context.missing(_customerNameMeta);
     }
-    if (data.containsKey('customer_phone')) {
+    if (data.containsKey('customer_mobile')) {
       context.handle(
-        _customerPhoneMeta,
-        customerPhone.isAcceptableOrUnknown(
-          data['customer_phone']!,
-          _customerPhoneMeta,
+        _customerMobileMeta,
+        customerMobile.isAcceptableOrUnknown(
+          data['customer_mobile']!,
+          _customerMobileMeta,
         ),
       );
+    } else if (isInserting) {
+      context.missing(_customerMobileMeta);
     }
     if (data.containsKey('doctor_name')) {
       context.handle(
         _doctorNameMeta,
         doctorName.isAcceptableOrUnknown(data['doctor_name']!, _doctorNameMeta),
       );
+    } else if (isInserting) {
+      context.missing(_doctorNameMeta);
+    }
+    if (data.containsKey('doctor_place')) {
+      context.handle(
+        _doctorPlaceMeta,
+        doctorPlace.isAcceptableOrUnknown(
+          data['doctor_place']!,
+          _doctorPlaceMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_doctorPlaceMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(
@@ -2353,6 +2418,30 @@ class $SalesInvoicesTable extends SalesInvoices
     } else if (isInserting) {
       context.missing(_totalAmountMeta);
     }
+    if (data.containsKey('amount_paid')) {
+      context.handle(
+        _amountPaidMeta,
+        amountPaid.isAcceptableOrUnknown(data['amount_paid']!, _amountPaidMeta),
+      );
+    }
+    if (data.containsKey('credit_balance_added')) {
+      context.handle(
+        _creditBalanceAddedMeta,
+        creditBalanceAdded.isAcceptableOrUnknown(
+          data['credit_balance_added']!,
+          _creditBalanceAddedMeta,
+        ),
+      );
+    }
+    if (data.containsKey('customer_notes')) {
+      context.handle(
+        _customerNotesMeta,
+        customerNotes.isAcceptableOrUnknown(
+          data['customer_notes']!,
+          _customerNotesMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2373,15 +2462,19 @@ class $SalesInvoicesTable extends SalesInvoices
       customerName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}customer_name'],
-      ),
-      customerPhone: attachedDatabase.typeMapping.read(
+      )!,
+      customerMobile: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}customer_phone'],
-      ),
+        data['${effectivePrefix}customer_mobile'],
+      )!,
       doctorName: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}doctor_name'],
-      ),
+      )!,
+      doctorPlace: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}doctor_place'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -2402,6 +2495,18 @@ class $SalesInvoicesTable extends SalesInvoices
         DriftSqlType.double,
         data['${effectivePrefix}total_amount'],
       )!,
+      amountPaid: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}amount_paid'],
+      )!,
+      creditBalanceAdded: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}credit_balance_added'],
+      )!,
+      customerNotes: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}customer_notes'],
+      ),
       paymentMode: $SalesInvoicesTable.$converterpaymentMode.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -2423,26 +2528,34 @@ class $SalesInvoicesTable extends SalesInvoices
 class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
   final int id;
   final String invoiceNumber;
-  final String? customerName;
-  final String? customerPhone;
-  final String? doctorName;
+  final String customerName;
+  final String customerMobile;
+  final String doctorName;
+  final String doctorPlace;
   final DateTime createdAt;
   final double subtotal;
   final double totalGst;
   final double totalDiscount;
   final double totalAmount;
+  final double amountPaid;
+  final double creditBalanceAdded;
+  final String? customerNotes;
   final PaymentMode paymentMode;
   const SalesInvoice({
     required this.id,
     required this.invoiceNumber,
-    this.customerName,
-    this.customerPhone,
-    this.doctorName,
+    required this.customerName,
+    required this.customerMobile,
+    required this.doctorName,
+    required this.doctorPlace,
     required this.createdAt,
     required this.subtotal,
     required this.totalGst,
     required this.totalDiscount,
     required this.totalAmount,
+    required this.amountPaid,
+    required this.creditBalanceAdded,
+    this.customerNotes,
     required this.paymentMode,
   });
   @override
@@ -2450,20 +2563,20 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['invoice_number'] = Variable<String>(invoiceNumber);
-    if (!nullToAbsent || customerName != null) {
-      map['customer_name'] = Variable<String>(customerName);
-    }
-    if (!nullToAbsent || customerPhone != null) {
-      map['customer_phone'] = Variable<String>(customerPhone);
-    }
-    if (!nullToAbsent || doctorName != null) {
-      map['doctor_name'] = Variable<String>(doctorName);
-    }
+    map['customer_name'] = Variable<String>(customerName);
+    map['customer_mobile'] = Variable<String>(customerMobile);
+    map['doctor_name'] = Variable<String>(doctorName);
+    map['doctor_place'] = Variable<String>(doctorPlace);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['subtotal'] = Variable<double>(subtotal);
     map['total_gst'] = Variable<double>(totalGst);
     map['total_discount'] = Variable<double>(totalDiscount);
     map['total_amount'] = Variable<double>(totalAmount);
+    map['amount_paid'] = Variable<double>(amountPaid);
+    map['credit_balance_added'] = Variable<double>(creditBalanceAdded);
+    if (!nullToAbsent || customerNotes != null) {
+      map['customer_notes'] = Variable<String>(customerNotes);
+    }
     {
       map['payment_mode'] = Variable<String>(
         $SalesInvoicesTable.$converterpaymentMode.toSql(paymentMode),
@@ -2476,20 +2589,20 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
     return SalesInvoicesCompanion(
       id: Value(id),
       invoiceNumber: Value(invoiceNumber),
-      customerName: customerName == null && nullToAbsent
-          ? const Value.absent()
-          : Value(customerName),
-      customerPhone: customerPhone == null && nullToAbsent
-          ? const Value.absent()
-          : Value(customerPhone),
-      doctorName: doctorName == null && nullToAbsent
-          ? const Value.absent()
-          : Value(doctorName),
+      customerName: Value(customerName),
+      customerMobile: Value(customerMobile),
+      doctorName: Value(doctorName),
+      doctorPlace: Value(doctorPlace),
       createdAt: Value(createdAt),
       subtotal: Value(subtotal),
       totalGst: Value(totalGst),
       totalDiscount: Value(totalDiscount),
       totalAmount: Value(totalAmount),
+      amountPaid: Value(amountPaid),
+      creditBalanceAdded: Value(creditBalanceAdded),
+      customerNotes: customerNotes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(customerNotes),
       paymentMode: Value(paymentMode),
     );
   }
@@ -2502,14 +2615,20 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
     return SalesInvoice(
       id: serializer.fromJson<int>(json['id']),
       invoiceNumber: serializer.fromJson<String>(json['invoiceNumber']),
-      customerName: serializer.fromJson<String?>(json['customerName']),
-      customerPhone: serializer.fromJson<String?>(json['customerPhone']),
-      doctorName: serializer.fromJson<String?>(json['doctorName']),
+      customerName: serializer.fromJson<String>(json['customerName']),
+      customerMobile: serializer.fromJson<String>(json['customerMobile']),
+      doctorName: serializer.fromJson<String>(json['doctorName']),
+      doctorPlace: serializer.fromJson<String>(json['doctorPlace']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       subtotal: serializer.fromJson<double>(json['subtotal']),
       totalGst: serializer.fromJson<double>(json['totalGst']),
       totalDiscount: serializer.fromJson<double>(json['totalDiscount']),
       totalAmount: serializer.fromJson<double>(json['totalAmount']),
+      amountPaid: serializer.fromJson<double>(json['amountPaid']),
+      creditBalanceAdded: serializer.fromJson<double>(
+        json['creditBalanceAdded'],
+      ),
+      customerNotes: serializer.fromJson<String?>(json['customerNotes']),
       paymentMode: $SalesInvoicesTable.$converterpaymentMode.fromJson(
         serializer.fromJson<String>(json['paymentMode']),
       ),
@@ -2521,14 +2640,18 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'invoiceNumber': serializer.toJson<String>(invoiceNumber),
-      'customerName': serializer.toJson<String?>(customerName),
-      'customerPhone': serializer.toJson<String?>(customerPhone),
-      'doctorName': serializer.toJson<String?>(doctorName),
+      'customerName': serializer.toJson<String>(customerName),
+      'customerMobile': serializer.toJson<String>(customerMobile),
+      'doctorName': serializer.toJson<String>(doctorName),
+      'doctorPlace': serializer.toJson<String>(doctorPlace),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'subtotal': serializer.toJson<double>(subtotal),
       'totalGst': serializer.toJson<double>(totalGst),
       'totalDiscount': serializer.toJson<double>(totalDiscount),
       'totalAmount': serializer.toJson<double>(totalAmount),
+      'amountPaid': serializer.toJson<double>(amountPaid),
+      'creditBalanceAdded': serializer.toJson<double>(creditBalanceAdded),
+      'customerNotes': serializer.toJson<String?>(customerNotes),
       'paymentMode': serializer.toJson<String>(
         $SalesInvoicesTable.$converterpaymentMode.toJson(paymentMode),
       ),
@@ -2538,28 +2661,36 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
   SalesInvoice copyWith({
     int? id,
     String? invoiceNumber,
-    Value<String?> customerName = const Value.absent(),
-    Value<String?> customerPhone = const Value.absent(),
-    Value<String?> doctorName = const Value.absent(),
+    String? customerName,
+    String? customerMobile,
+    String? doctorName,
+    String? doctorPlace,
     DateTime? createdAt,
     double? subtotal,
     double? totalGst,
     double? totalDiscount,
     double? totalAmount,
+    double? amountPaid,
+    double? creditBalanceAdded,
+    Value<String?> customerNotes = const Value.absent(),
     PaymentMode? paymentMode,
   }) => SalesInvoice(
     id: id ?? this.id,
     invoiceNumber: invoiceNumber ?? this.invoiceNumber,
-    customerName: customerName.present ? customerName.value : this.customerName,
-    customerPhone: customerPhone.present
-        ? customerPhone.value
-        : this.customerPhone,
-    doctorName: doctorName.present ? doctorName.value : this.doctorName,
+    customerName: customerName ?? this.customerName,
+    customerMobile: customerMobile ?? this.customerMobile,
+    doctorName: doctorName ?? this.doctorName,
+    doctorPlace: doctorPlace ?? this.doctorPlace,
     createdAt: createdAt ?? this.createdAt,
     subtotal: subtotal ?? this.subtotal,
     totalGst: totalGst ?? this.totalGst,
     totalDiscount: totalDiscount ?? this.totalDiscount,
     totalAmount: totalAmount ?? this.totalAmount,
+    amountPaid: amountPaid ?? this.amountPaid,
+    creditBalanceAdded: creditBalanceAdded ?? this.creditBalanceAdded,
+    customerNotes: customerNotes.present
+        ? customerNotes.value
+        : this.customerNotes,
     paymentMode: paymentMode ?? this.paymentMode,
   );
   SalesInvoice copyWithCompanion(SalesInvoicesCompanion data) {
@@ -2571,12 +2702,15 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
       customerName: data.customerName.present
           ? data.customerName.value
           : this.customerName,
-      customerPhone: data.customerPhone.present
-          ? data.customerPhone.value
-          : this.customerPhone,
+      customerMobile: data.customerMobile.present
+          ? data.customerMobile.value
+          : this.customerMobile,
       doctorName: data.doctorName.present
           ? data.doctorName.value
           : this.doctorName,
+      doctorPlace: data.doctorPlace.present
+          ? data.doctorPlace.value
+          : this.doctorPlace,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       subtotal: data.subtotal.present ? data.subtotal.value : this.subtotal,
       totalGst: data.totalGst.present ? data.totalGst.value : this.totalGst,
@@ -2586,6 +2720,15 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
       totalAmount: data.totalAmount.present
           ? data.totalAmount.value
           : this.totalAmount,
+      amountPaid: data.amountPaid.present
+          ? data.amountPaid.value
+          : this.amountPaid,
+      creditBalanceAdded: data.creditBalanceAdded.present
+          ? data.creditBalanceAdded.value
+          : this.creditBalanceAdded,
+      customerNotes: data.customerNotes.present
+          ? data.customerNotes.value
+          : this.customerNotes,
       paymentMode: data.paymentMode.present
           ? data.paymentMode.value
           : this.paymentMode,
@@ -2598,13 +2741,17 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
           ..write('id: $id, ')
           ..write('invoiceNumber: $invoiceNumber, ')
           ..write('customerName: $customerName, ')
-          ..write('customerPhone: $customerPhone, ')
+          ..write('customerMobile: $customerMobile, ')
           ..write('doctorName: $doctorName, ')
+          ..write('doctorPlace: $doctorPlace, ')
           ..write('createdAt: $createdAt, ')
           ..write('subtotal: $subtotal, ')
           ..write('totalGst: $totalGst, ')
           ..write('totalDiscount: $totalDiscount, ')
           ..write('totalAmount: $totalAmount, ')
+          ..write('amountPaid: $amountPaid, ')
+          ..write('creditBalanceAdded: $creditBalanceAdded, ')
+          ..write('customerNotes: $customerNotes, ')
           ..write('paymentMode: $paymentMode')
           ..write(')'))
         .toString();
@@ -2615,13 +2762,17 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
     id,
     invoiceNumber,
     customerName,
-    customerPhone,
+    customerMobile,
     doctorName,
+    doctorPlace,
     createdAt,
     subtotal,
     totalGst,
     totalDiscount,
     totalAmount,
+    amountPaid,
+    creditBalanceAdded,
+    customerNotes,
     paymentMode,
   );
   @override
@@ -2631,54 +2782,74 @@ class SalesInvoice extends DataClass implements Insertable<SalesInvoice> {
           other.id == this.id &&
           other.invoiceNumber == this.invoiceNumber &&
           other.customerName == this.customerName &&
-          other.customerPhone == this.customerPhone &&
+          other.customerMobile == this.customerMobile &&
           other.doctorName == this.doctorName &&
+          other.doctorPlace == this.doctorPlace &&
           other.createdAt == this.createdAt &&
           other.subtotal == this.subtotal &&
           other.totalGst == this.totalGst &&
           other.totalDiscount == this.totalDiscount &&
           other.totalAmount == this.totalAmount &&
+          other.amountPaid == this.amountPaid &&
+          other.creditBalanceAdded == this.creditBalanceAdded &&
+          other.customerNotes == this.customerNotes &&
           other.paymentMode == this.paymentMode);
 }
 
 class SalesInvoicesCompanion extends UpdateCompanion<SalesInvoice> {
   final Value<int> id;
   final Value<String> invoiceNumber;
-  final Value<String?> customerName;
-  final Value<String?> customerPhone;
-  final Value<String?> doctorName;
+  final Value<String> customerName;
+  final Value<String> customerMobile;
+  final Value<String> doctorName;
+  final Value<String> doctorPlace;
   final Value<DateTime> createdAt;
   final Value<double> subtotal;
   final Value<double> totalGst;
   final Value<double> totalDiscount;
   final Value<double> totalAmount;
+  final Value<double> amountPaid;
+  final Value<double> creditBalanceAdded;
+  final Value<String?> customerNotes;
   final Value<PaymentMode> paymentMode;
   const SalesInvoicesCompanion({
     this.id = const Value.absent(),
     this.invoiceNumber = const Value.absent(),
     this.customerName = const Value.absent(),
-    this.customerPhone = const Value.absent(),
+    this.customerMobile = const Value.absent(),
     this.doctorName = const Value.absent(),
+    this.doctorPlace = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.subtotal = const Value.absent(),
     this.totalGst = const Value.absent(),
     this.totalDiscount = const Value.absent(),
     this.totalAmount = const Value.absent(),
+    this.amountPaid = const Value.absent(),
+    this.creditBalanceAdded = const Value.absent(),
+    this.customerNotes = const Value.absent(),
     this.paymentMode = const Value.absent(),
   });
   SalesInvoicesCompanion.insert({
     this.id = const Value.absent(),
     required String invoiceNumber,
-    this.customerName = const Value.absent(),
-    this.customerPhone = const Value.absent(),
-    this.doctorName = const Value.absent(),
+    required String customerName,
+    required String customerMobile,
+    required String doctorName,
+    required String doctorPlace,
     this.createdAt = const Value.absent(),
     required double subtotal,
     required double totalGst,
     this.totalDiscount = const Value.absent(),
     required double totalAmount,
+    this.amountPaid = const Value.absent(),
+    this.creditBalanceAdded = const Value.absent(),
+    this.customerNotes = const Value.absent(),
     this.paymentMode = const Value.absent(),
   }) : invoiceNumber = Value(invoiceNumber),
+       customerName = Value(customerName),
+       customerMobile = Value(customerMobile),
+       doctorName = Value(doctorName),
+       doctorPlace = Value(doctorPlace),
        subtotal = Value(subtotal),
        totalGst = Value(totalGst),
        totalAmount = Value(totalAmount);
@@ -2686,26 +2857,35 @@ class SalesInvoicesCompanion extends UpdateCompanion<SalesInvoice> {
     Expression<int>? id,
     Expression<String>? invoiceNumber,
     Expression<String>? customerName,
-    Expression<String>? customerPhone,
+    Expression<String>? customerMobile,
     Expression<String>? doctorName,
+    Expression<String>? doctorPlace,
     Expression<DateTime>? createdAt,
     Expression<double>? subtotal,
     Expression<double>? totalGst,
     Expression<double>? totalDiscount,
     Expression<double>? totalAmount,
+    Expression<double>? amountPaid,
+    Expression<double>? creditBalanceAdded,
+    Expression<String>? customerNotes,
     Expression<String>? paymentMode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (invoiceNumber != null) 'invoice_number': invoiceNumber,
       if (customerName != null) 'customer_name': customerName,
-      if (customerPhone != null) 'customer_phone': customerPhone,
+      if (customerMobile != null) 'customer_mobile': customerMobile,
       if (doctorName != null) 'doctor_name': doctorName,
+      if (doctorPlace != null) 'doctor_place': doctorPlace,
       if (createdAt != null) 'created_at': createdAt,
       if (subtotal != null) 'subtotal': subtotal,
       if (totalGst != null) 'total_gst': totalGst,
       if (totalDiscount != null) 'total_discount': totalDiscount,
       if (totalAmount != null) 'total_amount': totalAmount,
+      if (amountPaid != null) 'amount_paid': amountPaid,
+      if (creditBalanceAdded != null)
+        'credit_balance_added': creditBalanceAdded,
+      if (customerNotes != null) 'customer_notes': customerNotes,
       if (paymentMode != null) 'payment_mode': paymentMode,
     });
   }
@@ -2713,27 +2893,35 @@ class SalesInvoicesCompanion extends UpdateCompanion<SalesInvoice> {
   SalesInvoicesCompanion copyWith({
     Value<int>? id,
     Value<String>? invoiceNumber,
-    Value<String?>? customerName,
-    Value<String?>? customerPhone,
-    Value<String?>? doctorName,
+    Value<String>? customerName,
+    Value<String>? customerMobile,
+    Value<String>? doctorName,
+    Value<String>? doctorPlace,
     Value<DateTime>? createdAt,
     Value<double>? subtotal,
     Value<double>? totalGst,
     Value<double>? totalDiscount,
     Value<double>? totalAmount,
+    Value<double>? amountPaid,
+    Value<double>? creditBalanceAdded,
+    Value<String?>? customerNotes,
     Value<PaymentMode>? paymentMode,
   }) {
     return SalesInvoicesCompanion(
       id: id ?? this.id,
       invoiceNumber: invoiceNumber ?? this.invoiceNumber,
       customerName: customerName ?? this.customerName,
-      customerPhone: customerPhone ?? this.customerPhone,
+      customerMobile: customerMobile ?? this.customerMobile,
       doctorName: doctorName ?? this.doctorName,
+      doctorPlace: doctorPlace ?? this.doctorPlace,
       createdAt: createdAt ?? this.createdAt,
       subtotal: subtotal ?? this.subtotal,
       totalGst: totalGst ?? this.totalGst,
       totalDiscount: totalDiscount ?? this.totalDiscount,
       totalAmount: totalAmount ?? this.totalAmount,
+      amountPaid: amountPaid ?? this.amountPaid,
+      creditBalanceAdded: creditBalanceAdded ?? this.creditBalanceAdded,
+      customerNotes: customerNotes ?? this.customerNotes,
       paymentMode: paymentMode ?? this.paymentMode,
     );
   }
@@ -2750,11 +2938,14 @@ class SalesInvoicesCompanion extends UpdateCompanion<SalesInvoice> {
     if (customerName.present) {
       map['customer_name'] = Variable<String>(customerName.value);
     }
-    if (customerPhone.present) {
-      map['customer_phone'] = Variable<String>(customerPhone.value);
+    if (customerMobile.present) {
+      map['customer_mobile'] = Variable<String>(customerMobile.value);
     }
     if (doctorName.present) {
       map['doctor_name'] = Variable<String>(doctorName.value);
+    }
+    if (doctorPlace.present) {
+      map['doctor_place'] = Variable<String>(doctorPlace.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -2771,6 +2962,15 @@ class SalesInvoicesCompanion extends UpdateCompanion<SalesInvoice> {
     if (totalAmount.present) {
       map['total_amount'] = Variable<double>(totalAmount.value);
     }
+    if (amountPaid.present) {
+      map['amount_paid'] = Variable<double>(amountPaid.value);
+    }
+    if (creditBalanceAdded.present) {
+      map['credit_balance_added'] = Variable<double>(creditBalanceAdded.value);
+    }
+    if (customerNotes.present) {
+      map['customer_notes'] = Variable<String>(customerNotes.value);
+    }
     if (paymentMode.present) {
       map['payment_mode'] = Variable<String>(
         $SalesInvoicesTable.$converterpaymentMode.toSql(paymentMode.value),
@@ -2785,13 +2985,17 @@ class SalesInvoicesCompanion extends UpdateCompanion<SalesInvoice> {
           ..write('id: $id, ')
           ..write('invoiceNumber: $invoiceNumber, ')
           ..write('customerName: $customerName, ')
-          ..write('customerPhone: $customerPhone, ')
+          ..write('customerMobile: $customerMobile, ')
           ..write('doctorName: $doctorName, ')
+          ..write('doctorPlace: $doctorPlace, ')
           ..write('createdAt: $createdAt, ')
           ..write('subtotal: $subtotal, ')
           ..write('totalGst: $totalGst, ')
           ..write('totalDiscount: $totalDiscount, ')
           ..write('totalAmount: $totalAmount, ')
+          ..write('amountPaid: $amountPaid, ')
+          ..write('creditBalanceAdded: $creditBalanceAdded, ')
+          ..write('customerNotes: $customerNotes, ')
           ..write('paymentMode: $paymentMode')
           ..write(')'))
         .toString();
@@ -2875,21 +3079,23 @@ class $SalesInvoiceItemsTable extends SalesInvoiceItems
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _quantityMeta = const VerificationMeta(
-    'quantity',
+  static const VerificationMeta _totalTabletsSoldMeta = const VerificationMeta(
+    'totalTabletsSold',
   );
   @override
-  late final GeneratedColumn<int> quantity = GeneratedColumn<int>(
-    'quantity',
+  late final GeneratedColumn<int> totalTabletsSold = GeneratedColumn<int>(
+    'total_tablets_sold',
     aliasedName,
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _mrpMeta = const VerificationMeta('mrp');
+  static const VerificationMeta _mrpPerTabletMeta = const VerificationMeta(
+    'mrpPerTablet',
+  );
   @override
-  late final GeneratedColumn<double> mrp = GeneratedColumn<double>(
-    'mrp',
+  late final GeneratedColumn<double> mrpPerTablet = GeneratedColumn<double>(
+    'mrp_per_tablet',
     aliasedName,
     false,
     type: DriftSqlType.double,
@@ -2937,8 +3143,8 @@ class $SalesInvoiceItemsTable extends SalesInvoiceItems
     productId,
     productName,
     batchNumber,
-    quantity,
-    mrp,
+    totalTabletsSold,
+    mrpPerTablet,
     gstPercentage,
     discountPercent,
     lineTotal,
@@ -3004,21 +3210,27 @@ class $SalesInvoiceItemsTable extends SalesInvoiceItems
     } else if (isInserting) {
       context.missing(_batchNumberMeta);
     }
-    if (data.containsKey('quantity')) {
+    if (data.containsKey('total_tablets_sold')) {
       context.handle(
-        _quantityMeta,
-        quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta),
+        _totalTabletsSoldMeta,
+        totalTabletsSold.isAcceptableOrUnknown(
+          data['total_tablets_sold']!,
+          _totalTabletsSoldMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_quantityMeta);
+      context.missing(_totalTabletsSoldMeta);
     }
-    if (data.containsKey('mrp')) {
+    if (data.containsKey('mrp_per_tablet')) {
       context.handle(
-        _mrpMeta,
-        mrp.isAcceptableOrUnknown(data['mrp']!, _mrpMeta),
+        _mrpPerTabletMeta,
+        mrpPerTablet.isAcceptableOrUnknown(
+          data['mrp_per_tablet']!,
+          _mrpPerTabletMeta,
+        ),
       );
     } else if (isInserting) {
-      context.missing(_mrpMeta);
+      context.missing(_mrpPerTabletMeta);
     }
     if (data.containsKey('gst_percentage')) {
       context.handle(
@@ -3081,13 +3293,13 @@ class $SalesInvoiceItemsTable extends SalesInvoiceItems
         DriftSqlType.string,
         data['${effectivePrefix}batch_number'],
       )!,
-      quantity: attachedDatabase.typeMapping.read(
+      totalTabletsSold: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
-        data['${effectivePrefix}quantity'],
+        data['${effectivePrefix}total_tablets_sold'],
       )!,
-      mrp: attachedDatabase.typeMapping.read(
+      mrpPerTablet: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
-        data['${effectivePrefix}mrp'],
+        data['${effectivePrefix}mrp_per_tablet'],
       )!,
       gstPercentage: attachedDatabase.typeMapping.read(
         DriftSqlType.double,
@@ -3118,8 +3330,8 @@ class SalesInvoiceItem extends DataClass
   final int productId;
   final String productName;
   final String batchNumber;
-  final int quantity;
-  final double mrp;
+  final int totalTabletsSold;
+  final double mrpPerTablet;
   final double gstPercentage;
   final double discountPercent;
   final double lineTotal;
@@ -3130,8 +3342,8 @@ class SalesInvoiceItem extends DataClass
     required this.productId,
     required this.productName,
     required this.batchNumber,
-    required this.quantity,
-    required this.mrp,
+    required this.totalTabletsSold,
+    required this.mrpPerTablet,
     required this.gstPercentage,
     required this.discountPercent,
     required this.lineTotal,
@@ -3145,8 +3357,8 @@ class SalesInvoiceItem extends DataClass
     map['product_id'] = Variable<int>(productId);
     map['product_name'] = Variable<String>(productName);
     map['batch_number'] = Variable<String>(batchNumber);
-    map['quantity'] = Variable<int>(quantity);
-    map['mrp'] = Variable<double>(mrp);
+    map['total_tablets_sold'] = Variable<int>(totalTabletsSold);
+    map['mrp_per_tablet'] = Variable<double>(mrpPerTablet);
     map['gst_percentage'] = Variable<double>(gstPercentage);
     map['discount_percent'] = Variable<double>(discountPercent);
     map['line_total'] = Variable<double>(lineTotal);
@@ -3161,8 +3373,8 @@ class SalesInvoiceItem extends DataClass
       productId: Value(productId),
       productName: Value(productName),
       batchNumber: Value(batchNumber),
-      quantity: Value(quantity),
-      mrp: Value(mrp),
+      totalTabletsSold: Value(totalTabletsSold),
+      mrpPerTablet: Value(mrpPerTablet),
       gstPercentage: Value(gstPercentage),
       discountPercent: Value(discountPercent),
       lineTotal: Value(lineTotal),
@@ -3181,8 +3393,8 @@ class SalesInvoiceItem extends DataClass
       productId: serializer.fromJson<int>(json['productId']),
       productName: serializer.fromJson<String>(json['productName']),
       batchNumber: serializer.fromJson<String>(json['batchNumber']),
-      quantity: serializer.fromJson<int>(json['quantity']),
-      mrp: serializer.fromJson<double>(json['mrp']),
+      totalTabletsSold: serializer.fromJson<int>(json['totalTabletsSold']),
+      mrpPerTablet: serializer.fromJson<double>(json['mrpPerTablet']),
       gstPercentage: serializer.fromJson<double>(json['gstPercentage']),
       discountPercent: serializer.fromJson<double>(json['discountPercent']),
       lineTotal: serializer.fromJson<double>(json['lineTotal']),
@@ -3198,8 +3410,8 @@ class SalesInvoiceItem extends DataClass
       'productId': serializer.toJson<int>(productId),
       'productName': serializer.toJson<String>(productName),
       'batchNumber': serializer.toJson<String>(batchNumber),
-      'quantity': serializer.toJson<int>(quantity),
-      'mrp': serializer.toJson<double>(mrp),
+      'totalTabletsSold': serializer.toJson<int>(totalTabletsSold),
+      'mrpPerTablet': serializer.toJson<double>(mrpPerTablet),
       'gstPercentage': serializer.toJson<double>(gstPercentage),
       'discountPercent': serializer.toJson<double>(discountPercent),
       'lineTotal': serializer.toJson<double>(lineTotal),
@@ -3213,8 +3425,8 @@ class SalesInvoiceItem extends DataClass
     int? productId,
     String? productName,
     String? batchNumber,
-    int? quantity,
-    double? mrp,
+    int? totalTabletsSold,
+    double? mrpPerTablet,
     double? gstPercentage,
     double? discountPercent,
     double? lineTotal,
@@ -3225,8 +3437,8 @@ class SalesInvoiceItem extends DataClass
     productId: productId ?? this.productId,
     productName: productName ?? this.productName,
     batchNumber: batchNumber ?? this.batchNumber,
-    quantity: quantity ?? this.quantity,
-    mrp: mrp ?? this.mrp,
+    totalTabletsSold: totalTabletsSold ?? this.totalTabletsSold,
+    mrpPerTablet: mrpPerTablet ?? this.mrpPerTablet,
     gstPercentage: gstPercentage ?? this.gstPercentage,
     discountPercent: discountPercent ?? this.discountPercent,
     lineTotal: lineTotal ?? this.lineTotal,
@@ -3243,8 +3455,12 @@ class SalesInvoiceItem extends DataClass
       batchNumber: data.batchNumber.present
           ? data.batchNumber.value
           : this.batchNumber,
-      quantity: data.quantity.present ? data.quantity.value : this.quantity,
-      mrp: data.mrp.present ? data.mrp.value : this.mrp,
+      totalTabletsSold: data.totalTabletsSold.present
+          ? data.totalTabletsSold.value
+          : this.totalTabletsSold,
+      mrpPerTablet: data.mrpPerTablet.present
+          ? data.mrpPerTablet.value
+          : this.mrpPerTablet,
       gstPercentage: data.gstPercentage.present
           ? data.gstPercentage.value
           : this.gstPercentage,
@@ -3264,8 +3480,8 @@ class SalesInvoiceItem extends DataClass
           ..write('productId: $productId, ')
           ..write('productName: $productName, ')
           ..write('batchNumber: $batchNumber, ')
-          ..write('quantity: $quantity, ')
-          ..write('mrp: $mrp, ')
+          ..write('totalTabletsSold: $totalTabletsSold, ')
+          ..write('mrpPerTablet: $mrpPerTablet, ')
           ..write('gstPercentage: $gstPercentage, ')
           ..write('discountPercent: $discountPercent, ')
           ..write('lineTotal: $lineTotal')
@@ -3281,8 +3497,8 @@ class SalesInvoiceItem extends DataClass
     productId,
     productName,
     batchNumber,
-    quantity,
-    mrp,
+    totalTabletsSold,
+    mrpPerTablet,
     gstPercentage,
     discountPercent,
     lineTotal,
@@ -3297,8 +3513,8 @@ class SalesInvoiceItem extends DataClass
           other.productId == this.productId &&
           other.productName == this.productName &&
           other.batchNumber == this.batchNumber &&
-          other.quantity == this.quantity &&
-          other.mrp == this.mrp &&
+          other.totalTabletsSold == this.totalTabletsSold &&
+          other.mrpPerTablet == this.mrpPerTablet &&
           other.gstPercentage == this.gstPercentage &&
           other.discountPercent == this.discountPercent &&
           other.lineTotal == this.lineTotal);
@@ -3311,8 +3527,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
   final Value<int> productId;
   final Value<String> productName;
   final Value<String> batchNumber;
-  final Value<int> quantity;
-  final Value<double> mrp;
+  final Value<int> totalTabletsSold;
+  final Value<double> mrpPerTablet;
   final Value<double> gstPercentage;
   final Value<double> discountPercent;
   final Value<double> lineTotal;
@@ -3323,8 +3539,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
     this.productId = const Value.absent(),
     this.productName = const Value.absent(),
     this.batchNumber = const Value.absent(),
-    this.quantity = const Value.absent(),
-    this.mrp = const Value.absent(),
+    this.totalTabletsSold = const Value.absent(),
+    this.mrpPerTablet = const Value.absent(),
     this.gstPercentage = const Value.absent(),
     this.discountPercent = const Value.absent(),
     this.lineTotal = const Value.absent(),
@@ -3336,8 +3552,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
     required int productId,
     required String productName,
     required String batchNumber,
-    required int quantity,
-    required double mrp,
+    required int totalTabletsSold,
+    required double mrpPerTablet,
     required double gstPercentage,
     this.discountPercent = const Value.absent(),
     required double lineTotal,
@@ -3346,8 +3562,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
        productId = Value(productId),
        productName = Value(productName),
        batchNumber = Value(batchNumber),
-       quantity = Value(quantity),
-       mrp = Value(mrp),
+       totalTabletsSold = Value(totalTabletsSold),
+       mrpPerTablet = Value(mrpPerTablet),
        gstPercentage = Value(gstPercentage),
        lineTotal = Value(lineTotal);
   static Insertable<SalesInvoiceItem> custom({
@@ -3357,8 +3573,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
     Expression<int>? productId,
     Expression<String>? productName,
     Expression<String>? batchNumber,
-    Expression<int>? quantity,
-    Expression<double>? mrp,
+    Expression<int>? totalTabletsSold,
+    Expression<double>? mrpPerTablet,
     Expression<double>? gstPercentage,
     Expression<double>? discountPercent,
     Expression<double>? lineTotal,
@@ -3370,8 +3586,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
       if (productId != null) 'product_id': productId,
       if (productName != null) 'product_name': productName,
       if (batchNumber != null) 'batch_number': batchNumber,
-      if (quantity != null) 'quantity': quantity,
-      if (mrp != null) 'mrp': mrp,
+      if (totalTabletsSold != null) 'total_tablets_sold': totalTabletsSold,
+      if (mrpPerTablet != null) 'mrp_per_tablet': mrpPerTablet,
       if (gstPercentage != null) 'gst_percentage': gstPercentage,
       if (discountPercent != null) 'discount_percent': discountPercent,
       if (lineTotal != null) 'line_total': lineTotal,
@@ -3385,8 +3601,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
     Value<int>? productId,
     Value<String>? productName,
     Value<String>? batchNumber,
-    Value<int>? quantity,
-    Value<double>? mrp,
+    Value<int>? totalTabletsSold,
+    Value<double>? mrpPerTablet,
     Value<double>? gstPercentage,
     Value<double>? discountPercent,
     Value<double>? lineTotal,
@@ -3398,8 +3614,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
       productId: productId ?? this.productId,
       productName: productName ?? this.productName,
       batchNumber: batchNumber ?? this.batchNumber,
-      quantity: quantity ?? this.quantity,
-      mrp: mrp ?? this.mrp,
+      totalTabletsSold: totalTabletsSold ?? this.totalTabletsSold,
+      mrpPerTablet: mrpPerTablet ?? this.mrpPerTablet,
       gstPercentage: gstPercentage ?? this.gstPercentage,
       discountPercent: discountPercent ?? this.discountPercent,
       lineTotal: lineTotal ?? this.lineTotal,
@@ -3427,11 +3643,11 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
     if (batchNumber.present) {
       map['batch_number'] = Variable<String>(batchNumber.value);
     }
-    if (quantity.present) {
-      map['quantity'] = Variable<int>(quantity.value);
+    if (totalTabletsSold.present) {
+      map['total_tablets_sold'] = Variable<int>(totalTabletsSold.value);
     }
-    if (mrp.present) {
-      map['mrp'] = Variable<double>(mrp.value);
+    if (mrpPerTablet.present) {
+      map['mrp_per_tablet'] = Variable<double>(mrpPerTablet.value);
     }
     if (gstPercentage.present) {
       map['gst_percentage'] = Variable<double>(gstPercentage.value);
@@ -3454,8 +3670,8 @@ class SalesInvoiceItemsCompanion extends UpdateCompanion<SalesInvoiceItem> {
           ..write('productId: $productId, ')
           ..write('productName: $productName, ')
           ..write('batchNumber: $batchNumber, ')
-          ..write('quantity: $quantity, ')
-          ..write('mrp: $mrp, ')
+          ..write('totalTabletsSold: $totalTabletsSold, ')
+          ..write('mrpPerTablet: $mrpPerTablet, ')
           ..write('gstPercentage: $gstPercentage, ')
           ..write('discountPercent: $discountPercent, ')
           ..write('lineTotal: $lineTotal')
@@ -3503,21 +3719,21 @@ typedef $$ProductsTableCreateCompanionBuilder =
     ProductsCompanion Function({
       Value<int> id,
       required String name,
-      Value<String?> composition,
+      required String composition,
       Value<String?> hsnCode,
       Value<ProductCategory> category,
       Value<String?> rackLocation,
-      Value<double> minStockThreshold,
+      Value<int> minStockThreshold,
     });
 typedef $$ProductsTableUpdateCompanionBuilder =
     ProductsCompanion Function({
       Value<int> id,
       Value<String> name,
-      Value<String?> composition,
+      Value<String> composition,
       Value<String?> hsnCode,
       Value<ProductCategory> category,
       Value<String?> rackLocation,
-      Value<double> minStockThreshold,
+      Value<int> minStockThreshold,
     });
 
 final class $$ProductsTableReferences
@@ -3583,7 +3799,7 @@ class $$ProductsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get minStockThreshold => $composableBuilder(
+  ColumnFilters<int> get minStockThreshold => $composableBuilder(
     column: $table.minStockThreshold,
     builder: (column) => ColumnFilters(column),
   );
@@ -3653,7 +3869,7 @@ class $$ProductsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get minStockThreshold => $composableBuilder(
+  ColumnOrderings<int> get minStockThreshold => $composableBuilder(
     column: $table.minStockThreshold,
     builder: (column) => ColumnOrderings(column),
   );
@@ -3690,7 +3906,7 @@ class $$ProductsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<double> get minStockThreshold => $composableBuilder(
+  GeneratedColumn<int> get minStockThreshold => $composableBuilder(
     column: $table.minStockThreshold,
     builder: (column) => column,
   );
@@ -3751,11 +3967,11 @@ class $$ProductsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<String?> composition = const Value.absent(),
+                Value<String> composition = const Value.absent(),
                 Value<String?> hsnCode = const Value.absent(),
                 Value<ProductCategory> category = const Value.absent(),
                 Value<String?> rackLocation = const Value.absent(),
-                Value<double> minStockThreshold = const Value.absent(),
+                Value<int> minStockThreshold = const Value.absent(),
               }) => ProductsCompanion(
                 id: id,
                 name: name,
@@ -3769,11 +3985,11 @@ class $$ProductsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 required String name,
-                Value<String?> composition = const Value.absent(),
+                required String composition,
                 Value<String?> hsnCode = const Value.absent(),
                 Value<ProductCategory> category = const Value.absent(),
                 Value<String?> rackLocation = const Value.absent(),
-                Value<double> minStockThreshold = const Value.absent(),
+                Value<int> minStockThreshold = const Value.absent(),
               }) => ProductsCompanion.insert(
                 id: id,
                 name: name,
@@ -4997,28 +5213,36 @@ typedef $$SalesInvoicesTableCreateCompanionBuilder =
     SalesInvoicesCompanion Function({
       Value<int> id,
       required String invoiceNumber,
-      Value<String?> customerName,
-      Value<String?> customerPhone,
-      Value<String?> doctorName,
+      required String customerName,
+      required String customerMobile,
+      required String doctorName,
+      required String doctorPlace,
       Value<DateTime> createdAt,
       required double subtotal,
       required double totalGst,
       Value<double> totalDiscount,
       required double totalAmount,
+      Value<double> amountPaid,
+      Value<double> creditBalanceAdded,
+      Value<String?> customerNotes,
       Value<PaymentMode> paymentMode,
     });
 typedef $$SalesInvoicesTableUpdateCompanionBuilder =
     SalesInvoicesCompanion Function({
       Value<int> id,
       Value<String> invoiceNumber,
-      Value<String?> customerName,
-      Value<String?> customerPhone,
-      Value<String?> doctorName,
+      Value<String> customerName,
+      Value<String> customerMobile,
+      Value<String> doctorName,
+      Value<String> doctorPlace,
       Value<DateTime> createdAt,
       Value<double> subtotal,
       Value<double> totalGst,
       Value<double> totalDiscount,
       Value<double> totalAmount,
+      Value<double> amountPaid,
+      Value<double> creditBalanceAdded,
+      Value<String?> customerNotes,
       Value<PaymentMode> paymentMode,
     });
 
@@ -5079,13 +5303,18 @@ class $$SalesInvoicesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get customerPhone => $composableBuilder(
-    column: $table.customerPhone,
+  ColumnFilters<String> get customerMobile => $composableBuilder(
+    column: $table.customerMobile,
     builder: (column) => ColumnFilters(column),
   );
 
   ColumnFilters<String> get doctorName => $composableBuilder(
     column: $table.doctorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get doctorPlace => $composableBuilder(
+    column: $table.doctorPlace,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5111,6 +5340,21 @@ class $$SalesInvoicesTableFilterComposer
 
   ColumnFilters<double> get totalAmount => $composableBuilder(
     column: $table.totalAmount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get amountPaid => $composableBuilder(
+    column: $table.amountPaid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get creditBalanceAdded => $composableBuilder(
+    column: $table.creditBalanceAdded,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get customerNotes => $composableBuilder(
+    column: $table.customerNotes,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5170,13 +5414,18 @@ class $$SalesInvoicesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get customerPhone => $composableBuilder(
-    column: $table.customerPhone,
+  ColumnOrderings<String> get customerMobile => $composableBuilder(
+    column: $table.customerMobile,
     builder: (column) => ColumnOrderings(column),
   );
 
   ColumnOrderings<String> get doctorName => $composableBuilder(
     column: $table.doctorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get doctorPlace => $composableBuilder(
+    column: $table.doctorPlace,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -5202,6 +5451,21 @@ class $$SalesInvoicesTableOrderingComposer
 
   ColumnOrderings<double> get totalAmount => $composableBuilder(
     column: $table.totalAmount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get amountPaid => $composableBuilder(
+    column: $table.amountPaid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<double> get creditBalanceAdded => $composableBuilder(
+    column: $table.creditBalanceAdded,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get customerNotes => $composableBuilder(
+    column: $table.customerNotes,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -5233,13 +5497,18 @@ class $$SalesInvoicesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get customerPhone => $composableBuilder(
-    column: $table.customerPhone,
+  GeneratedColumn<String> get customerMobile => $composableBuilder(
+    column: $table.customerMobile,
     builder: (column) => column,
   );
 
   GeneratedColumn<String> get doctorName => $composableBuilder(
     column: $table.doctorName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get doctorPlace => $composableBuilder(
+    column: $table.doctorPlace,
     builder: (column) => column,
   );
 
@@ -5259,6 +5528,21 @@ class $$SalesInvoicesTableAnnotationComposer
 
   GeneratedColumn<double> get totalAmount => $composableBuilder(
     column: $table.totalAmount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get amountPaid => $composableBuilder(
+    column: $table.amountPaid,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get creditBalanceAdded => $composableBuilder(
+    column: $table.creditBalanceAdded,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get customerNotes => $composableBuilder(
+    column: $table.customerNotes,
     builder: (column) => column,
   );
 
@@ -5325,52 +5609,68 @@ class $$SalesInvoicesTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> invoiceNumber = const Value.absent(),
-                Value<String?> customerName = const Value.absent(),
-                Value<String?> customerPhone = const Value.absent(),
-                Value<String?> doctorName = const Value.absent(),
+                Value<String> customerName = const Value.absent(),
+                Value<String> customerMobile = const Value.absent(),
+                Value<String> doctorName = const Value.absent(),
+                Value<String> doctorPlace = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<double> subtotal = const Value.absent(),
                 Value<double> totalGst = const Value.absent(),
                 Value<double> totalDiscount = const Value.absent(),
                 Value<double> totalAmount = const Value.absent(),
+                Value<double> amountPaid = const Value.absent(),
+                Value<double> creditBalanceAdded = const Value.absent(),
+                Value<String?> customerNotes = const Value.absent(),
                 Value<PaymentMode> paymentMode = const Value.absent(),
               }) => SalesInvoicesCompanion(
                 id: id,
                 invoiceNumber: invoiceNumber,
                 customerName: customerName,
-                customerPhone: customerPhone,
+                customerMobile: customerMobile,
                 doctorName: doctorName,
+                doctorPlace: doctorPlace,
                 createdAt: createdAt,
                 subtotal: subtotal,
                 totalGst: totalGst,
                 totalDiscount: totalDiscount,
                 totalAmount: totalAmount,
+                amountPaid: amountPaid,
+                creditBalanceAdded: creditBalanceAdded,
+                customerNotes: customerNotes,
                 paymentMode: paymentMode,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required String invoiceNumber,
-                Value<String?> customerName = const Value.absent(),
-                Value<String?> customerPhone = const Value.absent(),
-                Value<String?> doctorName = const Value.absent(),
+                required String customerName,
+                required String customerMobile,
+                required String doctorName,
+                required String doctorPlace,
                 Value<DateTime> createdAt = const Value.absent(),
                 required double subtotal,
                 required double totalGst,
                 Value<double> totalDiscount = const Value.absent(),
                 required double totalAmount,
+                Value<double> amountPaid = const Value.absent(),
+                Value<double> creditBalanceAdded = const Value.absent(),
+                Value<String?> customerNotes = const Value.absent(),
                 Value<PaymentMode> paymentMode = const Value.absent(),
               }) => SalesInvoicesCompanion.insert(
                 id: id,
                 invoiceNumber: invoiceNumber,
                 customerName: customerName,
-                customerPhone: customerPhone,
+                customerMobile: customerMobile,
                 doctorName: doctorName,
+                doctorPlace: doctorPlace,
                 createdAt: createdAt,
                 subtotal: subtotal,
                 totalGst: totalGst,
                 totalDiscount: totalDiscount,
                 totalAmount: totalAmount,
+                amountPaid: amountPaid,
+                creditBalanceAdded: creditBalanceAdded,
+                customerNotes: customerNotes,
                 paymentMode: paymentMode,
               ),
           withReferenceMapper: (p0) => p0
@@ -5439,8 +5739,8 @@ typedef $$SalesInvoiceItemsTableCreateCompanionBuilder =
       required int productId,
       required String productName,
       required String batchNumber,
-      required int quantity,
-      required double mrp,
+      required int totalTabletsSold,
+      required double mrpPerTablet,
       required double gstPercentage,
       Value<double> discountPercent,
       required double lineTotal,
@@ -5453,8 +5753,8 @@ typedef $$SalesInvoiceItemsTableUpdateCompanionBuilder =
       Value<int> productId,
       Value<String> productName,
       Value<String> batchNumber,
-      Value<int> quantity,
-      Value<double> mrp,
+      Value<int> totalTabletsSold,
+      Value<double> mrpPerTablet,
       Value<double> gstPercentage,
       Value<double> discountPercent,
       Value<double> lineTotal,
@@ -5530,13 +5830,13 @@ class $$SalesInvoiceItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<int> get quantity => $composableBuilder(
-    column: $table.quantity,
+  ColumnFilters<int> get totalTabletsSold => $composableBuilder(
+    column: $table.totalTabletsSold,
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<double> get mrp => $composableBuilder(
-    column: $table.mrp,
+  ColumnFilters<double> get mrpPerTablet => $composableBuilder(
+    column: $table.mrpPerTablet,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5613,13 +5913,13 @@ class $$SalesInvoiceItemsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get quantity => $composableBuilder(
-    column: $table.quantity,
+  ColumnOrderings<int> get totalTabletsSold => $composableBuilder(
+    column: $table.totalTabletsSold,
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<double> get mrp => $composableBuilder(
-    column: $table.mrp,
+  ColumnOrderings<double> get mrpPerTablet => $composableBuilder(
+    column: $table.mrpPerTablet,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -5690,11 +5990,15 @@ class $$SalesInvoiceItemsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<int> get quantity =>
-      $composableBuilder(column: $table.quantity, builder: (column) => column);
+  GeneratedColumn<int> get totalTabletsSold => $composableBuilder(
+    column: $table.totalTabletsSold,
+    builder: (column) => column,
+  );
 
-  GeneratedColumn<double> get mrp =>
-      $composableBuilder(column: $table.mrp, builder: (column) => column);
+  GeneratedColumn<double> get mrpPerTablet => $composableBuilder(
+    column: $table.mrpPerTablet,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<double> get gstPercentage => $composableBuilder(
     column: $table.gstPercentage,
@@ -5772,8 +6076,8 @@ class $$SalesInvoiceItemsTableTableManager
                 Value<int> productId = const Value.absent(),
                 Value<String> productName = const Value.absent(),
                 Value<String> batchNumber = const Value.absent(),
-                Value<int> quantity = const Value.absent(),
-                Value<double> mrp = const Value.absent(),
+                Value<int> totalTabletsSold = const Value.absent(),
+                Value<double> mrpPerTablet = const Value.absent(),
                 Value<double> gstPercentage = const Value.absent(),
                 Value<double> discountPercent = const Value.absent(),
                 Value<double> lineTotal = const Value.absent(),
@@ -5784,8 +6088,8 @@ class $$SalesInvoiceItemsTableTableManager
                 productId: productId,
                 productName: productName,
                 batchNumber: batchNumber,
-                quantity: quantity,
-                mrp: mrp,
+                totalTabletsSold: totalTabletsSold,
+                mrpPerTablet: mrpPerTablet,
                 gstPercentage: gstPercentage,
                 discountPercent: discountPercent,
                 lineTotal: lineTotal,
@@ -5798,8 +6102,8 @@ class $$SalesInvoiceItemsTableTableManager
                 required int productId,
                 required String productName,
                 required String batchNumber,
-                required int quantity,
-                required double mrp,
+                required int totalTabletsSold,
+                required double mrpPerTablet,
                 required double gstPercentage,
                 Value<double> discountPercent = const Value.absent(),
                 required double lineTotal,
@@ -5810,8 +6114,8 @@ class $$SalesInvoiceItemsTableTableManager
                 productId: productId,
                 productName: productName,
                 batchNumber: batchNumber,
-                quantity: quantity,
-                mrp: mrp,
+                totalTabletsSold: totalTabletsSold,
+                mrpPerTablet: mrpPerTablet,
                 gstPercentage: gstPercentage,
                 discountPercent: discountPercent,
                 lineTotal: lineTotal,

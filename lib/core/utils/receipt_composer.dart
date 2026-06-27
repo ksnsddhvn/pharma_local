@@ -10,6 +10,8 @@ class ReceiptLineItem {
   final double discountPercent;
   final double gstPercent;
   final double lineTotal;
+  final String composition;
+  final String? alternativeName;
 
   ReceiptLineItem({
     required this.productName,
@@ -19,6 +21,8 @@ class ReceiptLineItem {
     required this.discountPercent,
     required this.gstPercent,
     required this.lineTotal,
+    this.composition = '',
+    this.alternativeName,
   });
 }
 
@@ -30,50 +34,52 @@ class ReceiptComposer {
   static String composeWhatsAppReceipt({
     required String invoiceNumber,
     required DateTime createdAt,
-    required String? customerName,
+    required String customerName,
+    required String customerMobile,
+    required String doctorName,
+    required String doctorPlace,
     required List<ReceiptLineItem> items,
     required double subtotal,
     required double totalGst,
     required double totalDiscount,
     required double totalAmount,
+    required double amountPaid,
+    required double creditBalanceAdded,
+    String? customerNotes,
     required PaymentMode paymentMode,
     String pharmacyName = 'PharmaLocal Medical Store',
     String? gstin,
   }) {
     final buf = StringBuffer();
-    buf.writeln('━━━━━━━━━━━━━━━━━━━━━━━');
-    buf.writeln('🏥 *$pharmacyName*');
-    if (gstin != null) buf.writeln('GSTIN: $gstin');
-    buf.writeln('━━━━━━━━━━━━━━━━━━━━━━━');
-    buf.writeln('Invoice No: *$invoiceNumber*');
-    buf.writeln('Date: ${_dateFmt.format(createdAt)}');
-    if (customerName != null && customerName.isNotEmpty) {
-      buf.writeln('Patient: $customerName');
-    }
-    buf.writeln('━━━━━━━━━━━━━━━━━━━━━━━');
+    buf.writeln('--- RETAIL MEDICINE BILL ---');
+    buf.writeln('Shop: $pharmacyName');
+    buf.writeln('Patient: $customerName ($customerMobile)');
+    buf.writeln('Dr: $doctorName ($doctorPlace)');
+    buf.writeln('----------------------------');
 
-    for (final item in items) {
-      buf.writeln('▸ ${item.productName}');
-      buf.writeln(
-          '  Batch: ${item.batchNumber} | Qty: ${item.quantity} × ₹${_currencyFmt.format(item.mrp)}');
-      if (item.discountPercent > 0) {
-        buf.writeln('  Disc: ${item.discountPercent.toStringAsFixed(0)}%');
+    for (var i = 0; i < items.length; i++) {
+      final item = items[i];
+      buf.writeln('${i + 1}. ${item.productName} (Batch: ${item.batchNumber}) x ${item.quantity} Tablets - ₹${_currencyFmt.format(item.lineTotal)}');
+      if (item.composition.isNotEmpty) {
+        buf.writeln('(Composition: ${item.composition})');
       }
-      buf.writeln(
-          '  GST: ${item.gstPercent.toStringAsFixed(0)}% | Total: ₹${_currencyFmt.format(item.lineTotal)}');
+      if (item.alternativeName != null && item.alternativeName!.isNotEmpty) {
+        buf.writeln('*Alternative Available: ${item.alternativeName}*');
+      }
     }
 
-    buf.writeln('━━━━━━━━━━━━━━━━━━━━━━━');
-    buf.writeln('Subtotal:   ₹${_currencyFmt.format(subtotal)}');
-    if (totalDiscount > 0) {
-      buf.writeln('Discount:  -₹${_currencyFmt.format(totalDiscount)}');
+    buf.writeln('----------------------------');
+    buf.writeln('Total Bill: ₹${_currencyFmt.format(totalAmount)}');
+    
+    if (creditBalanceAdded > 0) {
+      buf.writeln('Payment Due: ₹${_currencyFmt.format(creditBalanceAdded)} (Logged to Note Book)');
+    } else {
+      buf.writeln('Amount Paid: ₹${_currencyFmt.format(amountPaid)}');
     }
-    buf.writeln('GST:        ₹${_currencyFmt.format(totalGst)}');
-    buf.writeln('━━━━━━━━━━━━━━━━━━━━━━━');
-    buf.writeln('*TOTAL: ₹${_currencyFmt.format(totalAmount)}*');
-    buf.writeln('Payment: ${_paymentLabel(paymentMode)}');
-    buf.writeln('━━━━━━━━━━━━━━━━━━━━━━━');
-    buf.writeln('Thank you! Stay healthy 💊');
+    
+    if (customerNotes != null && customerNotes.isNotEmpty) {
+      buf.writeln('Note: $customerNotes');
+    }
 
     return buf.toString();
   }

@@ -14,6 +14,8 @@ class CartItem {
   final double gstPercentage;
   final ProductCategory category;
   double discountPercent;
+  final String composition;
+  final String? alternativeName;
 
   CartItem({
     required this.batchId,
@@ -25,6 +27,8 @@ class CartItem {
     required this.gstPercentage,
     required this.category,
     this.discountPercent = 0.0,
+    this.composition = '',
+    this.alternativeName,
   });
 
   double get lineTotal => mrp * quantity * (1 - discountPercent / 100);
@@ -55,9 +59,13 @@ class CheckoutService {
   Future<CheckoutResult> processCheckout({
     required List<CartItem> items,
     required PaymentMode paymentMode,
-    String? customerName,
-    String? customerPhone,
-    String? doctorName,
+    required String customerName,
+    required String customerMobile,
+    required String doctorName,
+    required String doctorPlace,
+    required double amountPaid,
+    required double creditBalanceAdded,
+    String? customerNotes,
   }) async {
     if (items.isEmpty) throw Exception('Cart is empty');
 
@@ -99,13 +107,17 @@ class CheckoutService {
       final invoiceId = await db.salesDao.createInvoiceWithItems(
         SalesInvoicesCompanion.insert(
           invoiceNumber: invoiceNumber,
-          customerName: Value(customerName),
-          customerPhone: Value(customerPhone),
-          doctorName: Value(doctorName),
+          customerName: customerName,
+          customerMobile: customerMobile,
+          doctorName: doctorName,
+          doctorPlace: doctorPlace,
           subtotal: subtotal,
           totalGst: totalGst,
           totalDiscount: Value(totalDiscount),
           totalAmount: totalAmount,
+          amountPaid: Value(amountPaid),
+          creditBalanceAdded: Value(creditBalanceAdded),
+          customerNotes: Value(customerNotes),
           paymentMode: Value(paymentMode),
         ),
         items
@@ -116,8 +128,8 @@ class CheckoutService {
                 productId: i.productId,
                 productName: i.productName,
                 batchNumber: i.batchNumber,
-                quantity: i.quantity,
-                mrp: i.mrp,
+                totalTabletsSold: i.quantity,
+                mrpPerTablet: i.mrp,
                 gstPercentage: i.gstPercentage,
                 discountPercent: Value(i.discountPercent),
                 lineTotal: i.lineTotal,

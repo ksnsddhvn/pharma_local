@@ -32,6 +32,8 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
         gstPercentage: item.gstPercentage,
         category: item.category,
         discountPercent: updated[idx].discountPercent,
+        composition: item.composition,
+        alternativeName: item.alternativeName,
       );
       state = updated;
     } else {
@@ -55,6 +57,8 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           gstPercentage: i.gstPercentage,
           category: i.category,
           discountPercent: discount,
+          composition: i.composition,
+          alternativeName: i.alternativeName,
         );
       }
       return i;
@@ -78,6 +82,8 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           gstPercentage: i.gstPercentage,
           category: i.category,
           discountPercent: i.discountPercent,
+          composition: i.composition,
+          alternativeName: i.alternativeName,
         );
       }
       return i;
@@ -128,7 +134,18 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
     _barcodeCtrl.clear();
   }
 
-  void _addToCart(StockBatch batch, Product product) {
+  Future<void> _addToCart(StockBatch batch, Product product) async {
+    String? altName;
+    if (product.composition.isNotEmpty) {
+      final alternatives = await ref
+          .read(productsDaoProvider)
+          .watchSubstitutions(product.composition, product.id)
+          .first;
+      if (alternatives.isNotEmpty) {
+        altName = alternatives.first.name;
+      }
+    }
+
     ref.read(cartProvider.notifier).addItem(
           CartItem(
             batchId: batch.id,
@@ -139,13 +156,17 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             mrp: batch.mrp,
             gstPercentage: batch.gstPercentage,
             category: product.category,
+            composition: product.composition,
+            alternativeName: altName,
           ),
         );
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('${product.name} added to cart'),
-      duration: const Duration(seconds: 1),
-      backgroundColor: AppColors.success,
-    ));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${product.name} added to cart'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: AppColors.success,
+      ));
+    }
   }
 
   @override

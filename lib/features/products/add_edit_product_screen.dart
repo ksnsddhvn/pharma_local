@@ -81,16 +81,14 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             ? drift.Value(widget.productId!)
             : const drift.Value.absent(),
         name: drift.Value(_nameCtrl.text.trim()),
-        composition: drift.Value(_compositionCtrl.text.trim().isEmpty
-            ? null
-            : _compositionCtrl.text.trim()),
+        composition: drift.Value(_compositionCtrl.text.trim()),
         hsnCode: drift.Value(
             _hsnCtrl.text.trim().isEmpty ? null : _hsnCtrl.text.trim()),
         category: drift.Value(_category),
         rackLocation: drift.Value(
             _rackCtrl.text.trim().isEmpty ? null : _rackCtrl.text.trim()),
         minStockThreshold:
-            drift.Value(double.tryParse(_thresholdCtrl.text) ?? 10.0),
+            drift.Value(int.tryParse(_thresholdCtrl.text) ?? 10),
       );
 
       if (widget.productId != null) {
@@ -161,8 +159,10 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                     validator: (v) =>
                         v!.trim().isEmpty ? 'Name is required' : null),
                 const SizedBox(height: 12),
-                _field('Composition / Salt', _compositionCtrl,
-                    hint: 'e.g. Paracetamol IP 500mg'),
+                _field('Composition / Salt *', _compositionCtrl,
+                    hint: 'e.g. Paracetamol IP 500mg',
+                    validator: (v) =>
+                        v!.trim().isEmpty ? 'Composition is required' : null),
               ],
             ),
             const SizedBox(height: 16),

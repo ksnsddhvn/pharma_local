@@ -30,6 +30,14 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  /// Find other products with the exact same composition.
+  Stream<List<Product>> watchSubstitutions(String composition, int excludeProductId) {
+    return (select(products)
+          ..where((p) => p.composition.equals(composition) & p.id.isNotValue(excludeProductId))
+          ..orderBy([(p) => OrderingTerm.asc(p.name)]))
+        .watch();
+  }
+
   Future<Product?> getProductById(int id) =>
       (select(products)..where((p) => p.id.equals(id))).getSingleOrNull();
 

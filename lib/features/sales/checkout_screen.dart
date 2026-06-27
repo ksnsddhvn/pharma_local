@@ -19,16 +19,22 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   PaymentMode _paymentMode = PaymentMode.cash;
   final _customerNameCtrl = TextEditingController();
-  final _customerPhoneCtrl = TextEditingController();
+  final _customerMobileCtrl = TextEditingController();
   final _doctorNameCtrl = TextEditingController();
+  final _doctorPlaceCtrl = TextEditingController();
+  final _amountPaidCtrl = TextEditingController();
+  final _customerNotesCtrl = TextEditingController();
   bool _loading = false;
   CheckoutResult? _result;
 
   @override
   void dispose() {
     _customerNameCtrl.dispose();
-    _customerPhoneCtrl.dispose();
+    _customerMobileCtrl.dispose();
     _doctorNameCtrl.dispose();
+    _doctorPlaceCtrl.dispose();
+    _amountPaidCtrl.dispose();
+    _customerNotesCtrl.dispose();
     super.dispose();
   }
 
@@ -36,21 +42,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cart = ref.read(cartProvider);
     if (cart.isEmpty) return;
 
+    final total = cart.fold(0.0, (s, i) => s + i.lineTotal);
+    final amountPaid = _amountPaidCtrl.text.trim().isEmpty ? total : (double.tryParse(_amountPaidCtrl.text) ?? total);
+    final creditBalanceAdded = total - amountPaid;
+
     setState(() => _loading = true);
     try {
       final result =
           await ref.read(checkoutServiceProvider).processCheckout(
                 items: cart,
                 paymentMode: _paymentMode,
-                customerName: _customerNameCtrl.text.trim().isEmpty
-                    ? null
-                    : _customerNameCtrl.text.trim(),
-                customerPhone: _customerPhoneCtrl.text.trim().isEmpty
-                    ? null
-                    : _customerPhoneCtrl.text.trim(),
-                doctorName: _doctorNameCtrl.text.trim().isEmpty
-                    ? null
-                    : _doctorNameCtrl.text.trim(),
+                customerName: _customerNameCtrl.text.trim().isEmpty ? 'Cash Customer' : _customerNameCtrl.text.trim(),
+                customerMobile: _customerMobileCtrl.text.trim().isEmpty ? '0000000000' : _customerMobileCtrl.text.trim(),
+                doctorName: _doctorNameCtrl.text.trim().isEmpty ? 'Self' : _doctorNameCtrl.text.trim(),
+                doctorPlace: _doctorPlaceCtrl.text.trim().isEmpty ? 'Local' : _doctorPlaceCtrl.text.trim(),
+                amountPaid: amountPaid,
+                creditBalanceAdded: creditBalanceAdded > 0 ? creditBalanceAdded : 0,
+                customerNotes: _customerNotesCtrl.text.trim().isEmpty ? null : _customerNotesCtrl.text.trim(),
               );
 
       ref.read(cartProvider.notifier).clear();
@@ -77,26 +85,36 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           discountPercent: i.discountPercent,
           gstPercent: i.gstPercentage,
           lineTotal: i.lineTotal,
+          composition: i.composition,
+          alternativeName: i.alternativeName,
         )).toList();
+
+    final total = cart.fold(0.0, (s, i) => s + i.lineTotal);
+    final amountPaid = _amountPaidCtrl.text.trim().isEmpty ? total : (double.tryParse(_amountPaidCtrl.text) ?? total);
+    final creditBalanceAdded = total - amountPaid;
 
     final text = ReceiptComposer.composeWhatsAppReceipt(
       invoiceNumber: _result!.invoiceNumber,
       createdAt: DateTime.now(),
-      customerName: _customerNameCtrl.text.trim().isEmpty
-          ? null
-          : _customerNameCtrl.text.trim(),
+      customerName: _customerNameCtrl.text.trim().isEmpty ? 'Cash Customer' : _customerNameCtrl.text.trim(),
+      customerMobile: _customerMobileCtrl.text.trim().isEmpty ? '0000000000' : _customerMobileCtrl.text.trim(),
+      doctorName: _doctorNameCtrl.text.trim().isEmpty ? 'Self' : _doctorNameCtrl.text.trim(),
+      doctorPlace: _doctorPlaceCtrl.text.trim().isEmpty ? 'Local' : _doctorPlaceCtrl.text.trim(),
       items: items,
       subtotal: _result!.total,
       totalGst: cart.fold(0.0, (s, i) => s + i.gstAmount),
       totalDiscount: cart.fold(
           0.0, (s, i) => s + (i.mrp * i.quantity * i.discountPercent / 100)),
       totalAmount: _result!.total,
+      amountPaid: amountPaid,
+      creditBalanceAdded: creditBalanceAdded > 0 ? creditBalanceAdded : 0,
+      customerNotes: _customerNotesCtrl.text.trim().isEmpty ? null : _customerNotesCtrl.text.trim(),
       paymentMode: _paymentMode,
     );
 
-    final phone = _customerPhoneCtrl.text.trim().isEmpty
+    final phone = _customerMobileCtrl.text.trim().isEmpty
         ? null
-        : '91${_customerPhoneCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '')}';
+        : '91${_customerMobileCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '')}';
 
     final ok = await ReceiptComposer.launchWhatsApp(text: text, phone: phone);
     if (!ok && mounted) {
@@ -236,32 +254,58 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
           // Customer
           _section(
-            'Customer (Optional)',
+            'Patient & Doctor Info',
             Column(
               children: [
                 TextField(
                   controller: _customerNameCtrl,
                   style: const TextStyle(color: AppColors.textPrimary),
-                  decoration:
-                      const InputDecoration(labelText: 'Patient Name'),
+                  decoration: const InputDecoration(labelText: 'Patient Name'),
                 ),
                 const SizedBox(height: 12),
                 TextField(
-                  controller: _customerPhoneCtrl,
+                  controller: _customerMobileCtrl,
                   keyboardType: TextInputType.phone,
                   style: const TextStyle(color: AppColors.textPrimary),
-                  decoration:
-                      const InputDecoration(labelText: 'Phone (for WhatsApp)'),
+                  decoration: const InputDecoration(labelText: 'Mobile (for WhatsApp)'),
                 ),
-                if (needsDoctor) ...[
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _doctorNameCtrl,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: const InputDecoration(
-                        labelText: 'Doctor Name (Required for Sch-H/H1)'),
-                  ),
-                ],
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _doctorNameCtrl,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                      labelText: needsDoctor ? 'Doctor Name (Required for Sch-H/H1)' : 'Doctor Name'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _doctorPlaceCtrl,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: const InputDecoration(labelText: 'Clinic / Hospital Locality'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Payment Note Book
+          _section(
+            'Payment & Note Book',
+            Column(
+              children: [
+                TextField(
+                  controller: _amountPaidCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                      labelText: 'Amount Paid Now (₹)',
+                      hintText: 'Leave empty if full amount is paid (${AppFormatters.currency(total)})'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _customerNotesCtrl,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: const InputDecoration(labelText: 'Note Book Reminder / Comments'),
+                ),
               ],
             ),
           ),

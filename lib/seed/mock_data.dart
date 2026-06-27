@@ -119,11 +119,11 @@ class MockDataSeeder {
       final id = await db.productsDao.insertProduct(
         ProductsCompanion.insert(
           name: p.$1,
-          composition: Value(p.$2),
+          composition: p.$2,
           hsnCode: Value(p.$3),
           category: Value(p.$4),
           rackLocation: Value(p.$5),
-          minStockThreshold: Value(p.$6),
+          minStockThreshold: Value(p.$6.toInt()),
         ),
       );
       ids.add(id);
@@ -287,27 +287,31 @@ class MockDataSeeder {
         const lineTotal = mrp * qty;
 
         await db.salesDao.createInvoiceWithItems(
-          SalesInvoicesCompanion(
-            invoiceNumber: Value('PL-${saleDate.year}-${(day * 10 + s).toString().padLeft(4, '0')}'),
+          SalesInvoicesCompanion.insert(
+            invoiceNumber: 'PL-${saleDate.year}-${(day * 10 + s).toString().padLeft(4, '0')}',
             createdAt: Value(saleDate),
-            subtotal: const Value(lineTotal),
-            totalGst: const Value(lineTotal * gst / (100 + gst)),
+            customerName: 'Cash Customer',
+            customerMobile: '0000000000',
+            subtotal: lineTotal,
+            totalGst: lineTotal * gst / (100 + gst),
             totalDiscount: const Value(0.0),
-            totalAmount: const Value(lineTotal),
+            totalAmount: lineTotal,
             paymentMode: const Value(PaymentMode.cash),
-            doctorName: pidx >= 18 && pidx <= 29 ? const Value('Dr. R. K. Gupta') : const Value(null),
+            doctorName: pidx >= 18 && pidx <= 29 ? 'Dr. R. K. Gupta' : 'Self',
+            doctorPlace: 'Local',
           ),
           [
-            SalesInvoiceItemsCompanion(
-              batchId: const Value(1),
-              productId: Value(productIds[pidx]),
-              productName: const Value('Sample Product'),
-              batchNumber: const Value('SEED-001'),
-              quantity: const Value(qty),
-              mrp: const Value(mrp),
-              gstPercentage: const Value(gst),
+            SalesInvoiceItemsCompanion.insert(
+              invoiceId: 0,
+              batchId: 1,
+              productId: productIds[pidx],
+              productName: 'Sample Product',
+              batchNumber: 'SEED-001',
+              totalTabletsSold: qty,
+              mrpPerTablet: mrp,
+              gstPercentage: gst,
               discountPercent: const Value(0.0),
-              lineTotal: const Value(lineTotal),
+              lineTotal: lineTotal,
             ),
           ],
         );
