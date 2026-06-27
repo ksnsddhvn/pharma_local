@@ -1,7 +1,7 @@
 import 'package:drift/drift.dart';
 
 /// Category of a pharmaceutical product per Indian regulatory classification.
-enum ProductCategory { otc, rx, scheduleH, scheduleH1 }
+enum ProductCategory { otc, rx, scheduleH, scheduleH1, cosmetics }
 
 @DataClassName('Product')
 class Products extends Table {

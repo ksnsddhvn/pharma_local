@@ -27,16 +27,16 @@ class MockDataSeeder {
   // ── 1. Suppliers ──────────────────────────────────────────────────────────
   Future<List<int>> _seedSuppliers() async {
     final suppliers = [
-      ('Sun Pharma Distributors', '9876543210', '27AADCS1681Q1ZO'),
-      ('Cipla Agency Mumbai', '9823456789', '27AAACC7407L1ZL'),
-      ('Abbott India Ltd Dist.', '9845612370', '27AAAAD6888K1ZD'),
-      ('Alkem Laboratories Dist.', '9900112233', '27AAACA9999H1ZE'),
-      ('Lupin Ltd Pharma Depot', '9911223344', '27AAACL5555M1ZK'),
-      ('Mankind Pharma Agency', '9922334455', '27AAACM4321J1ZP'),
-      ('Zydus Healthcare Dist.', '9933445566', '27AAACZ8765K1ZQ'),
-      ('Dr. Reddy Labs Agency', '9944556677', '27AAACR2345L1ZR'),
-      ('Glenmark Pharma Depot', '9955667788', '27AAACG6789M1ZS'),
-      ('Torrent Pharma Agency', '9966778899', '27AAACT3456N1ZT'),
+      ('Sun Pharma Distributors', '9876543210', '27AADCS1681Q1ZO', 'Rahul Sharma'),
+      ('Cipla Agency Mumbai', '9823456789', '27AAACC7407L1ZL', 'Amit Patel'),
+      ('Abbott India Ltd Dist.', '9845612370', '27AAAAD6888K1ZD', 'Priya Singh'),
+      ('Alkem Laboratories Dist.', '9900112233', '27AAACA9999H1ZE', 'Vikram Joshi'),
+      ('Lupin Ltd Pharma Depot', '9911223344', '27AAACL5555M1ZK', 'Rajeev Kumar'),
+      ('Mankind Pharma Agency', '9922334455', '27AAACM4321J1ZP', 'Sanjay Verma'),
+      ('Zydus Healthcare Dist.', '9933445566', '27AAACZ8765K1ZQ', 'Neha Gupta'),
+      ('Dr. Reddy Labs Agency', '9944556677', '27AAACR2345L1ZR', 'Ramesh Rao'),
+      ('Glenmark Pharma Depot', '9955667788', '27AAACG6789M1ZS', 'Kiran Shah'),
+      ('Torrent Pharma Agency', '9966778899', '27AAACT3456N1ZT', 'Vijay Mehta'),
     ];
 
     final ids = <int>[];
@@ -46,6 +46,7 @@ class MockDataSeeder {
           name: s.$1,
           phone: Value(s.$2),
           gstinNumber: Value(s.$3),
+          contactPerson: Value(s.$4),
           currentBalance: const Value(0.0),
         ),
       );
@@ -106,9 +107,11 @@ class MockDataSeeder {
       ('Prednisolone 5mg', 'Prednisolone IP 5mg', '3004', ProductCategory.scheduleH, 'J-03', 15.0),
       ('Hydrocortisone Cream', 'Hydrocortisone 1% w/w Cream', '3004', ProductCategory.otc, 'K-01', 15.0),
       ('Betamethasone Cream', 'Betamethasone Valerate 0.1% Cream', '3004', ProductCategory.scheduleH, 'K-02', 10.0),
-      ('Antifungal Dusting Powder', 'Clotrimazole 1% w/w Powder', '3004', ProductCategory.otc, 'K-03', 15.0),
       ('Neomycin Eye Drops', 'Neomycin Sulphate 0.5% w/v Eye Drops', '3004', ProductCategory.scheduleH, 'L-01', 10.0),
       ('Ciprofloxacin Eye Drops', 'Ciprofloxacin HCl 0.3% w/v Eye Drops', '3004', ProductCategory.scheduleH, 'L-02', 10.0),
+      ('Himalaya Face Wash', 'Purifying Neem Face Wash', '3304', ProductCategory.cosmetics, 'M-01', 10.0),
+      ('Nivea Body Lotion', 'Nourishing Body Milk', '3304', ProductCategory.cosmetics, 'M-02', 15.0),
+      ('Lakme Sunscreen', 'SPF 50 Sun Protect', '3304', ProductCategory.cosmetics, 'M-03', 10.0),
     ];
 
     final ids = <int>[];
@@ -197,6 +200,9 @@ class MockDataSeeder {
       (47, 'BT-2024-001', now.add(const Duration(days: 360)), 68.00, 40.80, 20),
       (48, 'AF-2024-001', now.add(const Duration(days: 420)), 38.00, 22.80, 20),
       (49, 'NE-2024-001', now.add(const Duration(days: 400)), 28.00, 16.80, 15),
+      (50, 'HFW-2024-001', now.add(const Duration(days: 540)), 150.00, 0.0, 20),
+      (51, 'NBL-2024-001', now.add(const Duration(days: 540)), 299.00, 0.0, 15),
+      (52, 'LSS-2024-001', now.add(const Duration(days: 540)), 350.00, 0.0, 10),
     ];
 
     for (final b in batches) {
@@ -211,6 +217,7 @@ class MockDataSeeder {
           purchaseRate: b.$5,
           gstPercentage: Value(gstFor(pidx)),
           currentStock: Value(b.$6),
+          isOpeningStock: Value(b.$5 == 0.0),
         ),
       );
     }
@@ -232,7 +239,8 @@ class MockDataSeeder {
           transactionType: LedgerTxType.creditPurchase,
           amount: p.$3,
           balanceAfter: p.$3,
-          referenceNote: Value(p.$4),
+          invoiceNumber: Value(p.$4),
+          referenceNote: const Value('Stock Purchase'),
         ),
       );
       await db.suppliersDao.updateBalance(supplierId, p.$3);
@@ -287,6 +295,7 @@ class MockDataSeeder {
             totalDiscount: const Value(0.0),
             totalAmount: const Value(lineTotal),
             paymentMode: const Value(PaymentMode.cash),
+            doctorName: pidx >= 18 && pidx <= 29 ? const Value('Dr. R. K. Gupta') : const Value(null),
           ),
           [
             SalesInvoiceItemsCompanion(

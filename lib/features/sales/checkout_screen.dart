@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/database/tables/products_table.dart';
 import '../../core/database/tables/sales_tables.dart';
 import '../../core/providers.dart';
 import '../../core/services/checkout_service.dart';
@@ -19,6 +20,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   PaymentMode _paymentMode = PaymentMode.cash;
   final _customerNameCtrl = TextEditingController();
   final _customerPhoneCtrl = TextEditingController();
+  final _doctorNameCtrl = TextEditingController();
   bool _loading = false;
   CheckoutResult? _result;
 
@@ -26,6 +28,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void dispose() {
     _customerNameCtrl.dispose();
     _customerPhoneCtrl.dispose();
+    _doctorNameCtrl.dispose();
     super.dispose();
   }
 
@@ -45,6 +48,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 customerPhone: _customerPhoneCtrl.text.trim().isEmpty
                     ? null
                     : _customerPhoneCtrl.text.trim(),
+                doctorName: _doctorNameCtrl.text.trim().isEmpty
+                    ? null
+                    : _doctorNameCtrl.text.trim(),
               );
 
       ref.read(cartProvider.notifier).clear();
@@ -108,6 +114,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         0.0, (s, i) => s + (i.mrp * i.quantity * i.discountPercent / 100));
     final totalGst = cart.fold(0.0, (s, i) => s + i.gstAmount);
     final total = cart.fold(0.0, (s, i) => s + i.lineTotal);
+
+    final needsDoctor = cart.any((item) =>
+        item.category == ProductCategory.scheduleH ||
+        item.category == ProductCategory.scheduleH1);
 
     // ── Success state ────────────────────────────────────────
     if (_result != null) {
@@ -243,6 +253,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   decoration:
                       const InputDecoration(labelText: 'Phone (for WhatsApp)'),
                 ),
+                if (needsDoctor) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _doctorNameCtrl,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: const InputDecoration(
+                        labelText: 'Doctor Name (Required for Sch-H/H1)'),
+                  ),
+                ],
               ],
             ),
           ),

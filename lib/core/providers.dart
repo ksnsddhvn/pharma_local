@@ -5,6 +5,7 @@ import 'services/checkout_service.dart';
 import 'services/supplier_service.dart';
 import 'services/shortbook_service.dart';
 import 'services/backup_service.dart';
+import 'services/opening_stock_service.dart';
 
 // ── Database singleton ──────────────────────────────────────────────────────
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -41,6 +42,9 @@ final supplierServiceProvider = Provider(
 
 final shortbookServiceProvider = Provider(
     (ref) => ShortbookService(ref.watch(databaseProvider)));
+
+final openingStockServiceProvider = Provider(
+    (ref) => OpeningStockService(ref.watch(databaseProvider)));
 
 final backupServiceProvider = Provider((_) => BackupService());
 

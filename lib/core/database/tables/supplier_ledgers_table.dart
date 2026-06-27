@@ -14,6 +14,8 @@ class SupplierLedgers extends Table {
   RealColumn get amount => real()();
   RealColumn get balanceAfter =>
       real()(); // running balance snapshot after this tx
+  TextColumn get invoiceNumber =>
+      text().nullable()(); // distributor invoice sheet number
   TextColumn get referenceNote =>
       text().nullable()(); // invoice / UTR / note
   DateTimeColumn get timestamp =>

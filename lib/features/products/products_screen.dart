@@ -146,6 +146,8 @@ class _CategoryFilter extends StatelessWidget {
           _chip(ProductCategory.scheduleH, 'Sch-H'),
           const SizedBox(width: 8),
           _chip(ProductCategory.scheduleH1, 'Sch-H1'),
+          const SizedBox(width: 8),
+          _chip(ProductCategory.cosmetics, 'Cosmetics'),
         ],
       ),
     );
@@ -189,6 +191,8 @@ class _CategoryFilter extends StatelessWidget {
         return AppColors.scheduleHColor;
       case ProductCategory.scheduleH1:
         return AppColors.scheduleH1Color;
+      case ProductCategory.cosmetics:
+        return AppColors.cosmeticsColor;
     }
   }
 }

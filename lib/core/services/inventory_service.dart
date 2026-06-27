@@ -24,6 +24,7 @@ class InventoryService {
     required int supplierId,
     required double invoiceAmount,
     String? barcode,
+    String? invoiceNumber,
     String? referenceNote,
   }) async {
     await db.transaction(() async {
@@ -59,6 +60,7 @@ class InventoryService {
             gstPercentage: Value(gstPercentage),
             currentStock: Value(quantity),
             barcode: Value(barcode),
+            isOpeningStock: const Value(false),
           ),
         );
       }
@@ -77,6 +79,7 @@ class InventoryService {
           transactionType: LedgerTxType.creditPurchase,
           amount: invoiceAmount,
           balanceAfter: newBalance,
+          invoiceNumber: Value(invoiceNumber),
           referenceNote: Value(referenceNote),
         ),
       );

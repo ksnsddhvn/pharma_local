@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/barcode_service.dart';
+import 'on_the_fly_entry_sheet.dart';
 
 // Provider to hold the current cart
 final cartProvider =
@@ -29,6 +30,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
         quantity: updated[idx].quantity + item.quantity,
         mrp: item.mrp,
         gstPercentage: item.gstPercentage,
+        category: item.category,
         discountPercent: updated[idx].discountPercent,
       );
       state = updated;
@@ -51,6 +53,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           quantity: i.quantity,
           mrp: i.mrp,
           gstPercentage: i.gstPercentage,
+          category: i.category,
           discountPercent: discount,
         );
       }
@@ -73,6 +76,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           quantity: qty,
           mrp: i.mrp,
           gstPercentage: i.gstPercentage,
+          category: i.category,
           discountPercent: i.discountPercent,
         );
       }
@@ -109,10 +113,14 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
         await ref.read(stockBatchesDaoProvider).findByBarcode(barcode.trim());
     if (result == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Barcode "$barcode" not found'),
-          backgroundColor: AppColors.warning,
-        ));
+        final res = await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          builder: (ctx) => OnTheFlyEntrySheet(initialName: barcode.trim()),
+        );
+        if (res != null) {
+          _addToCart(res.batch, res.product);
+        }
       }
       return;
     }
@@ -130,6 +138,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
             quantity: 1,
             mrp: batch.mrp,
             gstPercentage: batch.gstPercentage,
+            category: product.category,
           ),
         );
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(

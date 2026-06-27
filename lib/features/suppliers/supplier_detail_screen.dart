@@ -92,16 +92,28 @@ class SupplierDetailScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    if (supplier.phone != null)
+                    if (supplier.phone != null || supplier.contactPerson != null)
                       Column(
                         children: [
-                          const Icon(Icons.phone_outlined,
-                              color: AppColors.textMuted, size: 18),
-                          const SizedBox(height: 4),
-                          Text(supplier.phone!,
-                              style: const TextStyle(
-                                  color: AppColors.textSecondary,
-                                  fontSize: 12)),
+                          if (supplier.phone != null) ...[
+                            const Icon(Icons.phone_outlined,
+                                color: AppColors.textMuted, size: 18),
+                            const SizedBox(height: 4),
+                            Text(supplier.phone!,
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12)),
+                          ],
+                          if (supplier.contactPerson != null) ...[
+                            const SizedBox(height: 8),
+                            const Icon(Icons.person_outline,
+                                color: AppColors.textMuted, size: 18),
+                            const SizedBox(height: 4),
+                            Text(supplier.contactPerson!,
+                                style: const TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12)),
+                          ],
                         ],
                       ),
                   ],
@@ -300,6 +312,10 @@ class _LedgerTile extends StatelessWidget {
                 ),
                 if (entry.referenceNote != null)
                   Text(entry.referenceNote!,
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 11)),
+                if (entry.invoiceNumber != null)
+                  Text('Inv: ${entry.invoiceNumber!}',
                       style: const TextStyle(
                           color: AppColors.textMuted, fontSize: 11)),
               ],

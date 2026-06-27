@@ -160,6 +160,7 @@ class SuppliersScreen extends ConsumerWidget {
   void _showAddSupplier(BuildContext context, WidgetRef ref) {
     final nameCtrl = TextEditingController();
     final phoneCtrl = TextEditingController();
+    final contactCtrl = TextEditingController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -195,6 +196,12 @@ class SuppliersScreen extends ConsumerWidget {
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: const InputDecoration(labelText: 'Phone'),
             ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: contactCtrl,
+              style: const TextStyle(color: AppColors.textPrimary),
+              decoration: const InputDecoration(labelText: 'Contact Person'),
+            ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
@@ -205,6 +212,9 @@ class SuppliersScreen extends ConsumerWidget {
                         phone: drift.Value(phoneCtrl.text.trim().isEmpty
                             ? null
                             : phoneCtrl.text.trim()),
+                        contactPerson: drift.Value(contactCtrl.text.trim().isEmpty
+                            ? null
+                            : contactCtrl.text.trim()),
                       ),
                     );
                 if (context.mounted) Navigator.pop(context);

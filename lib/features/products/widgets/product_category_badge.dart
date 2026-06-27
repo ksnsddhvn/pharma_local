@@ -34,6 +34,8 @@ class ProductCategoryBadge extends StatelessWidget {
         return ('SCH-H', AppColors.scheduleHColor);
       case ProductCategory.scheduleH1:
         return ('SCH-H1', AppColors.scheduleH1Color);
+      case ProductCategory.cosmetics:
+        return ('COSMETICS', AppColors.cosmeticsColor);
     }
   }
 }

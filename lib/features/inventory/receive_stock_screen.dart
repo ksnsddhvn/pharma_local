@@ -24,6 +24,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
   final _mrpCtrl = TextEditingController();
   final _rateCtrl = TextEditingController();
   final _invoiceAmtCtrl = TextEditingController();
+  final _invoiceNoCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
 
@@ -31,6 +32,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
   DateTime _expiry = DateTime.now().add(const Duration(days: 365));
   bool _loading = false;
   bool _showSearch = false;
+  bool _isOpeningStock = false;
 
   @override
   void dispose() {
@@ -39,6 +41,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
     _mrpCtrl.dispose();
     _rateCtrl.dispose();
     _invoiceAmtCtrl.dispose();
+    _invoiceNoCtrl.dispose();
     _noteCtrl.dispose();
     _searchCtrl.dispose();
     super.dispose();
@@ -68,7 +71,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
           backgroundColor: AppColors.warning));
       return;
     }
-    if (_selectedSupplierId == null) {
+    if (!_isOpeningStock && _selectedSupplierId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Please select a supplier'),
           backgroundColor: AppColors.warning));
@@ -77,20 +80,33 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
 
     setState(() => _loading = true);
     try {
-      await ref.read(inventoryServiceProvider).receivePurchase(
-            productId: _selectedProduct!.id,
-            batchNumber: _batchCtrl.text.trim(),
-            expiryDate: _expiry,
-            mrp: double.parse(_mrpCtrl.text),
-            purchaseRate: double.parse(_rateCtrl.text),
-            gstPercentage: _gst,
-            quantity: int.parse(_qtyCtrl.text),
-            supplierId: _selectedSupplierId!,
-            invoiceAmount: double.parse(_invoiceAmtCtrl.text),
-            referenceNote: _noteCtrl.text.trim().isEmpty
-                ? null
-                : _noteCtrl.text.trim(),
-          );
+      if (_isOpeningStock) {
+        await ref.read(openingStockServiceProvider).addOpeningStock(
+              productId: _selectedProduct!.id,
+              batchNumber: _batchCtrl.text.trim(),
+              expiryDate: _expiry,
+              mrp: double.parse(_mrpCtrl.text),
+              quantity: int.parse(_qtyCtrl.text),
+            );
+      } else {
+        await ref.read(inventoryServiceProvider).receivePurchase(
+              productId: _selectedProduct!.id,
+              batchNumber: _batchCtrl.text.trim(),
+              expiryDate: _expiry,
+              mrp: double.parse(_mrpCtrl.text),
+              purchaseRate: double.parse(_rateCtrl.text),
+              gstPercentage: _gst,
+              quantity: int.parse(_qtyCtrl.text),
+              supplierId: _selectedSupplierId!,
+              invoiceAmount: double.parse(_invoiceAmtCtrl.text),
+              invoiceNumber: _invoiceNoCtrl.text.trim().isEmpty
+                  ? null
+                  : _invoiceNoCtrl.text.trim(),
+              referenceNote: _noteCtrl.text.trim().isEmpty
+                  ? null
+                  : _noteCtrl.text.trim(),
+            );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -140,6 +156,16 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            SwitchListTile(
+              title: const Text('Opening Stock Mode', style: TextStyle(color: AppColors.textPrimary)),
+              subtitle: const Text('Bypass supplier and purchase rate for legacy stock', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              value: _isOpeningStock,
+              activeColor: AppColors.primary,
+              onChanged: (v) => setState(() => _isOpeningStock = v),
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 16),
+
             // Product selector
             _sectionLabel('Select Product'),
             GestureDetector(
@@ -240,7 +266,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      if (!_isOpeningStock) Expanded(
                         child: TextFormField(
                           controller: _rateCtrl,
                           keyboardType:
@@ -269,7 +295,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      if (!_isOpeningStock) Expanded(
                         child: DropdownButtonFormField<double>(
                           value: _gst,
                           dropdownColor: AppColors.surfaceElevated,
@@ -292,69 +318,80 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
             const SizedBox(height: 16),
 
             // Supplier
-            _sectionLabel('Supplier'),
-            suppliersAsync.when(
-              data: (suppliers) => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+            if (!_isOpeningStock) ...[
+              _sectionLabel('Supplier'),
+              suppliersAsync.when(
+                data: (suppliers) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.surfaceBorder),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      value: _selectedSupplierId,
+                      dropdownColor: AppColors.surfaceElevated,
+                      isExpanded: true,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                      hint: const Text('Select Supplier',
+                          style: TextStyle(color: AppColors.textMuted)),
+                      items: suppliers
+                          .map((s) => DropdownMenuItem(
+                              value: s.id,
+                              child: Text(s.name)))
+                          .toList(),
+                      onChanged: (v) =>
+                          setState(() => _selectedSupplierId = v),
+                    ),
+                  ),
+                ),
+                loading: () => const LinearProgressIndicator(),
+                error: (_, __) => const Text('Error loading suppliers'),
+              ),
+              const SizedBox(height: 16),
+            ],
+
+            // Invoice
+            if (!_isOpeningStock) ...[
+              _sectionLabel('Invoice Details'),
+              Container(
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.surfaceElevated,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.surfaceBorder),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _selectedSupplierId,
-                    dropdownColor: AppColors.surfaceElevated,
-                    isExpanded: true,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    hint: const Text('Select Supplier',
-                        style: TextStyle(color: AppColors.textMuted)),
-                    items: suppliers
-                        .map((s) => DropdownMenuItem(
-                            value: s.id,
-                            child: Text(s.name)))
-                        .toList(),
-                    onChanged: (v) =>
-                        setState(() => _selectedSupplierId = v),
-                  ),
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _invoiceAmtCtrl,
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
+                      style: const TextStyle(color: AppColors.textPrimary),
+                      decoration:
+                          const InputDecoration(labelText: 'Invoice Amount (₹) *'),
+                      validator: (v) =>
+                          double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _invoiceNoCtrl,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                      decoration: const InputDecoration(
+                          labelText: 'Invoice No.'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _noteCtrl,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                      decoration: const InputDecoration(
+                          labelText: 'Reference Note'),
+                    ),
+                  ],
                 ),
               ),
-              loading: () => const LinearProgressIndicator(),
-              error: (_, __) => const Text('Error loading suppliers'),
-            ),
-            const SizedBox(height: 16),
-
-            // Invoice
-            _sectionLabel('Invoice Details'),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceBorder),
-              ),
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _invoiceAmtCtrl,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration:
-                        const InputDecoration(labelText: 'Invoice Amount (₹) *'),
-                    validator: (v) =>
-                        double.tryParse(v ?? '') == null ? 'Invalid' : null,
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _noteCtrl,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: const InputDecoration(
-                        labelText: 'Reference / Invoice No.'),
-                  ),
-                ],
-              ),
-            ),
+            ],
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _loading ? null : _submit,

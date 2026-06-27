@@ -10,6 +10,8 @@ class SalesInvoices extends Table {
   TextColumn get invoiceNumber => text()(); // e.g. "PL-2025-0001"
   TextColumn get customerName => text().nullable()();
   TextColumn get customerPhone => text().nullable()();
+  TextColumn get doctorName =>
+      text().nullable()(); // mandatory for Schedule H items
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();
   RealColumn get subtotal => real()(); // before GST

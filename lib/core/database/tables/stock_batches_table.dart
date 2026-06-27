@@ -15,4 +15,6 @@ class StockBatches extends Table {
   IntColumn get currentStock =>
       integer().withDefault(const Constant(0))();
   TextColumn get barcode => text().nullable()(); // optional EAN/UPC barcode
+  BoolColumn get isOpeningStock =>
+      boolean().withDefault(const Constant(false))(); // TRUE = legacy shelf stock
 }

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
+import '../database/tables/products_table.dart';
 import '../database/tables/sales_tables.dart';
 
 /// One item in the shopping cart before checkout.
@@ -11,6 +12,7 @@ class CartItem {
   int quantity;
   final double mrp;
   final double gstPercentage;
+  final ProductCategory category;
   double discountPercent;
 
   CartItem({
@@ -21,6 +23,7 @@ class CartItem {
     required this.quantity,
     required this.mrp,
     required this.gstPercentage,
+    required this.category,
     this.discountPercent = 0.0,
   });
 
@@ -54,6 +57,7 @@ class CheckoutService {
     required PaymentMode paymentMode,
     String? customerName,
     String? customerPhone,
+    String? doctorName,
   }) async {
     if (items.isEmpty) throw Exception('Cart is empty');
 
@@ -97,6 +101,7 @@ class CheckoutService {
           invoiceNumber: invoiceNumber,
           customerName: Value(customerName),
           customerPhone: Value(customerPhone),
+          doctorName: Value(doctorName),
           subtotal: subtotal,
           totalGst: totalGst,
           totalDiscount: Value(totalDiscount),

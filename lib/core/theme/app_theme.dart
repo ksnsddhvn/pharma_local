@@ -29,6 +29,7 @@ class AppColors {
   static const rxColor = Color(0xFF58A6FF);
   static const scheduleHColor = Color(0xFFD29922);
   static const scheduleH1Color = Color(0xFFF85149);
+  static const cosmeticsColor = Color(0xFFBC8F8F); // Rosy brown for cosmetics
 
   // Expiry colors
   static const expiryGood = Color(0xFF3FB950);

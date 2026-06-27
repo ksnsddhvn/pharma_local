@@ -99,6 +99,46 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
     return map;
   }
 
+  /// Insert a batch marked as opening stock (legacy shelf item).
+  /// Bypasses purchase rate / GST — only requires product, batch, expiry, MRP, qty.
+  Future<int> insertOpeningStock({
+    required int productId,
+    required String batchNumber,
+    required DateTime expiryDate,
+    required double mrp,
+    required int quantity,
+    String? barcode,
+  }) =>
+      into(stockBatches).insert(
+        StockBatchesCompanion.insert(
+          productId: productId,
+          batchNumber: batchNumber,
+          expiryDate: expiryDate,
+          mrp: mrp,
+          purchaseRate: 0.0,
+          gstPercentage: const Value(0.0),
+          currentStock: Value(quantity),
+          barcode: Value(barcode),
+          isOpeningStock: const Value(true),
+        ),
+      );
+
+  /// Watch all batches flagged as opening stock (for audit / review).
+  Stream<List<BatchWithProduct>> watchOpeningStockBatches() {
+    final query = select(stockBatches).join([
+      innerJoin(products, products.id.equalsExp(stockBatches.productId)),
+    ])
+      ..where(stockBatches.isOpeningStock.equals(true))
+      ..orderBy([OrderingTerm.asc(products.name)]);
+
+    return query.watch().map((rows) => rows
+        .map((row) => BatchWithProduct(
+              batch: row.readTable(stockBatches),
+              product: row.readTable(products),
+            ))
+        .toList());
+  }
+
   Future<bool> updateBatch(StockBatchesCompanion entry) =>
       update(stockBatches).replace(entry);
 }
