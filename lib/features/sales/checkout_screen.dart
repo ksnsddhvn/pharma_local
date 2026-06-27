@@ -26,6 +26,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _customerNotesCtrl = TextEditingController();
   bool _loading = false;
   CheckoutResult? _result;
+  List<CartItem>? _checkedOutItems;
 
   @override
   void dispose() {
@@ -61,8 +62,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 customerNotes: _customerNotesCtrl.text.trim().isEmpty ? null : _customerNotesCtrl.text.trim(),
               );
 
+      final cartCopy = List<CartItem>.from(cart);
       ref.read(cartProvider.notifier).clear();
-      if (mounted) setState(() => _result = result);
+      if (mounted) {
+        setState(() {
+          _result = result;
+          _checkedOutItems = cartCopy;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -75,9 +82,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _shareWhatsApp() async {
-    if (_result == null) return;
-    final cart = ref.read(cartProvider);
-    final items = cart.map((i) => ReceiptLineItem(
+    if (_result == null || _checkedOutItems == null) return;
+    
+    final invoice = await ref.read(salesDaoProvider).getInvoiceById(_result!.invoiceId);
+    if (invoice == null) return;
+
+    final items = _checkedOutItems!.map((i) => ReceiptLineItem(
           productName: i.productName,
           batchNumber: i.batchNumber,
           quantity: i.quantity,
@@ -89,32 +99,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           alternativeName: i.alternativeName,
         )).toList();
 
-    final total = cart.fold(0.0, (s, i) => s + i.lineTotal);
-    final amountPaid = _amountPaidCtrl.text.trim().isEmpty ? total : (double.tryParse(_amountPaidCtrl.text) ?? total);
-    final creditBalanceAdded = total - amountPaid;
-
-    final text = ReceiptComposer.composeWhatsAppReceipt(
-      invoiceNumber: _result!.invoiceNumber,
-      createdAt: DateTime.now(),
-      customerName: _customerNameCtrl.text.trim().isEmpty ? 'Cash Customer' : _customerNameCtrl.text.trim(),
-      customerMobile: _customerMobileCtrl.text.trim().isEmpty ? '0000000000' : _customerMobileCtrl.text.trim(),
-      doctorName: _doctorNameCtrl.text.trim().isEmpty ? 'Self' : _doctorNameCtrl.text.trim(),
-      doctorPlace: _doctorPlaceCtrl.text.trim().isEmpty ? 'Local' : _doctorPlaceCtrl.text.trim(),
+    final text = ReceiptComposer.generateWhatsAppInvoice(
+      invoice: invoice,
       items: items,
-      subtotal: _result!.total,
-      totalGst: cart.fold(0.0, (s, i) => s + i.gstAmount),
-      totalDiscount: cart.fold(
-          0.0, (s, i) => s + (i.mrp * i.quantity * i.discountPercent / 100)),
-      totalAmount: _result!.total,
-      amountPaid: amountPaid,
-      creditBalanceAdded: creditBalanceAdded > 0 ? creditBalanceAdded : 0,
-      customerNotes: _customerNotesCtrl.text.trim().isEmpty ? null : _customerNotesCtrl.text.trim(),
-      paymentMode: _paymentMode,
     );
 
-    final phone = _customerMobileCtrl.text.trim().isEmpty
+    final phone = invoice.customerMobile.trim().isEmpty
         ? null
-        : '91${_customerMobileCtrl.text.trim().replaceAll(RegExp(r'[^0-9]'), '')}';
+        : '91${invoice.customerMobile.trim().replaceAll(RegExp(r'[^0-9]'), '')}';
 
     final ok = await ReceiptComposer.launchWhatsApp(text: text, phone: phone);
     if (!ok && mounted) {
@@ -182,7 +174,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 const SizedBox(height: 12),
                 OutlinedButton(
                   onPressed: () {
-                    setState(() => _result = null);
+                    setState(() {
+                      _result = null;
+                      _checkedOutItems = null;
+                    });
                     Navigator.of(context).pop();
                   },
                   style: OutlinedButton.styleFrom(

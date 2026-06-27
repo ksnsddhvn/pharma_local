@@ -7,7 +7,6 @@ import '../../core/services/checkout_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
 import '../../core/utils/formatters.dart';
-import '../../core/utils/barcode_service.dart';
 import 'on_the_fly_entry_sheet.dart';
 
 // Provider to hold the current cart
@@ -102,44 +101,22 @@ class SalesScreen extends ConsumerStatefulWidget {
 
 class _SalesScreenState extends ConsumerState<SalesScreen> {
   final _searchCtrl = TextEditingController();
-  final _barcodeCtrl = TextEditingController();
   String _query = '';
-  bool _showCamera = false;
 
   @override
   void dispose() {
     _searchCtrl.dispose();
-    _barcodeCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _handleBarcodeInput(String barcode) async {
-    if (barcode.trim().isEmpty) return;
-    final result =
-        await ref.read(stockBatchesDaoProvider).findByBarcode(barcode.trim());
-    if (result == null) {
-      if (mounted) {
-        final res = await showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          builder: (ctx) => OnTheFlyEntrySheet(initialName: barcode.trim()),
-        );
-        if (res != null) {
-          _addToCart(res.batch, res.product);
-        }
-      }
-      return;
-    }
-    _addToCart(result.batch, result.product);
-    _barcodeCtrl.clear();
-  }
+
 
   Future<void> _addToCart(StockBatch batch, Product product) async {
     String? altName;
     if (product.composition.isNotEmpty) {
       final alternatives = await ref
           .read(productsDaoProvider)
-          .watchSubstitutions(product.composition, product.id)
+          .watchSubstitutesForComposition(product.composition, product.id)
           .first;
       if (alternatives.isNotEmpty) {
         altName = alternatives.first.name;
@@ -199,46 +176,15 @@ class _SalesScreenState extends ConsumerState<SalesScreen> {
                 Expanded(
                   child: TextField(
                     controller: _searchCtrl,
+                    autofocus: true,
                     onChanged: (v) => setState(() => _query = v),
                     decoration: const InputDecoration(
-                      hintText: 'Search or type barcode...',
+                      hintText: 'Search inventory manually...',
                       prefixIcon: Icon(Icons.search,
                           color: AppColors.textMuted, size: 20),
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                // Barcode scan button (Android only, hidden on desktop)
-                if (BarcodeService.isSupportedPlatform)
-                  IconButton(
-                    style: IconButton.styleFrom(
-                      backgroundColor: AppColors.primary.withValues(alpha: 0.15),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                    icon: const Icon(Icons.qr_code_scanner,
-                        color: AppColors.primary),
-                    onPressed: () =>
-                        setState(() => _showCamera = !_showCamera),
-                  )
-                else
-                  // Desktop fallback: manual barcode entry
-                  SizedBox(
-                    width: 120,
-                    child: TextField(
-                      controller: _barcodeCtrl,
-                      onSubmitted: _handleBarcodeInput,
-                      style: const TextStyle(fontSize: 13),
-                      decoration: InputDecoration(
-                        hintText: 'Barcode',
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.send, size: 16),
-                          onPressed: () =>
-                              _handleBarcodeInput(_barcodeCtrl.text),
-                        ),
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -529,7 +475,7 @@ class _EmptyCartPlaceholder extends StatelessWidget {
                   fontSize: 16,
                   fontWeight: FontWeight.w500)),
           SizedBox(height: 8),
-          Text('Search for a product or scan a barcode to begin',
+          Text('Search for a product manually to begin',
               style: TextStyle(
                   color: AppColors.textMuted, fontSize: 13),
               textAlign: TextAlign.center),

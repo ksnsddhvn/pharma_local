@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 enum ProductCategory { otc, rx, scheduleH, scheduleH1, cosmetics }
 
 @DataClassName('Product')
+@TableIndex(name: 'idx_product_composition', columns: {#composition})
 class Products extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 200)();

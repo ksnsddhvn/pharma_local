@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../database/app_database.dart';
 import '../database/tables/sales_tables.dart';
 
 class ReceiptLineItem {
@@ -31,57 +32,36 @@ class ReceiptComposer {
   static final _currencyFmt = NumberFormat('#,##,##0.00', 'en_IN');
   static final _dateFmt = DateFormat('dd-MMM-yyyy hh:mm a');
 
-  static String composeWhatsAppReceipt({
-    required String invoiceNumber,
-    required DateTime createdAt,
-    required String customerName,
-    required String customerMobile,
-    required String doctorName,
-    required String doctorPlace,
+  static String generateWhatsAppInvoice({
+    required SalesInvoice invoice,
     required List<ReceiptLineItem> items,
-    required double subtotal,
-    required double totalGst,
-    required double totalDiscount,
-    required double totalAmount,
-    required double amountPaid,
-    required double creditBalanceAdded,
-    String? customerNotes,
-    required PaymentMode paymentMode,
-    String pharmacyName = 'PharmaLocal Medical Store',
-    String? gstin,
   }) {
-    final buf = StringBuffer();
-    buf.writeln('--- RETAIL MEDICINE BILL ---');
-    buf.writeln('Shop: $pharmacyName');
-    buf.writeln('Patient: $customerName ($customerMobile)');
-    buf.writeln('Dr: $doctorName ($doctorPlace)');
-    buf.writeln('----------------------------');
-
-    for (var i = 0; i < items.length; i++) {
-      final item = items[i];
-      buf.writeln('${i + 1}. ${item.productName} (Batch: ${item.batchNumber}) x ${item.quantity} Tablets - ₹${_currencyFmt.format(item.lineTotal)}');
-      if (item.composition.isNotEmpty) {
-        buf.writeln('(Composition: ${item.composition})');
-      }
+    final buffer = StringBuffer();
+    buffer.writeln("📝 *MEDICINE RECEIPT*");
+    buffer.writeln("--------------------------------");
+    buffer.writeln("👤 *Patient:* ${invoice.customerName} (${invoice.customerMobile})");
+    buffer.writeln("👨⚕️ *Dr.:* ${invoice.doctorName} [${invoice.doctorPlace}]");
+    buffer.writeln("--------------------------------");
+    
+    for (var item in items) {
+      buffer.writeln("💊 ${item.productName} (${item.batchNumber})");
+      buffer.writeln("   ${item.quantity} Tabs @ ₹${item.mrp}/tab = ₹${item.lineTotal.toStringAsFixed(2)}");
       if (item.alternativeName != null && item.alternativeName!.isNotEmpty) {
-        buf.writeln('*Alternative Available: ${item.alternativeName}*');
+        buffer.writeln("*Alternative Available: ${item.alternativeName}*");
       }
     }
-
-    buf.writeln('----------------------------');
-    buf.writeln('Total Bill: ₹${_currencyFmt.format(totalAmount)}');
     
-    if (creditBalanceAdded > 0) {
-      buf.writeln('Payment Due: ₹${_currencyFmt.format(creditBalanceAdded)} (Logged to Note Book)');
-    } else {
-      buf.writeln('Amount Paid: ₹${_currencyFmt.format(amountPaid)}');
-    }
+    buffer.writeln("--------------------------------");
+    buffer.writeln("💵 *Total Bill:* ₹${invoice.totalAmount.toStringAsFixed(2)}");
+    buffer.writeln("💰 *Paid:* ₹${invoice.amountPaid.toStringAsFixed(2)}");
     
-    if (customerNotes != null && customerNotes.isNotEmpty) {
-      buf.writeln('Note: $customerNotes');
+    if (invoice.creditBalanceAdded > 0) {
+      buffer.writeln("📌 *Pending Credit:* ₹${invoice.creditBalanceAdded.toStringAsFixed(2)}");
+      if (invoice.customerNotes != null && invoice.customerNotes!.isNotEmpty) {
+        buffer.writeln("📝 *Note:* ${invoice.customerNotes}");
+      }
     }
-
-    return buf.toString();
+    return Uri.encodeComponent(buffer.toString());
   }
 
   /// Opens WhatsApp with a pre-filled receipt message.

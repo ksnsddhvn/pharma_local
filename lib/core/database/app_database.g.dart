@@ -3692,6 +3692,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SalesInvoicesTable salesInvoices = $SalesInvoicesTable(this);
   late final $SalesInvoiceItemsTable salesInvoiceItems =
       $SalesInvoiceItemsTable(this);
+  late final Index idxProductComposition = Index(
+    'idx_product_composition',
+    'CREATE INDEX idx_product_composition ON products (composition)',
+  );
   late final ProductsDao productsDao = ProductsDao(this as AppDatabase);
   late final StockBatchesDao stockBatchesDao = StockBatchesDao(
     this as AppDatabase,
@@ -3712,6 +3716,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     supplierLedgers,
     salesInvoices,
     salesInvoiceItems,
+    idxProductComposition,
   ];
 }
 
