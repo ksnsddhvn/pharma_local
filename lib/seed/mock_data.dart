@@ -1,0 +1,308 @@
+import 'package:drift/drift.dart';
+import '../core/database/app_database.dart';
+import '../core/database/tables/products_table.dart';
+import '../core/database/tables/stock_batches_table.dart';
+import '../core/database/tables/suppliers_table.dart';
+import '../core/database/tables/supplier_ledgers_table.dart';
+import '../core/database/tables/sales_tables.dart';
+
+/// Seeds realistic Indian pharmacy mock data on first launch.
+/// Safe to call multiple times — checks if data already exists.
+class MockDataSeeder {
+  final AppDatabase db;
+  MockDataSeeder(this.db);
+
+  Future<void> seedIfEmpty() async {
+    final existing = await db.productsDao.getAllProducts();
+    if (existing.isNotEmpty) return; // Already seeded
+
+    await db.transaction(() async {
+      final supplierIds = await _seedSuppliers();
+      final productIds = await _seedProducts();
+      await _seedBatches(productIds, supplierIds);
+      await _seedSalesHistory(productIds);
+    });
+  }
+
+  // ── 1. Suppliers ──────────────────────────────────────────────────────────
+  Future<List<int>> _seedSuppliers() async {
+    final suppliers = [
+      ('Sun Pharma Distributors', '9876543210', '27AADCS1681Q1ZO'),
+      ('Cipla Agency Mumbai', '9823456789', '27AAACC7407L1ZL'),
+      ('Abbott India Ltd Dist.', '9845612370', '27AAAAD6888K1ZD'),
+      ('Alkem Laboratories Dist.', '9900112233', '27AAACA9999H1ZE'),
+      ('Lupin Ltd Pharma Depot', '9911223344', '27AAACL5555M1ZK'),
+      ('Mankind Pharma Agency', '9922334455', '27AAACM4321J1ZP'),
+      ('Zydus Healthcare Dist.', '9933445566', '27AAACZ8765K1ZQ'),
+      ('Dr. Reddy Labs Agency', '9944556677', '27AAACR2345L1ZR'),
+      ('Glenmark Pharma Depot', '9955667788', '27AAACG6789M1ZS'),
+      ('Torrent Pharma Agency', '9966778899', '27AAACT3456N1ZT'),
+    ];
+
+    final ids = <int>[];
+    for (final s in suppliers) {
+      final id = await db.suppliersDao.insertSupplier(
+        SuppliersCompanion.insert(
+          name: s.$1,
+          phone: Value(s.$2),
+          gstinNumber: Value(s.$3),
+          currentBalance: const Value(0.0),
+        ),
+      );
+      ids.add(id);
+    }
+    return ids;
+  }
+
+  // ── 2. Products ───────────────────────────────────────────────────────────
+  Future<List<int>> _seedProducts() async {
+    final products = [
+      // name, composition, hsn, category, rack, threshold
+      ('Paracetamol 500mg', 'Paracetamol IP 500mg', '3004', ProductCategory.otc, 'A-01', 50.0),
+      ('Paracetamol 650mg', 'Paracetamol IP 650mg', '3004', ProductCategory.otc, 'A-02', 50.0),
+      ('Ibuprofen 400mg', 'Ibuprofen IP 400mg', '3004', ProductCategory.otc, 'A-03', 30.0),
+      ('Aspirin 75mg', 'Aspirin IP 75mg', '3004', ProductCategory.otc, 'A-04', 40.0),
+      ('Cetirizine 10mg', 'Cetirizine HCl IP 10mg', '3004', ProductCategory.otc, 'A-05', 20.0),
+      ('Levocetirizine 5mg', 'Levocetirizine Dihydrochloride 5mg', '3004', ProductCategory.otc, 'A-06', 20.0),
+      ('Pantoprazole 40mg', 'Pantoprazole Sodium Sesquihydrate 40mg', '3004', ProductCategory.rx, 'B-01', 30.0),
+      ('Omeprazole 20mg', 'Omeprazole IP 20mg', '3004', ProductCategory.rx, 'B-02', 25.0),
+      ('Metformin 500mg', 'Metformin Hydrochloride IP 500mg', '3004', ProductCategory.rx, 'B-03', 40.0),
+      ('Metformin 1000mg', 'Metformin Hydrochloride IP 1000mg', '3004', ProductCategory.rx, 'B-04', 30.0),
+      ('Glimepiride 1mg', 'Glimepiride IP 1mg', '3004', ProductCategory.rx, 'B-05', 20.0),
+      ('Glimepiride 2mg', 'Glimepiride IP 2mg', '3004', ProductCategory.rx, 'B-06', 20.0),
+      ('Atorvastatin 10mg', 'Atorvastatin Calcium IP 10mg', '3004', ProductCategory.rx, 'C-01', 30.0),
+      ('Atorvastatin 20mg', 'Atorvastatin Calcium IP 20mg', '3004', ProductCategory.rx, 'C-02', 30.0),
+      ('Amlodipine 5mg', 'Amlodipine Besylate IP 5mg', '3004', ProductCategory.rx, 'C-03', 25.0),
+      ('Telmisartan 40mg', 'Telmisartan IP 40mg', '3004', ProductCategory.rx, 'C-04', 25.0),
+      ('Telmisartan 80mg', 'Telmisartan IP 80mg', '3004', ProductCategory.rx, 'C-05', 20.0),
+      ('Losartan 50mg', 'Losartan Potassium IP 50mg', '3004', ProductCategory.rx, 'C-06', 20.0),
+      ('Amoxicillin 500mg', 'Amoxicillin IP 500mg', '3004', ProductCategory.scheduleH, 'D-01', 15.0),
+      ('Azithromycin 500mg', 'Azithromycin IP 500mg', '3004', ProductCategory.scheduleH, 'D-02', 15.0),
+      ('Ciprofloxacin 500mg', 'Ciprofloxacin HCl IP 500mg', '3004', ProductCategory.scheduleH, 'D-03', 15.0),
+      ('Cefixime 200mg', 'Cefixime Trihydrate IP 200mg', '3004', ProductCategory.scheduleH, 'D-04', 15.0),
+      ('Metronidazole 400mg', 'Metronidazole IP 400mg', '3004', ProductCategory.scheduleH, 'D-05', 20.0),
+      ('Doxycycline 100mg', 'Doxycycline HCl IP 100mg', '3004', ProductCategory.scheduleH, 'D-06', 15.0),
+      ('Diclofenac 50mg', 'Diclofenac Sodium IP 50mg', '3004', ProductCategory.scheduleH, 'D-07', 20.0),
+      ('Tramadol 50mg', 'Tramadol Hydrochloride IP 50mg', '3004', ProductCategory.scheduleH, 'E-01', 10.0),
+      ('Alprazolam 0.25mg', 'Alprazolam IP 0.25mg', '3004', ProductCategory.scheduleH1, 'E-02', 5.0),
+      ('Alprazolam 0.5mg', 'Alprazolam IP 0.5mg', '3004', ProductCategory.scheduleH1, 'E-03', 5.0),
+      ('Clonazepam 0.5mg', 'Clonazepam IP 0.5mg', '3004', ProductCategory.scheduleH1, 'E-04', 5.0),
+      ('Zolpidem 10mg', 'Zolpidem Tartrate IP 10mg', '3004', ProductCategory.scheduleH1, 'E-05', 5.0),
+      ('Vitamin C 500mg', 'Ascorbic Acid IP 500mg', '3006', ProductCategory.otc, 'F-01', 30.0),
+      ('Vitamin D3 60000IU', 'Cholecalciferol 60000 IU', '3006', ProductCategory.rx, 'F-02', 20.0),
+      ('Calcium + Vit D3', 'Calcium Carbonate 500mg + Cholecalciferol 250IU', '3006', ProductCategory.otc, 'F-03', 25.0),
+      ('Multivitamin Tablet', 'Multiple Vitamins & Minerals', '3006', ProductCategory.otc, 'F-04', 20.0),
+      ('ORS Sachet', 'Oral Rehydration Salts IP', '3006', ProductCategory.otc, 'F-05', 50.0),
+      ('Ranitidine 150mg', 'Ranitidine Hydrochloride IP 150mg', '3004', ProductCategory.otc, 'G-01', 25.0),
+      ('Domperidone 10mg', 'Domperidone IP 10mg', '3004', ProductCategory.otc, 'G-02', 25.0),
+      ('Ondansetron 4mg', 'Ondansetron HCl IP 4mg', '3004', ProductCategory.rx, 'G-03', 20.0),
+      ('Montelukast 10mg', 'Montelukast Sodium IP 10mg', '3004', ProductCategory.rx, 'G-04', 20.0),
+      ('Salbutamol Inhaler', 'Salbutamol Sulfate IP 100mcg/dose', '3004', ProductCategory.rx, 'H-01', 10.0),
+      ('Budesonide Inhaler', 'Budesonide IP 200mcg/dose', '3004', ProductCategory.rx, 'H-02', 10.0),
+      ('Insulin Glargine 100IU', 'Insulin Glargine 100 IU/mL', '3004', ProductCategory.scheduleH, 'I-01', 5.0),
+      ('Methotrexate 2.5mg', 'Methotrexate IP 2.5mg', '3004', ProductCategory.scheduleH, 'I-02', 5.0),
+      ('Levothyroxine 50mcg', 'Levothyroxine Sodium IP 50mcg', '3004', ProductCategory.rx, 'J-01', 20.0),
+      ('Levothyroxine 100mcg', 'Levothyroxine Sodium IP 100mcg', '3004', ProductCategory.rx, 'J-02', 20.0),
+      ('Prednisolone 5mg', 'Prednisolone IP 5mg', '3004', ProductCategory.scheduleH, 'J-03', 15.0),
+      ('Hydrocortisone Cream', 'Hydrocortisone 1% w/w Cream', '3004', ProductCategory.otc, 'K-01', 15.0),
+      ('Betamethasone Cream', 'Betamethasone Valerate 0.1% Cream', '3004', ProductCategory.scheduleH, 'K-02', 10.0),
+      ('Antifungal Dusting Powder', 'Clotrimazole 1% w/w Powder', '3004', ProductCategory.otc, 'K-03', 15.0),
+      ('Neomycin Eye Drops', 'Neomycin Sulphate 0.5% w/v Eye Drops', '3004', ProductCategory.scheduleH, 'L-01', 10.0),
+      ('Ciprofloxacin Eye Drops', 'Ciprofloxacin HCl 0.3% w/v Eye Drops', '3004', ProductCategory.scheduleH, 'L-02', 10.0),
+    ];
+
+    final ids = <int>[];
+    for (final p in products) {
+      final id = await db.productsDao.insertProduct(
+        ProductsCompanion.insert(
+          name: p.$1,
+          composition: Value(p.$2),
+          hsnCode: Value(p.$3),
+          category: Value(p.$4),
+          rackLocation: Value(p.$5),
+          minStockThreshold: Value(p.$6),
+        ),
+      );
+      ids.add(id);
+    }
+    return ids;
+  }
+
+  // ── 3. Stock Batches ──────────────────────────────────────────────────────
+  Future<void> _seedBatches(
+      List<int> productIds, List<int> supplierIds) async {
+    // GST rates by product index (0-based)
+    final gstRates = {
+      0: 5.0, 1: 5.0, 2: 5.0, 3: 5.0, 4: 5.0, 5: 5.0, // OTC basic
+      30: 12.0, 31: 12.0, 32: 12.0, 33: 12.0, 34: 12.0, // Vitamins
+    };
+    double gstFor(int i) => gstRates[i] ?? 12.0;
+
+    final now = DateTime.now();
+    final batches = <(int, String, DateTime, double, double, int)>[
+      // (productIndex, batchNo, expiry, mrp, purchaseRate, qty)
+      (0, 'PC-2024-001', now.add(const Duration(days: 540)), 3.50, 2.10, 500),
+      (0, 'PC-2024-002', now.add(const Duration(days: 180)), 3.50, 2.10, 200),
+      (0, 'PC-2025-001', now.add(const Duration(days: 25)), 3.50, 2.10, 50),  // near expiry
+      (1, 'PC6-2024-001', now.add(const Duration(days: 480)), 4.20, 2.50, 300),
+      (2, 'IB-2024-001', now.add(const Duration(days: 600)), 8.50, 5.10, 200),
+      (2, 'IB-2024-002', now.add(const Duration(days: 45)), 8.50, 5.10, 30),  // near expiry
+      (3, 'AS-2024-001', now.add(const Duration(days: 720)), 2.80, 1.60, 400),
+      (4, 'CT-2024-001', now.add(const Duration(days: 365)), 5.20, 3.10, 150),
+      (5, 'LC-2024-001', now.add(const Duration(days: 400)), 6.80, 4.00, 120),
+      (6, 'PZ-2024-001', now.add(const Duration(days: 550)), 18.50, 11.00, 100),
+      (6, 'PZ-2024-002', now.add(const Duration(days: 20)), 18.50, 11.00, 40),  // near expiry
+      (7, 'OM-2024-001', now.add(const Duration(days: 500)), 12.00, 7.20, 100),
+      (8, 'MF-2024-001', now.add(const Duration(days: 520)), 4.50, 2.70, 200),
+      (8, 'MF-2024-002', now.add(const Duration(days: 380)), 4.50, 2.70, 150),
+      (9, 'MF1-2024-001', now.add(const Duration(days: 450)), 7.00, 4.20, 100),
+      (10, 'GL1-2024-001', now.add(const Duration(days: 400)), 15.00, 9.00, 80),
+      (11, 'GL2-2024-001', now.add(const Duration(days: 420)), 22.00, 13.20, 80),
+      (12, 'AT10-2024-001', now.add(const Duration(days: 600)), 12.00, 7.20, 90),
+      (13, 'AT20-2024-001', now.add(const Duration(days: 580)), 18.00, 10.80, 80),
+      (14, 'AM5-2024-001', now.add(const Duration(days: 650)), 14.00, 8.40, 70),
+      (15, 'TE40-2024-001', now.add(const Duration(days: 500)), 18.50, 11.10, 70),
+      (16, 'TE80-2024-001', now.add(const Duration(days: 520)), 25.00, 15.00, 50),
+      (17, 'LO-2024-001', now.add(const Duration(days: 480)), 20.00, 12.00, 60),
+      (18, 'AX-2024-001', now.add(const Duration(days: 400)), 12.00, 7.20, 80),
+      (19, 'AZ-2024-001', now.add(const Duration(days: 360)), 48.00, 28.80, 60),
+      (20, 'CP-2024-001', now.add(const Duration(days: 420)), 14.00, 8.40, 60),
+      (21, 'CF-2024-001', now.add(const Duration(days: 380)), 35.00, 21.00, 50),
+      (22, 'MN-2024-001', now.add(const Duration(days: 440)), 8.00, 4.80, 100),
+      (23, 'DX-2024-001', now.add(const Duration(days: 350)), 22.00, 13.20, 50),
+      (24, 'DC-2024-001', now.add(const Duration(days: 500)), 10.00, 6.00, 80),
+      (25, 'TR-2024-001', now.add(const Duration(days: 480)), 18.00, 10.80, 40),
+      // Low stock items for shortbook testing
+      (26, 'AX025-2024-001', now.add(const Duration(days: 600)), 12.00, 7.20, 3),
+      (27, 'AX05-2024-001', now.add(const Duration(days: 580)), 18.00, 10.80, 2),
+      (28, 'CL-2024-001', now.add(const Duration(days: 560)), 22.00, 13.20, 1),
+      (29, 'ZP-2024-001', now.add(const Duration(days: 540)), 28.00, 16.80, 0), // out of stock
+      (30, 'VC-2024-001', now.add(const Duration(days: 400)), 8.00, 4.80, 60),
+      (31, 'VD-2024-001', now.add(const Duration(days: 380)), 45.00, 27.00, 40),
+      (32, 'CA-2024-001', now.add(const Duration(days: 420)), 18.00, 10.80, 50),
+      (33, 'MV-2024-001', now.add(const Duration(days: 360)), 28.00, 16.80, 40),
+      (34, 'OR-2024-001', now.add(const Duration(days: 300)), 6.00, 3.60, 100),
+      (35, 'RN-2024-001', now.add(const Duration(days: 480)), 8.00, 4.80, 80),
+      (36, 'DP-2024-001', now.add(const Duration(days: 460)), 12.00, 7.20, 60),
+      (37, 'ON-2024-001', now.add(const Duration(days: 440)), 22.00, 13.20, 40),
+      (38, 'ML-2024-001', now.add(const Duration(days: 420)), 28.00, 16.80, 40),
+      (39, 'SB-2024-001', now.add(const Duration(days: 400)), 180.00, 108.00, 15),
+      (40, 'BD-2024-001', now.add(const Duration(days: 380)), 380.00, 228.00, 12),
+      (41, 'IN-2024-001', now.add(const Duration(days: 60)), 580.00, 348.00, 8),  // near expiry
+      (42, 'MT-2024-001', now.add(const Duration(days: 480)), 45.00, 27.00, 20),
+      (43, 'LT50-2024-001', now.add(const Duration(days: 520)), 28.00, 16.80, 60),
+      (44, 'LT100-2024-001', now.add(const Duration(days: 500)), 42.00, 25.20, 50),
+      (45, 'PD-2024-001', now.add(const Duration(days: 400)), 18.00, 10.80, 40),
+      (46, 'HC-2024-001', now.add(const Duration(days: 380)), 45.00, 27.00, 25),
+      (47, 'BT-2024-001', now.add(const Duration(days: 360)), 68.00, 40.80, 20),
+      (48, 'AF-2024-001', now.add(const Duration(days: 420)), 38.00, 22.80, 20),
+      (49, 'NE-2024-001', now.add(const Duration(days: 400)), 28.00, 16.80, 15),
+    ];
+
+    for (final b in batches) {
+      final pidx = b.$1;
+      if (pidx >= productIds.length) continue;
+      await db.stockBatchesDao.insertBatch(
+        StockBatchesCompanion.insert(
+          productId: productIds[pidx],
+          batchNumber: b.$2,
+          expiryDate: b.$3,
+          mrp: b.$4,
+          purchaseRate: b.$5,
+          gstPercentage: Value(gstFor(pidx)),
+          currentStock: Value(b.$6),
+        ),
+      );
+    }
+
+    // Seed a few supplier ledger entries (purchases)
+    final purchaseData = [
+      (0, 1, 12500.0, 'INV-SUN-2024-001'),
+      (1, 2, 8200.0, 'INV-CIP-2024-001'),
+      (2, 3, 5400.0, 'INV-ABT-2024-001'),
+      (3, 4, 7800.0, 'INV-ALK-2024-001'),
+      (4, 5, 9200.0, 'INV-LUP-2024-001'),
+    ];
+
+    for (final p in purchaseData) {
+      final supplierId = supplierIds[p.$1];
+      await db.supplierLedgerDao.insertEntry(
+        SupplierLedgersCompanion.insert(
+          supplierId: supplierId,
+          transactionType: LedgerTxType.creditPurchase,
+          amount: p.$3,
+          balanceAfter: p.$3,
+          referenceNote: Value(p.$4),
+        ),
+      );
+      await db.suppliersDao.updateBalance(supplierId, p.$3);
+    }
+
+    // Partial payments
+    await db.supplierLedgerDao.insertEntry(
+      SupplierLedgersCompanion.insert(
+        supplierId: supplierIds[0],
+        transactionType: LedgerTxType.cashPaid,
+        amount: 5000.0,
+        balanceAfter: 7500.0,
+        referenceNote: const Value('Cash payment 15 Jun'),
+      ),
+    );
+    await db.suppliersDao.updateBalance(supplierIds[0], 7500.0);
+
+    await db.supplierLedgerDao.insertEntry(
+      SupplierLedgersCompanion.insert(
+        supplierId: supplierIds[1],
+        transactionType: LedgerTxType.upiPaid,
+        amount: 8200.0,
+        balanceAfter: 0.0,
+        referenceNote: const Value('UPI UTR: 4231897654321'),
+      ),
+    );
+    await db.suppliersDao.updateBalance(supplierIds[1], 0.0);
+  }
+
+  // ── 4. Sales History ─────────────────────────────────────────────────────
+  Future<void> _seedSalesHistory(List<int> productIds) async {
+    final now = DateTime.now();
+
+    // 30 sample invoices over the past 30 days
+    for (var day = 0; day < 30; day++) {
+      final saleDate = now.subtract(Duration(days: day));
+      final numSales = (day % 4) + 1;
+
+      for (var s = 0; s < numSales; s++) {
+        final pidx = (day * 3 + s) % productIds.length;
+        const qty = 2;
+        const mrp = 12.0;
+        const gst = 12.0;
+        const lineTotal = mrp * qty;
+
+        await db.salesDao.createInvoiceWithItems(
+          SalesInvoicesCompanion(
+            invoiceNumber: Value('PL-${saleDate.year}-${(day * 10 + s).toString().padLeft(4, '0')}'),
+            createdAt: Value(saleDate),
+            subtotal: const Value(lineTotal),
+            totalGst: const Value(lineTotal * gst / (100 + gst)),
+            totalDiscount: const Value(0.0),
+            totalAmount: const Value(lineTotal),
+            paymentMode: const Value(PaymentMode.cash),
+          ),
+          [
+            SalesInvoiceItemsCompanion(
+              batchId: const Value(1),
+              productId: Value(productIds[pidx]),
+              productName: const Value('Sample Product'),
+              batchNumber: const Value('SEED-001'),
+              quantity: const Value(qty),
+              mrp: const Value(mrp),
+              gstPercentage: const Value(gst),
+              discountPercent: const Value(0.0),
+              lineTotal: const Value(lineTotal),
+            ),
+          ],
+        );
+      }
+    }
+  }
+}

@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Use named parameters in generated insert/update methods
+          named_parameters: true
