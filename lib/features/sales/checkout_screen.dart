@@ -29,6 +29,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   List<CartItem>? _checkedOutItems;
 
   @override
+  void initState() {
+    super.initState();
+    _amountPaidCtrl.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _customerNameCtrl.dispose();
     _customerMobileCtrl.dispose();
@@ -293,6 +299,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       labelText: 'Amount Paid Now (₹)',
                       hintText: 'Leave empty if full amount is paid (${AppFormatters.currency(total)})'),
                 ),
+                if (_amountPaidCtrl.text.isNotEmpty && (double.tryParse(_amountPaidCtrl.text) ?? total) < total)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8, left: 4),
+                    child: Text(
+                      'Balance to be paid later: ${AppFormatters.currency(total - (double.tryParse(_amountPaidCtrl.text) ?? 0))}',
+                      style: const TextStyle(color: AppColors.warning, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: _customerNotesCtrl,
