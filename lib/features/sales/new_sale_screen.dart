@@ -123,7 +123,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
 
 
-  Future<void> _addToCart(StockBatch batch, Product product) async {
+  Future<void> _addToCart(List<StockBatch> batches, Product product) async {
     final qty = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
@@ -144,25 +144,45 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       }
     }
 
-    final success = ref.read(cartProvider.notifier).addItem(
-          CartItem(
-            batchId: batch.id,
-            productId: product.id,
-            productName: product.name,
-            batchNumber: batch.batchNumber,
-            quantity: qty,
-            maxQuantity: batch.currentStock,
-            mrp: batch.mrp,
-            gstPercentage: batch.gstPercentage,
-            composition: product.composition,
-            alternativeName: altName,
-          ),
-        );
+    final cart = ref.read(cartProvider);
+    int remainingQty = qty;
+    bool someAdded = false;
+
+    for (final batch in batches) {
+      if (remainingQty <= 0) break;
+
+      final inCart = cart.where((i) => i.batchId == batch.id).fold<int>(0, (sum, i) => sum + i.quantity);
+      final availableInBatch = batch.currentStock - inCart;
+
+      if (availableInBatch > 0) {
+        final amountToTake = remainingQty > availableInBatch ? availableInBatch : remainingQty;
         
-    if (!success) {
+        ref.read(cartProvider.notifier).addItem(
+              CartItem(
+                batchId: batch.id,
+                productId: product.id,
+                productName: product.name,
+                batchNumber: batch.batchNumber,
+                quantity: amountToTake,
+                maxQuantity: batch.currentStock,
+                mrp: batch.mrp,
+                gstPercentage: batch.gstPercentage,
+                composition: product.composition,
+                alternativeName: altName,
+              ),
+            );
+            
+        remainingQty -= amountToTake;
+        someAdded = true;
+      }
+    }
+
+    if (remainingQty > 0) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Cannot exceed available stock (${batch.currentStock}) for batch ${batch.batchNumber}.'),
+          content: Text(someAdded 
+            ? 'Only added ${qty - remainingQty} tablets. No more stock available across all batches.'
+            : 'Not enough available stock to add $qty tablets.'),
           backgroundColor: AppColors.error,
         ));
       }
@@ -292,7 +312,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
 class _SearchResults extends ConsumerStatefulWidget {
   final String query;
-  final Function(StockBatch, Product) onAdd;
+  final Function(List<StockBatch>, Product) onAdd;
   const _SearchResults({required this.query, required this.onAdd});
 
   @override
@@ -355,7 +375,7 @@ class _SearchResultsState extends ConsumerState<_SearchResults> {
 
 class _ProductResultTile extends ConsumerWidget {
   final Product product;
-  final Function(StockBatch, Product) onAdd;
+  final Function(List<StockBatch>, Product) onAdd;
   const _ProductResultTile({required this.product, required this.onAdd});
 
   @override
@@ -409,9 +429,8 @@ class _ProductResultTile extends ConsumerWidget {
             }
             return;
           }
-          // FEFO — take first (nearest expiry) batch with stock
-          final batch = batches.first;
-          onAdd(batch, product);
+          // Pass all batches to fulfill requested quantity automatically
+          onAdd(batches, product);
         },
       ),
     );
