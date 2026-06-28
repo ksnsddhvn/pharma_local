@@ -179,12 +179,28 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
     if (remainingQty > 0) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(someAdded 
-            ? 'Only added ${qty - remainingQty} tablets. No more stock available across all batches.'
-            : 'Not enough available stock to add $qty tablets.'),
-          backgroundColor: AppColors.error,
-        ));
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: AppColors.surface,
+            title: const Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, color: AppColors.error),
+                SizedBox(width: 8),
+                Text('Insufficient Stock'),
+              ],
+            ),
+            content: Text(someAdded 
+              ? 'Only added ${qty - remainingQty} tablets. No more stock available across all batches.'
+              : 'Not enough available stock to add $qty tablets.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx), 
+                child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+              ),
+            ],
+          ),
+        );
       }
       return;
     }
@@ -380,59 +396,58 @@ class _ProductResultTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      dense: true,
-      title: Text(product.name,
-          style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500)),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(product.composition ?? '',
+    return FutureBuilder<List<StockBatch>>(
+      future: ref.read(stockBatchesDaoProvider).getBatchesForProduct(product.id),
+      builder: (context, snapshot) {
+        final batches = snapshot.data ?? [];
+        final totalStock = batches.fold<int>(0, (sum, b) => sum + b.currentStock);
+        final isLoading = snapshot.connectionState == ConnectionState.waiting;
+
+        return ListTile(
+          dense: true,
+          title: Text(product.name,
               style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: 11)),
-          const SizedBox(height: 4),
-          FutureBuilder<List<StockBatch>>(
-            future: ref.read(stockBatchesDaoProvider).getBatchesForProduct(product.id),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Text('Loading stock...', style: TextStyle(color: AppColors.textMuted, fontSize: 11));
-              }
-              final batches = snapshot.data ?? [];
-              final totalStock = batches.fold<int>(0, (sum, b) => sum + b.currentStock);
-              return Text(
-                totalStock > 0 ? 'In Stock: $totalStock' : 'Out of Stock',
-                style: TextStyle(
-                  color: totalStock > 0 ? AppColors.success : AppColors.error,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500)),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(product.composition ?? '',
+                  style: const TextStyle(
+                      color: AppColors.textMuted, fontSize: 11)),
+              const SizedBox(height: 4),
+              if (isLoading)
+                const Text('Loading stock...', style: TextStyle(color: AppColors.textMuted, fontSize: 11))
+              else
+                Text(
+                  totalStock > 0 ? 'In Stock: $totalStock' : 'Out of Stock',
+                  style: TextStyle(
+                    color: totalStock > 0 ? AppColors.success : AppColors.error,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              );
-            },
+            ],
           ),
-        ],
-      ),
-      trailing: IconButton(
-        icon: const Icon(Icons.add_circle_outline,
-            color: AppColors.primary, size: 22),
-        onPressed: () async {
-          final batches = await ref
-              .read(stockBatchesDaoProvider)
-              .getBatchesForProduct(product.id);
-          if (batches.isEmpty) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('No stock available'),
-                  backgroundColor: AppColors.warning));
-            }
-            return;
-          }
-          // Pass all batches to fulfill requested quantity automatically
-          onAdd(batches, product);
-        },
-      ),
+          trailing: isLoading
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : (totalStock > 0
+                  ? IconButton(
+                      icon: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 22),
+                      onPressed: () => onAdd(batches, product),
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                      ),
+                      child: const Text('Out of Stock', style: TextStyle(color: AppColors.error, fontSize: 10, fontWeight: FontWeight.bold)),
+                    )),
+        );
+      },
     );
   }
 }
