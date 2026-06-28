@@ -45,7 +45,7 @@ class OpeningStockService {
     required int quantity,
     String? composition,
     String? barcode,
-    ProductCategory category = ProductCategory.otc,
+    // category removed
   }) async {
     return db.transaction(() async {
       // 1. Create the product record
@@ -53,7 +53,7 @@ class OpeningStockService {
         ProductsCompanion.insert(
           name: name,
           composition: composition ?? '',
-          category: Value(category),
+          categoryId: const Value(null),
         ),
       );
 
