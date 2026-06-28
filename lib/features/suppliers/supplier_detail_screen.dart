@@ -7,21 +7,22 @@ import '../../core/services/supplier_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 
+final _supplierLedgerFamily = StreamProvider.family<List<SupplierLedger>, int>((ref, id) {
+  return ref.watch(supplierLedgerDaoProvider).watchLedgerForSupplier(id);
+});
+
+final _supplierDetailFamily = FutureProvider.family<Supplier?, int>((ref, id) {
+  return ref.watch(suppliersDaoProvider).getSupplierById(id);
+});
+
 class SupplierDetailScreen extends ConsumerWidget {
   final int supplierId;
   const SupplierDetailScreen({super.key, required this.supplierId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ledgerAsync = ref.watch(
-      StreamProvider<List<SupplierLedger>>((ref) => ref
-          .watch(supplierLedgerDaoProvider)
-          .watchLedgerForSupplier(supplierId)),
-    );
-    final supplierAsync = ref.watch(
-      FutureProvider<Supplier?>((ref) =>
-          ref.watch(suppliersDaoProvider).getSupplierById(supplierId)),
-    );
+    final ledgerAsync = ref.watch(_supplierLedgerFamily(supplierId));
+    final supplierAsync = ref.watch(_supplierDetailFamily(supplierId));
 
     return Scaffold(
       backgroundColor: AppColors.background,

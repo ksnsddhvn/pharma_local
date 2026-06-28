@@ -10,6 +10,7 @@ class CartItem {
   final String productName;
   final String batchNumber;
   int quantity;
+  final int maxQuantity;
   final double mrp;
   final double gstPercentage;
   double discountPercent;
@@ -22,6 +23,7 @@ class CartItem {
     required this.productName,
     required this.batchNumber,
     required this.quantity,
+    required this.maxQuantity,
     required this.mrp,
     required this.gstPercentage,
     this.discountPercent = 0.0,

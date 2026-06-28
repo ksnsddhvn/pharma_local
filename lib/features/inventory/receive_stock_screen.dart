@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/services/inventory_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
+import '../../core/widgets/tablet_calculator_sheet.dart';
 
 class ReceiveStockScreen extends ConsumerStatefulWidget {
   const ReceiveStockScreen({super.key});
@@ -287,10 +288,28 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: _qtyCtrl,
+                          readOnly: true,
+                          onTap: () async {
+                            if (_selectedProduct == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Please select a product first', style: TextStyle(color: AppColors.textPrimary)), backgroundColor: AppColors.warning),
+                              );
+                              return;
+                            }
+                            final qty = await showModalBottomSheet<int>(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: AppColors.surfaceElevated,
+                              builder: (ctx) => TabletCalculatorSheet(productName: _selectedProduct!.name),
+                            );
+                            if (qty != null) {
+                              _qtyCtrl.text = qty.toString();
+                            }
+                          },
                           keyboardType: TextInputType.number,
                           style: const TextStyle(color: AppColors.textPrimary),
                           decoration:
-                              const InputDecoration(labelText: 'Quantity *'),
+                              const InputDecoration(labelText: 'Quantity *', hintText: 'Tap to calculate'),
                           validator: (v) =>
                               int.tryParse(v ?? '') == null ? 'Invalid' : null,
                         ),

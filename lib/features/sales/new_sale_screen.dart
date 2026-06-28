@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
 import '../../core/utils/formatters.dart';
 import 'on_the_fly_entry_sheet.dart';
+import '../../core/widgets/tablet_calculator_sheet.dart';
 
 // Provider to hold the current cart
 final cartProvider =
@@ -16,17 +17,21 @@ final cartProvider =
 class CartNotifier extends StateNotifier<List<CartItem>> {
   CartNotifier() : super([]);
 
-  void addItem(CartItem item) {
+  bool addItem(CartItem item) {
     final idx =
         state.indexWhere((i) => i.batchId == item.batchId);
     if (idx >= 0) {
       final updated = List<CartItem>.from(state);
+      final totalQty = updated[idx].quantity + item.quantity;
+      if (totalQty > item.maxQuantity) return false;
+      
       updated[idx] = CartItem(
         batchId: item.batchId,
         productId: item.productId,
         productName: item.productName,
         batchNumber: item.batchNumber,
-        quantity: updated[idx].quantity + item.quantity,
+        quantity: totalQty,
+        maxQuantity: item.maxQuantity,
         mrp: item.mrp,
         gstPercentage: item.gstPercentage,
         discountPercent: updated[idx].discountPercent,
@@ -35,8 +40,10 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
       );
       state = updated;
     } else {
+      if (item.quantity > item.maxQuantity) return false;
       state = [...state, item];
     }
+    return true;
   }
 
   void removeItem(int batchId) =>
@@ -51,6 +58,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           productName: i.productName,
           batchNumber: i.batchNumber,
           quantity: i.quantity,
+          maxQuantity: i.maxQuantity,
           mrp: i.mrp,
           gstPercentage: i.gstPercentage,
           discountPercent: discount,
@@ -62,19 +70,25 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
     }).toList();
   }
 
-  void updateQuantity(int batchId, int qty) {
+  bool updateQuantity(int batchId, int qty) {
     if (qty <= 0) {
       removeItem(batchId);
-      return;
+      return true;
     }
+    bool success = true;
     state = state.map((i) {
       if (i.batchId == batchId) {
+        if (qty > i.maxQuantity) {
+          success = false;
+          return i;
+        }
         return CartItem(
           batchId: i.batchId,
           productId: i.productId,
           productName: i.productName,
           batchNumber: i.batchNumber,
           quantity: qty,
+          maxQuantity: i.maxQuantity,
           mrp: i.mrp,
           gstPercentage: i.gstPercentage,
           discountPercent: i.discountPercent,
@@ -84,6 +98,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
       }
       return i;
     }).toList();
+    return success;
   }
 
   void clear() => state = [];
@@ -113,10 +128,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.surfaceElevated,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: _TabletCalculatorSheet(productName: product.name),
-      ),
+      builder: (ctx) => TabletCalculatorSheet(productName: product.name),
     );
 
     if (qty == null || qty <= 0) return;
@@ -132,19 +144,31 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       }
     }
 
-    ref.read(cartProvider.notifier).addItem(
+    final success = ref.read(cartProvider.notifier).addItem(
           CartItem(
             batchId: batch.id,
             productId: product.id,
             productName: product.name,
             batchNumber: batch.batchNumber,
             quantity: qty,
+            maxQuantity: batch.currentStock,
             mrp: batch.mrp,
             gstPercentage: batch.gstPercentage,
             composition: product.composition,
             alternativeName: altName,
           ),
         );
+        
+    if (!success) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Cannot exceed available stock (${batch.currentStock}) for batch ${batch.batchNumber}.'),
+          backgroundColor: AppColors.error,
+        ));
+      }
+      return;
+    }
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('${product.name} added to cart ($qty tablets)'),
@@ -426,13 +450,16 @@ class _CartItemTile extends ConsumerWidget {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: AppColors.surfaceElevated,
-                    builder: (ctx) => Padding(
-                      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-                      child: _TabletCalculatorSheet(productName: item.productName),
-                    ),
+                    builder: (ctx) => TabletCalculatorSheet(productName: item.productName),
                   );
                   if (qty != null) {
-                    ref.read(cartProvider.notifier).updateQuantity(item.batchId, qty);
+                    final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, qty);
+                    if (!success && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content: Text('Cannot exceed available stock (${item.maxQuantity}) for this batch.'),
+                        backgroundColor: AppColors.error,
+                      ));
+                    }
                   }
                 },
                 child: Padding(
@@ -447,9 +474,15 @@ class _CartItemTile extends ConsumerWidget {
               ),
               _QtyButton(
                 icon: Icons.add,
-                onTap: () => ref
-                    .read(cartProvider.notifier)
-                    .updateQuantity(item.batchId, item.quantity + 1),
+                onTap: () {
+                  final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.quantity + 1);
+                  if (!success && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('Cannot exceed available stock (${item.maxQuantity})'),
+                      backgroundColor: AppColors.error,
+                    ));
+                  }
+                },
               ),
               const Spacer(),
               // Line total
@@ -510,81 +543,6 @@ class _EmptyCartPlaceholder extends StatelessWidget {
               style: TextStyle(
                   color: AppColors.textMuted, fontSize: 13),
               textAlign: TextAlign.center),
-        ],
-      ),
-    );
-  }
-}
-
-class _TabletCalculatorSheet extends StatefulWidget {
-  final String productName;
-  const _TabletCalculatorSheet({required this.productName});
-
-  @override
-  State<_TabletCalculatorSheet> createState() => _TabletCalculatorSheetState();
-}
-
-class _TabletCalculatorSheetState extends State<_TabletCalculatorSheet> {
-  final _stripsCtrl = TextEditingController(text: '0');
-  final _perStripCtrl = TextEditingController(text: '10');
-  final _looseCtrl = TextEditingController(text: '0');
-
-  void _submit() {
-    final strips = int.tryParse(_stripsCtrl.text) ?? 0;
-    final perStrip = int.tryParse(_perStripCtrl.text) ?? 10;
-    final loose = int.tryParse(_looseCtrl.text) ?? 0;
-    
-    final total = (strips * perStrip) + loose;
-    Navigator.pop(context, total);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Quantity: ${widget.productName}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _stripsCtrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(labelText: 'Strips/Sheets'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _perStripCtrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(labelText: 'Tablets per Strip'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _looseCtrl,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(color: AppColors.textPrimary),
-            decoration: const InputDecoration(labelText: 'Loose Tablets'),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 14)),
-              onPressed: _submit,
-              child: const Text('Set Quantity', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            ),
-          ),
         ],
       ),
     );
