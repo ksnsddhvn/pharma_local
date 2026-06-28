@@ -24,6 +24,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   late TextEditingController _hsnCtrl;
 
   // category removed
+  String _productType = 'Tablet';
+  final _productTypes = ['Tablet', 'Syrup', 'Injection', 'Cream / Ointment', 'Diaper', 'Powder', 'Toothpaste', 'Other'];
   bool _loading = false;
   bool _initialized = false;
 
@@ -57,6 +59,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         _nameCtrl.text = product.name;
         _packagingCtrl.text = product.packagingUnit;
         _hsnCtrl.text = product.hsnCode;
+        _productType = product.productType;
         // category removed
       });
     }
@@ -74,6 +77,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             : const drift.Value.absent(),
         name: drift.Value(_nameCtrl.text.trim()),
         packagingUnit: drift.Value(_packagingCtrl.text.trim()),
+        productType: drift.Value(_productType),
         hsnCode: drift.Value(_hsnCtrl.text.trim()),
         categoryId: const drift.Value(null),
       );
@@ -146,6 +150,43 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                     validator: (v) =>
                         v!.trim().isEmpty ? 'Name is required' : null),
                 SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: _productType,
+                  dropdownColor: context.colors.surfaceElevated,
+                  decoration: InputDecoration(
+                    labelText: 'Product Type',
+                    labelStyle: TextStyle(color: context.colors.textMuted),
+                    filled: true,
+                    fillColor: context.colors.surface,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                  ),
+                  items: _productTypes.map((type) {
+                    return DropdownMenuItem(value: type, child: Text(type, style: TextStyle(color: context.colors.textPrimary)));
+                  }).toList(),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setState(() {
+                        _productType = v;
+                        
+                        // Smartly update packaging unit if it's currently a default
+                        final defaults = ["10's", "100ml", "1 Vial", "15g", "1 Pack", "50g", "1 Unit"];
+                        if (_packagingCtrl.text.trim().isEmpty || defaults.contains(_packagingCtrl.text.trim())) {
+                           switch(v) {
+                             case 'Tablet': _packagingCtrl.text = "10's"; break;
+                             case 'Syrup': _packagingCtrl.text = "100ml"; break;
+                             case 'Injection': _packagingCtrl.text = "1 Vial"; break;
+                             case 'Cream / Ointment': _packagingCtrl.text = "15g"; break;
+                             case 'Diaper': _packagingCtrl.text = "1 Pack"; break;
+                             case 'Powder':
+                             case 'Toothpaste': _packagingCtrl.text = "50g"; break;
+                             default: _packagingCtrl.text = "1 Unit"; break;
+                           }
+                        }
+                      });
+                    }
+                  },
+                ),
+                SizedBox(height: 12),
                 _field('Packaging Unit *', _packagingCtrl,
                     hint: "e.g. 10's, 15's, 100ml",
                     validator: (v) =>
@@ -166,6 +207,53 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
           ],
         ),
       ),
+      bottomNavigationBar: widget.productId != null
+          ? Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final batches = await ref.read(stockBatchesDaoProvider).getBatchesForProduct(widget.productId!);
+                  final hasStock = batches.any((b) => b.currentStock > 0);
+                  
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      backgroundColor: context.colors.surfaceElevated,
+                      title: Text(hasStock ? 'Warning: Active Stock!' : 'Delete Product?'),
+                      content: Text(hasStock 
+                        ? 'This product still has active stock in your inventory. Deleting it will permanently archive the product. Are you sure you want to proceed?' 
+                        : 'This will permanently archive the product. Are you sure?'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
+                          child: Text('Delete', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirm == true) {
+                    try {
+                      await ref.read(productsDaoProvider).deleteProduct(widget.productId!);
+                      if (context.mounted) {
+                        Navigator.pop(context); // Go back
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Product deleted')));
+                      }
+                    } catch (e) {
+                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
+                  }
+                },
+                icon: Icon(Icons.delete_outline, color: Colors.white),
+                label: Text('Delete Product', style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: context.colors.error,
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            )
+          : null,
     );
   }
 

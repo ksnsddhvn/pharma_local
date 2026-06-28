@@ -104,6 +104,46 @@ class _ProductInventoryCard extends ConsumerWidget {
                     child: Text('No stock batches',
                         style: TextStyle(color: context.colors.textMuted)),
                   ),
+                Divider(height: 1),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      final hasStock = batches.any((b) => b.currentStock > 0);
+                      
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          backgroundColor: context.colors.surfaceElevated,
+                          title: Text(hasStock ? 'Warning: Active Stock!' : 'Delete Product?'),
+                          content: Text(hasStock 
+                            ? 'This product still has active stock in your inventory. Deleting it will permanently archive the product. Are you sure you want to proceed?' 
+                            : 'This will permanently archive the product. Are you sure?'),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(ctx, true),
+                              style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
+                              child: Text('Delete', style: TextStyle(color: Colors.white)),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        try {
+                          await ref.read(productsDaoProvider).deleteProduct(product.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Product archived')));
+                          }
+                        } catch (e) {
+                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                        }
+                      }
+                    },
+                    icon: Icon(Icons.delete_outline, color: context.colors.error, size: 16),
+                    label: Text('Delete Product', style: TextStyle(color: context.colors.error, fontSize: 12)),
+                  ),
+                ),
               ],
             ),
             loading: () => LinearProgressIndicator(),
@@ -115,23 +155,17 @@ class _ProductInventoryCard extends ConsumerWidget {
   }
 }
 
-class _BatchRow extends StatelessWidget {
+class _BatchRow extends ConsumerWidget {
   final dynamic batch;
   const _BatchRow({required this.batch});
 
-  Color _expiryColor(BuildContext context) {
-    final days = batch.expiryDate.difference(DateTime.now()).inDays;
-    if (days < 0) return context.colors.expiryCritical;
-    if (days <= 30) return context.colors.expiryCritical;
-    if (days <= 90) return context.colors.expiryWarning;
-    return context.colors.expiryGood;
-  }
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isCritical = batch.expiryDate.difference(DateTime.now()).inDays < 30;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Expanded(
             child: Column(
@@ -140,30 +174,72 @@ class _BatchRow extends StatelessWidget {
                 Text(
                   'Batch: ${batch.batchNumber}',
                   style: TextStyle(
-                      color: context.colors.textPrimary,
-                      fontWeight: FontWeight.w500,
-                      fontSize: 13),
-                ),
-                SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_outlined,
-                        size: 11, color: _expiryColor(context)),
-                    SizedBox(width: 4),
-                    Text(
-                      AppFormatters.expiryLabel(batch.expiryDate),
-                      style:
-                          TextStyle(color: _expiryColor(context), fontSize: 11),
-                    ),
-                  ],
+                      fontWeight: FontWeight.w600,
+                      color: context.colors.textPrimary),
                 ),
                 Text(
-                  'MRP: ${AppFormatters.currency(batch.mrp)} | GST: ${batch.gstPercentage.toStringAsFixed(0)}%',
+                  'Exp: ${batch.expiryDate.year}-${batch.expiryDate.month.toString().padLeft(2, '0')}',
                   style: TextStyle(
-                      color: context.colors.textMuted, fontSize: 11),
+                    fontSize: 12,
+                    color: isCritical
+                        ? context.colors.expiryCritical
+                        : context.colors.textMuted,
+                    fontWeight: isCritical ? FontWeight.bold : FontWeight.normal,
+                  ),
                 ),
               ],
             ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'Stock: ${batch.currentStock}',
+                style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: context.colors.primary),
+              ),
+              Text(
+                'MRP: ₹${batch.mrp.toStringAsFixed(2)}',
+                style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: context.colors.error, size: 20),
+            padding: EdgeInsets.only(left: 16),
+            constraints: BoxConstraints(),
+            tooltip: 'Delete Batch',
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: Text('Delete Batch?'),
+                  content: Text('Are you sure you want to delete batch ${batch.batchNumber}? This will remove its remaining stock (${batch.currentStock}) from inventory.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text('Delete', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+              
+              if (confirm == true) {
+                try {
+                  await ref.read(stockBatchesDaoProvider).deleteBatch(batch.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Batch deleted successfully')));
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              }
+            },
           ),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),

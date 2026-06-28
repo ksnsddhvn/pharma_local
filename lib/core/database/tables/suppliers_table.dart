@@ -11,4 +11,5 @@ class Suppliers extends Table {
   TextColumn get address => text().nullable()();
   RealColumn get currentBalance =>
       real().withDefault(Constant(0.0))(); // positive = we owe them
+  BoolColumn get isDeleted => boolean().withDefault(Constant(false))();
 }

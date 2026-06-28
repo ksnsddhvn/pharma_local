@@ -16,6 +16,7 @@ class CartItem {
   double discountPercent;
   final String hsnCode;
   final String packagingUnit;
+  final String productType;
   final String? alternativeName;
 
   CartItem({
@@ -30,6 +31,7 @@ class CartItem {
     required this.hsnCode,
     this.discountPercent = 0.0,
     this.packagingUnit = "10's",
+    this.productType = 'Tablet',
     this.alternativeName,
   });
 
@@ -146,6 +148,26 @@ class CheckoutService {
         invoiceNumber: invoiceNumber,
         total: totalAmount,
       );
+    });
+  }
+
+  /// Cancels an existing sale, reverts stock, and deletes the invoice.
+  Future<void> cancelSale(int invoiceId) async {
+    await db.transaction(() async {
+      // 1. Get the items
+      final items = await (db.select(db.salesInvoiceItems)
+            ..where((i) => i.invoiceId.equals(invoiceId)))
+          .get();
+      
+      // 2. Revert the stock for each item
+      for (final item in items) {
+        await db.stockBatchesDao.addStock(item.batchId, item.totalTabletsSold);
+      }
+
+      // 3. Delete the invoice (items will be deleted automatically if CASCADE is on,
+      // but let's explicitly delete them to be safe)
+      await (db.delete(db.salesInvoiceItems)..where((i) => i.invoiceId.equals(invoiceId))).go();
+      await (db.delete(db.salesInvoices)..where((i) => i.id.equals(invoiceId))).go();
     });
   }
 

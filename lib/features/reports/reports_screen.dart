@@ -6,6 +6,7 @@ import '../../core/providers.dart';
 import '../../core/services/shortbook_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/database/tables/inventory_adjustments_table.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   ReportsScreen({super.key});
@@ -21,7 +22,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 3, vsync: this);
+    _tab = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -42,6 +43,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           labelColor: context.colors.primary,
           unselectedLabelColor: context.colors.textMuted,
           tabs: const [
+            Tab(icon: Icon(Icons.analytics_outlined, size: 18), text: 'P&L'),
             Tab(icon: Icon(Icons.warning_amber_rounded, size: 18), text: 'Shortbook'),
             Tab(icon: Icon(Icons.hourglass_bottom, size: 18), text: 'Expiry'),
             Tab(icon: Icon(Icons.backup_outlined, size: 18), text: 'Backup'),
@@ -51,6 +53,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       body: TabBarView(
         controller: _tab,
         children: const [
+          _PnLTab(),
           _ShortbookTab(),
           _ExpiryTab(),
           _BackupTab(),
@@ -254,10 +257,26 @@ class _ExpiryTab extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  Text('${bwp.batch.currentStock} qty',
-                      style: TextStyle(
-                          color: context.colors.textSecondary,
-                          fontWeight: FontWeight.w600)),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('${bwp.batch.currentStock} qty',
+                          style: TextStyle(
+                              color: context.colors.textSecondary,
+                              fontWeight: FontWeight.w600)),
+                      SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => _showAdjustmentDialog(context, ref, bwp),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          minimumSize: Size(0, 0),
+                          backgroundColor: color.withValues(alpha: 0.1),
+                          foregroundColor: color,
+                        ),
+                        child: Text('Take Action', style: TextStyle(fontSize: 12)),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             );
@@ -267,6 +286,99 @@ class _ExpiryTab extends ConsumerWidget {
       loading: () =>
           Center(child: CircularProgressIndicator(color: context.colors.primary)),
       error: (e, _) => Center(child: Text('Error: $e')),
+    );
+  }
+
+  Future<void> _showAdjustmentDialog(BuildContext context, WidgetRef ref, dynamic bwp) async {
+    final qtyCtrl = TextEditingController(text: bwp.batch.currentStock.toString());
+    final notesCtrl = TextEditingController();
+    AdjustmentType selectedType = AdjustmentType.expiredReturned;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: context.colors.surfaceElevated,
+              title: Text('Process Expired Stock', style: TextStyle(fontSize: 18)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Product: ${bwp.product.name}', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text('Batch: ${bwp.batch.batchNumber}', style: TextStyle(fontSize: 12, color: context.colors.textMuted)),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: qtyCtrl,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Quantity to Remove',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    DropdownButtonFormField<AdjustmentType>(
+                      value: selectedType,
+                      decoration: InputDecoration(
+                        labelText: 'Action Taken',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      items: [
+                        DropdownMenuItem(value: AdjustmentType.expiredReturned, child: Text('Returned to Supplier')),
+                        DropdownMenuItem(value: AdjustmentType.expiredDisposed, child: Text('Disposed / Thrown Away')),
+                        DropdownMenuItem(value: AdjustmentType.other, child: Text('Other')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setState(() => selectedType = val);
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: notesCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Notes (Optional)',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel')),
+                ElevatedButton(
+                  onPressed: () async {
+                    final qty = int.tryParse(qtyCtrl.text) ?? 0;
+                    if (qty <= 0 || qty > bwp.batch.currentStock) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Invalid quantity')));
+                      return;
+                    }
+                    try {
+                      await ref.read(inventoryAdjustmentDaoProvider).processAdjustment(
+                        batchId: bwp.batch.id,
+                        quantity: qty,
+                        type: selectedType,
+                        notes: notesCtrl.text.trim().isEmpty ? null : notesCtrl.text.trim(),
+                      );
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Stock adjusted successfully')));
+                      }
+                    } catch (e) {
+                      if (ctx.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                    }
+                  },
+                  child: Text('Confirm'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -425,6 +537,122 @@ class _BackupTabState extends ConsumerState<_BackupTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _PnLTab extends ConsumerWidget {
+  const _PnLTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // We are defaulting to "Last 30 Days" as per plan
+    final pnlAsync = ref.watch(profitLossStatsProvider(30));
+
+    return pnlAsync.when(
+      data: (stats) {
+        final hasLosses = stats.lossMakers.isNotEmpty;
+        return ListView(
+          padding: EdgeInsets.all(16),
+          children: [
+            Text('Last 30 Days Summary', style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.bold)),
+            SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(child: _StatCard(title: 'Revenue', amount: stats.revenue, color: context.colors.primary)),
+                SizedBox(width: 12),
+                Expanded(child: _StatCard(title: 'COGS', amount: stats.cogs, color: context.colors.warning)),
+              ],
+            ),
+            SizedBox(height: 12),
+            _StatCard(title: 'Gross Profit', amount: stats.grossProfit, color: stats.grossProfit >= 0 ? context.colors.success : context.colors.error),
+            SizedBox(height: 24),
+            
+            Text('Loss Makers & Low Margins (< 5%)', style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.bold)),
+            SizedBox(height: 12),
+            if (!hasLosses)
+              Container(
+                padding: EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: context.colors.success.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.colors.success.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.thumb_up_outlined, color: context.colors.success),
+                    SizedBox(width: 12),
+                    Expanded(child: Text('All products sold with good margins!', style: TextStyle(color: context.colors.success))),
+                  ],
+                ),
+              )
+            else
+              ...stats.lossMakers.map((lm) {
+                final margin = lm.soldPrice > 0 ? (lm.profit / lm.soldPrice * 100).toStringAsFixed(1) : 'N/A';
+                return Container(
+                  margin: EdgeInsets.only(bottom: 8),
+                  padding: EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: context.colors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: lm.profit < 0 ? context.colors.error.withValues(alpha: 0.5) : context.colors.warning.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(lm.profit < 0 ? Icons.trending_down : Icons.warning_amber_rounded, color: lm.profit < 0 ? context.colors.error : context.colors.warning),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(lm.productName, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w600)),
+                            Text('Revenue: ₹${lm.soldPrice.toStringAsFixed(2)} | Cost: ₹${lm.costPrice.toStringAsFixed(2)}', style: TextStyle(color: context.colors.textMuted, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text('₹${lm.profit.toStringAsFixed(2)}', style: TextStyle(color: lm.profit < 0 ? context.colors.error : context.colors.warning, fontWeight: FontWeight.bold)),
+                          Text('$margin%', style: TextStyle(color: context.colors.textSecondary, fontSize: 11)),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }),
+          ],
+        );
+      },
+      loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
+      error: (e, _) => Center(child: Text('Error: $e', style: TextStyle(color: context.colors.error))),
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  final String title;
+  final double amount;
+  final Color color;
+  const _StatCard({required this.title, required this.amount, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
+          SizedBox(height: 8),
+          Text('₹${amount.toStringAsFixed(2)}', style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.bold)),
+        ],
+      ),
     );
   }
 }

@@ -18,16 +18,31 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
   StockBatchesDao(super.db);
 
   /// All batches for a product, sorted by nearest expiry first (FEFO).
+  Future<List<StockBatch>> getLowStockBatches(int threshold) {
+    return (select(stockBatches)
+          ..where((b) => 
+              b.currentStock.isSmallerOrEqualValue(threshold) & 
+              b.isDeleted.equals(false)))
+        .get();
+  }
+
+  Future<void> deleteBatch(int batchId) async {
+    await (update(stockBatches)..where((b) => b.id.equals(batchId)))
+        .write(StockBatchesCompanion(isDeleted: const Value(true)));
+  }
+
   Future<List<StockBatch>> getBatchesForProduct(int productId) =>
       (select(stockBatches)
             ..where((b) =>
-                b.productId.equals(productId) & b.currentStock.isBiggerThanValue(0))
+                b.productId.equals(productId) & 
+                b.currentStock.isBiggerThanValue(0) &
+                b.isDeleted.equals(false))
             ..orderBy([(b) => OrderingTerm.asc(b.expiryDate)]))
           .get();
 
   Stream<List<StockBatch>> watchBatchesForProduct(int productId) =>
       (select(stockBatches)
-            ..where((b) => b.productId.equals(productId))
+            ..where((b) => b.productId.equals(productId) & b.isDeleted.equals(false))
             ..orderBy([(b) => OrderingTerm.asc(b.expiryDate)]))
           .watch();
 
@@ -35,7 +50,9 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
   Future<BatchWithProduct?> findByBarcode(String barcode) async {
     final batch = await (select(stockBatches)
           ..where(
-              (b) => b.barcode.equals(barcode) & b.currentStock.isBiggerThanValue(0))
+              (b) => b.barcode.equals(barcode) & 
+                     b.currentStock.isBiggerThanValue(0) & 
+                     b.isDeleted.equals(false))
           ..orderBy([(b) => OrderingTerm.asc(b.expiryDate)])
           ..limit(1))
         .getSingleOrNull();
@@ -69,6 +86,16 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
         .write(StockBatchesCompanion(currentStock: Value(newStock)));
   }
 
+  /// Add stock back (used when cancelling a sale).
+  Future<void> addStock(int batchId, int qty) async {
+    final batch = await (select(stockBatches)
+          ..where((b) => b.id.equals(batchId)))
+        .getSingle();
+    final newStock = batch.currentStock + qty;
+    await (update(stockBatches)..where((b) => b.id.equals(batchId)))
+        .write(StockBatchesCompanion(currentStock: Value(newStock)));
+  }
+
   /// Batches expiring within [days] days.
   Future<List<BatchWithProduct>> getExpiringBatches(int days) async {
     final cutoff = DateTime.now().add(Duration(days: days));
@@ -87,6 +114,23 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
       if (p != null) result.add(BatchWithProduct(batch: b, product: p));
     }
     return result;
+  }
+
+  Stream<List<BatchWithProduct>> watchExpiringBatches(int days) {
+    final cutoff = DateTime.now().add(Duration(days: days));
+    final query = select(stockBatches).join([
+      innerJoin(products, products.id.equalsExp(stockBatches.productId))
+    ])
+      ..where(stockBatches.expiryDate.isSmallerThanValue(cutoff) &
+          stockBatches.currentStock.isBiggerThanValue(0))
+      ..orderBy([OrderingTerm.asc(stockBatches.expiryDate)]);
+
+    return query.watch().map((rows) => rows
+        .map((row) => BatchWithProduct(
+              batch: row.readTable(stockBatches),
+              product: row.readTable(products),
+            ))
+        .toList());
   }
 
   /// Aggregate stock level per product (for shortbook).

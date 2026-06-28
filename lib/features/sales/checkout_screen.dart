@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 import '../../core/database/tables/products_table.dart';
 import '../../core/database/tables/sales_tables.dart';
 import '../../core/providers.dart';
@@ -7,6 +8,7 @@ import '../../core/services/checkout_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/receipt_composer.dart';
+import '../../core/utils/pdf_invoice_generator.dart';
 import 'package:share_plus/share_plus.dart';
 import 'new_sale_screen.dart';
 
@@ -224,6 +226,39 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                               ),
                             ),
                           ],
+                        ),
+                        SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              final invoiceId = _result!.invoiceId;
+                              final invoice = await ref.read(salesDaoProvider).getInvoiceById(invoiceId);
+                              if (invoice == null) return;
+                              final items = (_checkedOutItems ?? []).map((i) => ReceiptLineItem(
+                                productName: i.productName,
+                                batchNumber: i.batchNumber,
+                                quantity: i.quantity,
+                                mrp: i.mrp,
+                                discountPercent: i.discountPercent,
+                                gstPercent: i.gstPercentage,
+                                lineTotal: i.lineTotal,
+                                hsnCode: i.hsnCode,
+                                packagingUnit: i.packagingUnit,
+                                alternativeName: i.alternativeName,
+                              )).toList();
+                              
+                              await Printing.layoutPdf(
+                                onLayout: (format) => PdfInvoiceGenerator.generate(invoice, items),
+                                name: 'Invoice_${invoice.invoiceNumber}.pdf',
+                              );
+                            },
+                            icon: Icon(Icons.print, size: 18),
+                            label: Text('Print / PDF Receipt'),
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
                         ),
                         SizedBox(height: 12),
                       ] else ...[

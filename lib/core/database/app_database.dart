@@ -8,12 +8,14 @@ import 'tables/stock_batches_table.dart';
 import 'tables/suppliers_table.dart';
 import 'tables/supplier_ledgers_table.dart';
 import 'tables/sales_tables.dart';
+import 'tables/inventory_adjustments_table.dart';
 
 import 'daos/products_dao.dart';
 import 'daos/stock_batches_dao.dart';
 import 'daos/suppliers_dao.dart';
 import 'daos/supplier_ledger_dao.dart';
 import 'daos/sales_dao.dart';
+import 'daos/inventory_adjustment_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -27,6 +29,7 @@ part 'app_database.g.dart';
     SupplierLedgers,
     SalesInvoices,
     SalesInvoiceItems,
+    InventoryAdjustments,
   ],
   daos: [
     ProductsDao,
@@ -34,13 +37,14 @@ part 'app_database.g.dart';
     SuppliersDao,
     SupplierLedgerDao,
     SalesDao,
+    InventoryAdjustmentDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -68,6 +72,20 @@ class AppDatabase extends _$AppDatabase {
           } else if (from == 5) {
             // Recreate products table to apply column removals (composition, rackLocation, minStockThreshold)
             await m.alterTable(TableMigration(products));
+          }
+          if (from < 7) {
+            await m.addColumn(products, products.productType);
+          }
+          if (from < 8) {
+            await m.createTable(inventoryAdjustments);
+          }
+          if (from < 9) {
+            await m.addColumn(products, products.isDeleted);
+            await m.addColumn(productCategories, productCategories.isDeleted);
+            await m.addColumn(suppliers, suppliers.isDeleted);
+          }
+          if (from < 10) {
+            await m.addColumn(stockBatches, stockBatches.isDeleted);
           }
         },
       );

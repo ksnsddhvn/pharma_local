@@ -16,6 +16,7 @@ class DashboardScreen extends ConsumerWidget {
     final shortbookCount = ref.watch(shortbookCountProvider);
     final expiringCount = ref.watch(expiringBatchesCountProvider);
     final weeklySales = ref.watch(weeklySalesProvider);
+    final paymentBreakdown = ref.watch(paymentModeBreakdownProvider);
 
     return Scaffold(
       backgroundColor: context.colors.background,
@@ -90,6 +91,10 @@ class DashboardScreen extends ConsumerWidget {
 
                 // 7-day sales chart
                 _WeeklySalesChart(weeklySales: weeklySales),
+                SizedBox(height: 24),
+                
+                // Payment Breakdown Chart
+                _PaymentModePieChart(breakdown: paymentBreakdown),
                 SizedBox(height: 24),
 
                 // Quick Actions
@@ -415,6 +420,81 @@ class _ActionTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PaymentModePieChart extends StatelessWidget {
+  final AsyncValue<Map<String, double>> breakdown;
+  const _PaymentModePieChart({required this.breakdown});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: context.colors.surfaceBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '30-Day Payment Methods',
+            style: TextStyle(
+              color: context.colors.textPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 16),
+          SizedBox(
+            height: 150,
+            child: breakdown.when(
+              data: (data) {
+                if (data.isEmpty || data.values.every((v) => v == 0)) {
+                  return Center(child: Text('No data yet', style: TextStyle(color: context.colors.textSecondary)));
+                }
+                return _buildChart(context, data);
+              },
+              loading: () => Center(child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.primary)),
+              error: (_, __) => Center(child: Text('Chart unavailable')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChart(BuildContext context, Map<String, double> data) {
+    final colors = [
+      context.colors.primary,
+      context.colors.info,
+      context.colors.success,
+      context.colors.warning,
+      context.colors.expiryCritical,
+    ];
+
+    int i = 0;
+    final sections = data.entries.where((e) => e.value > 0).map((e) {
+      final color = colors[i % colors.length];
+      i++;
+      return PieChartSectionData(
+        value: e.value,
+        title: '${e.key}\n${AppFormatters.currency(e.value)}',
+        titleStyle: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+        color: color,
+        radius: 60,
+      );
+    }).toList();
+
+    return PieChart(
+      PieChartData(
+        sections: sections,
+        centerSpaceRadius: 20,
+        sectionsSpace: 2,
       ),
     );
   }

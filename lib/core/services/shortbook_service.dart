@@ -42,4 +42,12 @@ class ShortbookService {
 
     return result;
   }
+
+  Stream<List<ShortbookItem>> watchShortbookItems() {
+    // Watch stock batches and products tables for changes
+    // When either changes, recalculate the shortbook
+    return db.select(db.stockBatches).watch().asyncMap((_) async {
+      return await getShortbookItems();
+    });
+  }
 }

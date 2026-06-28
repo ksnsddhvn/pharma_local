@@ -17,4 +17,6 @@ class StockBatches extends Table {
   TextColumn get barcode => text().nullable()(); // optional EAN/UPC barcode
   BoolColumn get isOpeningStock =>
       boolean().withDefault(Constant(false))(); // TRUE = legacy shelf stock
+  BoolColumn get isDeleted => 
+      boolean().withDefault(Constant(false))(); // TRUE = archived
 }

@@ -11,8 +11,8 @@ final _supplierLedgerFamily = StreamProvider.family<List<SupplierLedger>, int>((
   return ref.watch(supplierLedgerDaoProvider).watchLedgerForSupplier(id);
 });
 
-final _supplierDetailFamily = FutureProvider.family<Supplier?, int>((ref, id) {
-  return ref.watch(suppliersDaoProvider).getSupplierById(id);
+final _supplierDetailFamily = StreamProvider.family<Supplier?, int>((ref, id) {
+  return ref.watch(suppliersDaoProvider).watchSupplierById(id);
 });
 
 class SupplierDetailScreen extends ConsumerWidget {
@@ -33,13 +33,54 @@ class SupplierDetailScreen extends ConsumerWidget {
           error: (_, __) => Text('Supplier'),
         ),
         actions: [
-          TextButton.icon(
-            onPressed: () => _showPaymentSheet(context, ref),
-            icon: Icon(Icons.payment_outlined,
-                color: context.colors.primary, size: 18),
-            label: Text('Pay',
-                style: TextStyle(
-                    color: context.colors.primary, fontWeight: FontWeight.w600)),
+          supplierAsync.when(
+            data: (s) => TextButton.icon(
+              onPressed: () => _showPaymentSheet(context, ref, s?.currentBalance ?? 0),
+              icon: Icon(Icons.payment_outlined,
+                  color: context.colors.primary, size: 18),
+              label: Text('Pay',
+                  style: TextStyle(
+                      color: context.colors.primary, fontWeight: FontWeight.w600)),
+            ),
+            loading: () => SizedBox.shrink(),
+            error: (_, __) => SizedBox.shrink(),
+          ),
+          supplierAsync.when(
+            data: (s) => IconButton(
+              icon: Icon(Icons.delete_outline, color: context.colors.error),
+              tooltip: 'Delete Supplier',
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: context.colors.surfaceElevated,
+                    title: Text('Delete Supplier?'),
+                    content: Text('This will permanently archive the supplier. Are you sure?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
+                        child: Text('Delete', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  try {
+                    await ref.read(suppliersDaoProvider).deleteSupplier(supplierId);
+                    if (context.mounted) {
+                      Navigator.pop(context); // Go back to list
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Supplier deleted')));
+                    }
+                  } catch (e) {
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              },
+            ),
+            loading: () => SizedBox.shrink(),
+            error: (_, __) => SizedBox.shrink(),
           ),
         ],
       ),
@@ -166,8 +207,9 @@ class SupplierDetailScreen extends ConsumerWidget {
     );
   }
 
-  void _showPaymentSheet(BuildContext context, WidgetRef ref) {
-    final amtCtrl = TextEditingController();
+  void _showPaymentSheet(BuildContext context, WidgetRef ref, double currentBalance) {
+    final defaultAmount = currentBalance > 0 ? currentBalance.toStringAsFixed(2) : '';
+    final amtCtrl = TextEditingController(text: defaultAmount);
     final noteCtrl = TextEditingController();
     LedgerTxType type = LedgerTxType.cashPaid;
 
@@ -267,12 +309,12 @@ class SupplierDetailScreen extends ConsumerWidget {
   }
 }
 
-class _LedgerTile extends StatelessWidget {
+class _LedgerTile extends ConsumerWidget {
   final SupplierLedger entry;
   const _LedgerTile({required this.entry});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isCredit = entry.transactionType == LedgerTxType.creditPurchase;
     final (label, color, icon) = isCredit
         ? ('Purchase', context.colors.error, Icons.arrow_downward_rounded)
@@ -338,6 +380,41 @@ class _LedgerTile extends StatelessWidget {
                     color: context.colors.textMuted, fontSize: 11),
               ),
             ],
+          ),
+          SizedBox(width: 8),
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: context.colors.error, size: 18),
+            padding: EdgeInsets.zero,
+            constraints: BoxConstraints(),
+            tooltip: 'Delete entry',
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (c) => AlertDialog(
+                  backgroundColor: context.colors.surfaceElevated,
+                  title: Text('Delete Transaction?'),
+                  content: Text('This will delete the transaction and revert the supplier balance.'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(c, false), child: Text('No')),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(c, true),
+                      style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
+                      child: Text('Yes, Delete', style: TextStyle(color: Colors.white)),
+                    ),
+                  ],
+                ),
+              );
+              if (confirm == true) {
+                try {
+                  await ref.read(supplierServiceProvider).deleteLedgerEntry(entry.id);
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Transaction deleted & balance reverted.')));
+                  }
+                } catch (e) {
+                  if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                }
+              }
+            },
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'database/app_database.dart';
 import 'database/daos/stock_batches_dao.dart';
 import 'services/inventory_service.dart';
+import 'database/daos/sales_dao.dart';
 import 'services/checkout_service.dart';
 import 'services/supplier_service.dart';
 import 'services/shortbook_service.dart';
@@ -55,8 +56,8 @@ final stockBatchesDaoProvider =
 final suppliersDaoProvider =
     Provider((ref) => ref.watch(databaseProvider).suppliersDao);
 
-final supplierLedgerDaoProvider =
-    Provider((ref) => ref.watch(databaseProvider).supplierLedgerDao);
+final supplierLedgerDaoProvider = Provider((ref) => ref.watch(databaseProvider).supplierLedgerDao);
+final inventoryAdjustmentDaoProvider = Provider((ref) => ref.watch(databaseProvider).inventoryAdjustmentDao);
 
 final salesDaoProvider =
     Provider((ref) => ref.watch(databaseProvider).salesDao);
@@ -93,25 +94,30 @@ final batchesForProductProvider = StreamProvider.family<List<StockBatch>, int>(
     (ref, productId) => ref.watch(stockBatchesDaoProvider).watchBatchesForProduct(productId));
 
 // ── Dashboard Data ────────────────────────────────────────────────────────────
-final todaysSalesTotalProvider = FutureProvider(
-    (ref) => ref.watch(salesDaoProvider).getTodaysSalesTotal());
+final todaysSalesTotalProvider = StreamProvider(
+    (ref) => ref.watch(salesDaoProvider).watchTodaysSalesTotal());
 
-final shortbookCountProvider = FutureProvider((ref) async {
-  final items = await ref.watch(shortbookServiceProvider).getShortbookItems();
-  return items.length;
+final shortbookCountProvider = StreamProvider((ref) {
+  return ref.watch(shortbookServiceProvider).watchShortbookItems().map((items) => items.length);
 });
 
-final shortbookItemsProvider = FutureProvider((ref) => 
-    ref.watch(shortbookServiceProvider).getShortbookItems());
+final shortbookItemsProvider = StreamProvider((ref) => 
+    ref.watch(shortbookServiceProvider).watchShortbookItems());
 
-final expiringBatchesCountProvider = FutureProvider((ref) async {
-  final batches =
-      await ref.watch(stockBatchesDaoProvider).getExpiringBatches(30);
-  return batches.length;
+final expiringBatchesCountProvider = StreamProvider((ref) {
+  return ref.watch(stockBatchesDaoProvider).watchExpiringBatches(30).map((batches) => batches.length);
 });
 
-final expiringBatchesProvider = FutureProvider.family<List<BatchWithProduct>, int>((ref, days) => 
-    ref.watch(stockBatchesDaoProvider).getExpiringBatches(days));
+final expiringBatchesProvider = StreamProvider.family<List<BatchWithProduct>, int>((ref, days) => 
+    ref.watch(stockBatchesDaoProvider).watchExpiringBatches(days));
 
-final weeklySalesProvider = FutureProvider(
-    (ref) => ref.watch(salesDaoProvider).getDailySalesTotals(7));
+final weeklySalesProvider = StreamProvider(
+    (ref) => ref.watch(salesDaoProvider).watchDailySalesTotals(7));
+
+final paymentModeBreakdownProvider = StreamProvider(
+    (ref) => ref.watch(salesDaoProvider).watchPaymentModeBreakdown(30));
+
+final profitLossStatsProvider = StreamProvider.family<ProfitLossStats, int>((ref, days) {
+  final from = DateTime.now().subtract(Duration(days: days));
+  return ref.watch(salesDaoProvider).watchProfitLossStats(from, DateTime.now());
+});

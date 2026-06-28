@@ -26,6 +26,8 @@ class InventoryService {
     String? barcode,
     String? invoiceNumber,
     String? referenceNote,
+    LedgerTxType? paymentMethod,
+    double? paymentAmount,
   }) async {
     await db.transaction(() async {
       // 1. Insert or update batch
@@ -84,8 +86,24 @@ class InventoryService {
         ),
       );
 
-      // 4. Update supplier balance
-      await db.suppliersDao.updateBalance(supplierId, newBalance);
+      // 4. Record immediate payment if applicable
+      var finalBalance = newBalance;
+      final pAmt = paymentAmount ?? invoiceAmount;
+      if (paymentMethod != null && pAmt > 0) {
+        finalBalance -= pAmt;
+        await db.supplierLedgerDao.insertEntry(
+          SupplierLedgersCompanion.insert(
+            supplierId: supplierId,
+            transactionType: paymentMethod,
+            amount: pAmt,
+            balanceAfter: finalBalance,
+            referenceNote: Value('Paid immediately on receipt'),
+          ),
+        );
+      }
+
+      // 5. Update supplier balance
+      await db.suppliersDao.updateBalance(supplierId, finalBalance);
     });
   }
 }

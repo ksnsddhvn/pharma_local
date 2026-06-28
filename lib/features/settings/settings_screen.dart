@@ -7,6 +7,8 @@ import 'package:path/path.dart' as p;
 
 import 'package:drift/drift.dart' hide Column;
 import '../../core/theme/app_theme.dart';
+import '../../core/database/tables/security_settings_table.dart';
+import 'archived_items_screen.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
 
@@ -40,6 +42,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     } else {
       await db.update(db.securitySettings).replace(
             current.copyWith(isAppLockEnabled: enable),
+          );
+    }
+    ref.invalidate(securitySettingsProvider);
+  }
+
+  Future<void> _toggleBiometric(bool enable, SecuritySetting? current) async {
+    final db = ref.read(databaseProvider);
+    if (current == null) {
+      await db.into(db.securitySettings).insert(
+            SecuritySettingsCompanion.insert(isBiometricEnabled: Value(enable)),
+          );
+    } else {
+      await db.update(db.securitySettings).replace(
+            current.copyWith(isBiometricEnabled: enable),
           );
     }
     ref.invalidate(securitySettingsProvider);
@@ -283,6 +299,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       activeColor: context.colors.primary,
                       onChanged: (v) => _toggleAppLock(v, settings),
                     ),
+                    if (isLocked) ...[
+                      Divider(height: 1, indent: 16, endIndent: 16, color: context.colors.surfaceBorder),
+                      SwitchListTile(
+                        title: Text('Enable Biometric Unlock', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
+                        subtitle: Text('Use Fingerprint/FaceID instead of PIN', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
+                        value: settings?.isBiometricEnabled ?? false,
+                        activeColor: context.colors.primary,
+                        onChanged: (v) => _toggleBiometric(v, settings),
+                      ),
+                    ],
                     Divider(height: 1, indent: 16, endIndent: 16, color: context.colors.surfaceBorder),
                     Padding(
                       padding: EdgeInsets.all(16.0),
@@ -340,6 +366,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       title: Text('Restore Database', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
                       subtitle: Text('Import data from a backup file', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
                       onTap: _restoreDB,
+                    ),
+                    Divider(height: 1, indent: 16, endIndent: 16, color: context.colors.surfaceBorder),
+                    ListTile(
+                      leading: Icon(Icons.archive, color: context.colors.textPrimary),
+                      title: Text('Archived Items', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
+                      subtitle: Text('Restore deleted products and suppliers', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => ArchivedItemsScreen()));
+                      },
                     ),
                   ],
                 ),

@@ -9,6 +9,8 @@ class Products extends Table {
   TextColumn get name => text().withLength(min: 1, max: 200)();
   TextColumn get hsnCode => text()(); // Mandatory Indian GST HSN code
   TextColumn get packagingUnit => text().withDefault(Constant("10's"))();
+  TextColumn get productType => text().withDefault(Constant('Tablet'))(); // v7
+  BoolColumn get isDeleted => boolean().withDefault(Constant(false))(); // v9
 
   IntColumn get categoryId => integer().nullable().references(ProductCategories, #id, onDelete: KeyAction.setNull)();
 

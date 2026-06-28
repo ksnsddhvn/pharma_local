@@ -36,4 +36,30 @@ class SupplierService {
       await db.suppliersDao.updateBalance(supplierId, newBalance);
     });
   }
+
+  /// Deletes a ledger entry and reverts the supplier's balance.
+  Future<void> deleteLedgerEntry(int entryId) async {
+    await db.transaction(() async {
+      // Get the entry
+      final entry = await (db.select(db.supplierLedgers)..where((l) => l.id.equals(entryId))).getSingleOrNull();
+      if (entry == null) return;
+
+      final supplier = await db.suppliersDao.getSupplierById(entry.supplierId);
+      if (supplier == null) return;
+
+      // Revert the balance
+      double newBalance = supplier.currentBalance;
+      if (entry.transactionType == LedgerTxType.creditPurchase) {
+        newBalance -= entry.amount; // Revert a purchase by subtracting
+      } else {
+        newBalance += entry.amount; // Revert a payment by adding back
+      }
+
+      // Delete the entry
+      await (db.delete(db.supplierLedgers)..where((l) => l.id.equals(entryId))).go();
+      
+      // Update supplier balance
+      await db.suppliersDao.updateBalance(entry.supplierId, newBalance);
+    });
+  }
 }

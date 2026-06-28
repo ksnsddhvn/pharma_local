@@ -8,6 +8,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/utils/receipt_composer.dart';
+import '../../core/utils/pdf_invoice_generator.dart';
+import 'package:printing/printing.dart';
 
 class SalesScreen extends ConsumerStatefulWidget {
   SalesScreen({super.key});
@@ -338,97 +340,168 @@ class _OutstandingAccountsTabState extends ConsumerState<_OutstandingAccountsTab
   }
 }
 
-Future<void> showReceiptDialog(BuildContext context, WidgetRef ref, SalesInvoice invoice) async {
-  final items = await ref.read(salesDaoProvider).getItemsForInvoice(invoice.id);
-  final receiptItems = items.map((i) => ReceiptLineItem(
-    productName: i.productName,
-    batchNumber: i.batchNumber,
-    quantity: i.totalTabletsSold,
-    mrp: i.mrpPerTablet,
-    discountPercent: i.discountPercent,
-    gstPercent: i.gstPercentage,
-    lineTotal: i.lineTotal,
-    hsnCode: '',
-    packagingUnit: i.packagingUnit,
-  )).toList();
-  
-  final receiptText = ReceiptComposer.generateWhatsAppInvoice(
-    invoice: invoice,
-    items: receiptItems,
-  );
-  
-  if (!context.mounted) return;
-
+void showReceiptDialog(BuildContext context, WidgetRef ref, SalesInvoice invoice) {
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (ctx) => SafeArea(
-      child: Container(
-        margin: EdgeInsets.all(16).copyWith(top: 40),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainer,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          children: [
-            AppBar(
-              title: Text('Receipt ${invoice.invoiceNumber}', style: TextStyle(fontSize: 16)),
-              automaticallyImplyLeading: false,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.close),
-                  onPressed: () => Navigator.pop(ctx),
-                )
+    builder: (ctx) => FutureBuilder<List<ReceiptLineItem>>(
+      future: ref.read(salesDaoProvider).getItemsForInvoice(invoice.id).then((items) {
+        return items.map((i) => ReceiptLineItem(
+          productName: i.productName,
+          batchNumber: i.batchNumber,
+          quantity: i.totalTabletsSold,
+          mrp: i.mrpPerTablet,
+          discountPercent: i.discountPercent,
+          gstPercent: i.gstPercentage,
+          lineTotal: i.lineTotal,
+          hsnCode: '',
+          packagingUnit: i.packagingUnit,
+        )).toList();
+      }),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return SafeArea(
+            child: Container(
+              height: 300,
+              margin: EdgeInsets.all(16).copyWith(top: 40),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainer,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        final receiptItems = snapshot.data ?? [];
+        final receiptText = ReceiptComposer.generateWhatsAppInvoice(
+          invoice: invoice,
+          items: receiptItems,
+        );
+
+        return SafeArea(
+          child: Container(
+            margin: EdgeInsets.all(16).copyWith(top: 40),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                AppBar(
+                  title: Text('Receipt ${invoice.invoiceNumber}', style: TextStyle(fontSize: 16)),
+                  automaticallyImplyLeading: false,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  actions: [
+                    IconButton(
+                      icon: Icon(Icons.delete_outline, color: context.colors.error),
+                      tooltip: 'Cancel Sale',
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: ctx,
+                          builder: (c) => AlertDialog(
+                            backgroundColor: context.colors.surfaceElevated,
+                            title: Text('Cancel Sale?'),
+                            content: Text('This will delete the invoice and return all items to inventory. This cannot be undone.'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.pop(c, false), child: Text('No')),
+                              ElevatedButton(
+                                onPressed: () => Navigator.pop(c, true),
+                                style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
+                                child: Text('Yes, Cancel Sale', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirm == true) {
+                          try {
+                            await ref.read(checkoutServiceProvider).cancelSale(invoice.id);
+                            if (ctx.mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Sale cancelled & stock restored.')));
+                            }
+                          } catch (e) {
+                            if (ctx.mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('Error: $e')));
+                          }
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close),
+                      onPressed: () => Navigator.pop(ctx),
+                    )
+                  ],
+                ),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(12),
+                    margin: EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: SingleChildScrollView(
+                      child: SelectableText(
+                        receiptText,
+                        style: TextStyle(fontFamily: 'monospace', fontSize: 11),
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () => Share.share(receiptText),
+                              icon: Icon(Icons.share, size: 18),
+                              label: Text('Share'),
+                            ),
+                          ),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                final phone = invoice.customerMobile.trim().isEmpty ? null : '91${invoice.customerMobile.trim().replaceAll(RegExp(r'[^0-9]'), '')}';
+                                ReceiptComposer.launchWhatsApp(text: receiptText, phone: phone);
+                              },
+                              icon: Icon(Icons.chat, size: 18),
+                              label: Text('WhatsApp'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            await Printing.layoutPdf(
+                              onLayout: (format) => PdfInvoiceGenerator.generate(invoice, receiptItems),
+                              name: 'Invoice_${invoice.invoiceNumber}.pdf',
+                            );
+                          },
+                          icon: Icon(Icons.print, size: 18),
+                          label: Text('Print / PDF Receipt'),
+                          style: OutlinedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(12),
-                margin: EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: SingleChildScrollView(
-                  child: SelectableText(
-                    receiptText,
-                    style: TextStyle(fontFamily: 'monospace', fontSize: 11),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => Share.share(receiptText),
-                      icon: Icon(Icons.share, size: 18),
-                      label: Text('Share'),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                         final phone = invoice.customerMobile.trim().isEmpty ? null : '91${invoice.customerMobile.trim().replaceAll(RegExp(r'[^0-9]'), '')}';
-                         ReceiptComposer.launchWhatsApp(text: receiptText, phone: phone);
-                      },
-                      icon: Icon(Icons.chat, size: 18),
-                      label: Text('WhatsApp'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     ),
   );
 }

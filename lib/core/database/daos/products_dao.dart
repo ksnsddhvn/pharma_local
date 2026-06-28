@@ -11,10 +11,10 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
 
   /// All products ordered by name.
   Stream<List<Product>> watchAllProducts() =>
-      (select(products)..orderBy([(p) => OrderingTerm.asc(p.name)])).watch();
+      (select(products)..where((p) => p.isDeleted.equals(false))..orderBy([(p) => OrderingTerm.asc(p.name)])).watch();
 
   Future<List<Product>> getAllProducts() =>
-      (select(products)..orderBy([(p) => OrderingTerm.asc(p.name)])).get();
+      (select(products)..where((p) => p.isDeleted.equals(false))..orderBy([(p) => OrderingTerm.asc(p.name)])).get();
 
   /// Exact or prefix search for the search screen.
   Future<List<Product>> searchProducts(String query) {
@@ -22,8 +22,9 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
     return (select(products)
           ..where(
             (p) =>
+                p.isDeleted.equals(false) & (
                 p.name.lower().contains(q) |
-                p.hsnCode.lower().contains(q),
+                p.hsnCode.lower().contains(q)),
           )
           ..orderBy([(p) => OrderingTerm.asc(p.name)])
           ..limit(100))
@@ -42,5 +43,5 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
       update(products).replace(entry);
 
   Future<int> deleteProduct(int id) =>
-      (delete(products)..where((p) => p.id.equals(id))).go();
+      (update(products)..where((p) => p.id.equals(id))).write(ProductsCompanion(isDeleted: Value(true)));
 }

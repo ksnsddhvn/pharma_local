@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
 import '../app_database.dart';
 import '../tables/sales_tables.dart';
+import '../tables/stock_batches_table.dart';
+import '../tables/products_table.dart';
 
 part 'sales_dao.g.dart';
 
-@DriftAccessor(tables: [SalesInvoices, SalesInvoiceItems])
+@DriftAccessor(tables: [SalesInvoices, SalesInvoiceItems, StockBatches, Products])
 class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
   SalesDao(super.db);
 
@@ -59,6 +61,9 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
     );
   }
 
+  Stream<List<SalesInvoice>> watchInvoicesForDateRange(DateTime start, DateTime end) =>
+      (select(salesInvoices)..where((i) => i.createdAt.isBetweenValues(start, end))).watch();
+
   /// Daily sales totals for dashboard chart.
   Future<Map<DateTime, double>> getDailySalesTotals(int days) async {
     final from = DateTime.now().subtract(Duration(days: days));
@@ -72,6 +77,18 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
     return map;
   }
 
+  Stream<Map<DateTime, double>> watchDailySalesTotals(int days) {
+    final from = DateTime.now().subtract(Duration(days: days));
+    return watchInvoicesForDateRange(from, DateTime.now()).map((invoices) {
+      final map = <DateTime, double>{};
+      for (final inv in invoices) {
+        final day = DateTime(inv.createdAt.year, inv.createdAt.month, inv.createdAt.day);
+        map[day] = (map[day] ?? 0.0) + inv.totalAmount;
+      }
+      return map;
+    });
+  }
+
   /// Today's total sales amount.
   Future<double> getTodaysSalesTotal() async {
     final now = DateTime.now();
@@ -81,4 +98,131 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
         await getInvoicesForDateRange(startOfDay, endOfDay);
     return invoices.fold<double>(0.0, (sum, inv) => sum + inv.totalAmount);
   }
+
+  Stream<double> watchTodaysSalesTotal() {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(Duration(days: 1));
+    return watchInvoicesForDateRange(startOfDay, endOfDay)
+        .map((invoices) => invoices.fold<double>(0.0, (sum, inv) => sum + inv.totalAmount));
+  }
+
+  /// Breakdown of sales by payment mode over the last N days
+  Future<Map<String, double>> getPaymentModeBreakdown(int days) async {
+    final from = DateTime.now().subtract(Duration(days: days));
+    final invoices = await getInvoicesForDateRange(from, DateTime.now());
+    final map = <String, double>{};
+    for (final inv in invoices) {
+      final mode = inv.paymentMode.name;
+      map[mode] = (map[mode] ?? 0.0) + inv.totalAmount;
+    }
+    return map;
+  }
+
+  Stream<Map<String, double>> watchPaymentModeBreakdown(int days) {
+    final from = DateTime.now().subtract(Duration(days: days));
+    return watchInvoicesForDateRange(from, DateTime.now()).map((invoices) {
+      final map = <String, double>{};
+      for (final inv in invoices) {
+        final mode = inv.paymentMode.name;
+        map[mode] = (map[mode] ?? 0.0) + inv.totalAmount;
+      }
+      return map;
+    });
+  }
+
+  Stream<ProfitLossStats> watchProfitLossStats(DateTime from, DateTime to) {
+    return select(salesInvoices).watch().asyncMap((_) async {
+      return await getProfitLossStats(from, to);
+    });
+  }
+
+  /// Calculates exact Profit and Loss for a given date range
+  Future<ProfitLossStats> getProfitLossStats(DateTime from, DateTime to) async {
+    final invoices = await getInvoicesForDateRange(from, to);
+    final invoiceIds = invoices.map((i) => i.id).toList();
+
+    if (invoiceIds.isEmpty) {
+      return ProfitLossStats(0, 0, 0, []);
+    }
+
+    final query = select(salesInvoiceItems).join([
+      innerJoin(stockBatches, stockBatches.id.equalsExp(salesInvoiceItems.batchId)),
+      innerJoin(products, products.id.equalsExp(salesInvoiceItems.productId)),
+    ])..where(salesInvoiceItems.invoiceId.isIn(invoiceIds));
+
+    final rows = await query.get();
+
+    double totalRevenue = 0.0;
+    double totalCogs = 0.0;
+    List<LossItem> lossMakers = [];
+
+    for (final row in rows) {
+      final item = row.readTable(salesInvoiceItems);
+      final batch = row.readTable(stockBatches);
+      final product = row.readTable(products);
+
+      int perStrip = 1;
+      final unitStr = product.packagingUnit.toLowerCase();
+      if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
+        final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
+        perStrip = int.tryParse(numStr) ?? 1;
+      }
+      if (perStrip <= 0) perStrip = 1;
+
+      final double costPerTablet = batch.purchaseRate / perStrip;
+      final double itemCogs = item.totalTabletsSold * costPerTablet;
+      final double itemRevenue = item.lineTotal;
+
+      totalRevenue += itemRevenue;
+      totalCogs += itemCogs;
+
+      final double profit = itemRevenue - itemCogs;
+      // Mark as loss maker if profit margin is less than 5% or it's a loss
+      if (profit <= 0 || (itemRevenue > 0 && profit / itemRevenue < 0.05)) {
+        lossMakers.add(LossItem(product.name, profit, itemRevenue, itemCogs));
+      }
+    }
+
+    final map = <String, LossItem>{};
+    for (final lm in lossMakers) {
+      if (map.containsKey(lm.productName)) {
+        final existing = map[lm.productName]!;
+        map[lm.productName] = LossItem(
+          lm.productName,
+          existing.profit + lm.profit,
+          existing.soldPrice + lm.soldPrice,
+          existing.costPrice + lm.costPrice,
+        );
+      } else {
+        map[lm.productName] = lm;
+      }
+    }
+    
+    final aggregatedLossMakers = map.values.toList()
+      ..sort((a, b) => a.profit.compareTo(b.profit));
+
+    return ProfitLossStats(
+      totalRevenue,
+      totalCogs,
+      totalRevenue - totalCogs,
+      aggregatedLossMakers,
+    );
+  }
+}
+
+class ProfitLossStats {
+  final double revenue;
+  final double cogs;
+  final double grossProfit;
+  final List<LossItem> lossMakers;
+  ProfitLossStats(this.revenue, this.cogs, this.grossProfit, this.lossMakers);
+}
+
+class LossItem {
+  final String productName;
+  final double profit;
+  final double soldPrice;
+  final double costPrice;
+  LossItem(this.productName, this.profit, this.soldPrice, this.costPrice);
 }

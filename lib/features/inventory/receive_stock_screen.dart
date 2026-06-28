@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import '../../core/database/tables/supplier_ledgers_table.dart';
 import '../../core/services/inventory_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
@@ -25,6 +26,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
   final _mrpCtrl = TextEditingController();
   final _rateCtrl = TextEditingController();
   final _invoiceAmtCtrl = TextEditingController();
+  final _paidAmountCtrl = TextEditingController();
   final _invoiceNoCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
@@ -33,6 +35,15 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
   bool _loading = false;
   bool _showSearch = false;
   bool _isOpeningStock = false;
+  LedgerTxType? _paymentMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    _qtyCtrl.addListener(_autoCalculateInvoiceAmount);
+    _rateCtrl.addListener(_autoCalculateInvoiceAmount);
+    _gstCtrl.addListener(_autoCalculateInvoiceAmount);
+  }
 
   @override
   void dispose() {
@@ -41,11 +52,52 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
     _mrpCtrl.dispose();
     _rateCtrl.dispose();
     _invoiceAmtCtrl.dispose();
+    _paidAmountCtrl.dispose();
     _invoiceNoCtrl.dispose();
     _noteCtrl.dispose();
     _searchCtrl.dispose();
     _gstCtrl.dispose();
+    
+    _qtyCtrl.removeListener(_autoCalculateInvoiceAmount);
+    _rateCtrl.removeListener(_autoCalculateInvoiceAmount);
+    _gstCtrl.removeListener(_autoCalculateInvoiceAmount);
+    
     super.dispose();
+  }
+
+  void _autoCalculateInvoiceAmount() {
+    if (_selectedProduct == null) return;
+    
+    final qty = int.tryParse(_qtyCtrl.text) ?? 0;
+    final rate = double.tryParse(_rateCtrl.text) ?? 0.0;
+    final gst = double.tryParse(_gstCtrl.text) ?? 0.0;
+
+    if (qty == 0 || rate == 0) {
+      _invoiceAmtCtrl.text = '0.00';
+      return;
+    }
+
+    int perStrip = 1;
+    final unitStr = _selectedProduct!.packagingUnit.toLowerCase();
+    if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
+      final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
+      perStrip = int.tryParse(numStr) ?? 1;
+    }
+    if (perStrip <= 0) perStrip = 1;
+
+    final double totalStrips = qty / perStrip;
+    
+    if (qty > 0 && rate > 0) {
+      final invoiceAmt = totalStrips * rate + (totalStrips * rate * gst / 100);
+      _invoiceAmtCtrl.text = invoiceAmt.toStringAsFixed(2);
+      
+      // Keep paid amount in sync if paying in full automatically
+      if (_paymentMethod != null && _paidAmountCtrl.text.isEmpty) {
+        _paidAmountCtrl.text = _invoiceAmtCtrl.text;
+      }
+    } else {
+      _invoiceAmtCtrl.text = '0.00';
+    }
   }
 
   Future<void> _pickExpiry() async {
@@ -71,6 +123,21 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
           content: Text('Please select a product'),
           backgroundColor: context.colors.warning));
       return;
+    }
+    if (!_isOpeningStock) {
+      if (_invoiceAmtCtrl.text.isEmpty ||
+          double.tryParse(_invoiceAmtCtrl.text) == null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Invalid invoice amount')));
+        return;
+      }
+      if (_paymentMethod != null) {
+        if (_paidAmountCtrl.text.isEmpty || double.tryParse(_paidAmountCtrl.text) == null) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text('Invalid paid amount')));
+          return;
+        }
+      }
     }
     if (!_isOpeningStock && _selectedSupplierId == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -101,12 +168,11 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
               quantity: int.parse(_qtyCtrl.text),
               supplierId: _selectedSupplierId!,
               invoiceAmount: double.parse(_invoiceAmtCtrl.text),
-              invoiceNumber: _invoiceNoCtrl.text.trim().isEmpty
-                  ? null
-                  : _invoiceNoCtrl.text.trim(),
-              referenceNote: _noteCtrl.text.trim().isEmpty
-                  ? null
-                  : _noteCtrl.text.trim(),
+              barcode: _batchCtrl.text.trim(),
+              invoiceNumber: _invoiceNoCtrl.text.trim(),
+              referenceNote: _noteCtrl.text.trim(),
+              paymentMethod: _paymentMethod,
+              paymentAmount: _paymentMethod != null ? double.parse(_paidAmountCtrl.text) : null,
             );
       }
 
@@ -300,7 +366,11 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                               context: context,
                               isScrollControlled: true,
                               backgroundColor: context.colors.surfaceElevated,
-                              builder: (ctx) => TabletCalculatorSheet(productName: _selectedProduct!.name, packagingUnit: _selectedProduct!.packagingUnit),
+                              builder: (ctx) => TabletCalculatorSheet(
+                                productName: _selectedProduct!.name,
+                                packagingUnit: _selectedProduct!.packagingUnit,
+                                productType: _selectedProduct!.productType,
+                              ),
                             );
                             if (qty != null) {
                               _qtyCtrl.text = qty.toString();
@@ -308,8 +378,14 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                           },
                           keyboardType: TextInputType.number,
                           style: TextStyle(color: context.colors.textPrimary),
-                          decoration:
-                              InputDecoration(labelText: 'Quantity *', hintText: 'Tap to calculate'),
+                          decoration: InputDecoration(
+                            labelText: _selectedProduct == null 
+                                ? 'Quantity *' 
+                                : (_selectedProduct!.productType == 'Tablet' || _selectedProduct!.productType == 'Capsule')
+                                    ? 'Total Tablets/Capsules *'
+                                    : 'Total ${_selectedProduct!.productType}s *',
+                            hintText: 'Tap to calculate',
+                          ),
                           validator: (v) =>
                               int.tryParse(v ?? '') == null ? 'Invalid' : null,
                         ),
@@ -358,8 +434,12 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                               value: s.id,
                               child: Text(s.name)))
                           .toList(),
-                      onChanged: (v) =>
-                          setState(() => _selectedSupplierId = v),
+                      onChanged: (v) {
+                        setState(() {
+                          _selectedSupplierId = v;
+                        });
+                        _autoCalculateInvoiceAmount();
+                      },
                     ),
                   ),
                 ),
@@ -383,11 +463,13 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                   children: [
                     TextFormField(
                       controller: _invoiceAmtCtrl,
-                      keyboardType:
-                          TextInputType.numberWithOptions(decimal: true),
+                      readOnly: true,
                       style: TextStyle(color: context.colors.textPrimary),
-                      decoration:
-                          InputDecoration(labelText: 'Invoice Amount (₹) *'),
+                      decoration: InputDecoration(
+                        labelText: 'Invoice Amount (Auto-Calculated) (₹)',
+                        filled: true,
+                        fillColor: context.colors.background,
+                      ),
                       validator: (v) =>
                           double.tryParse(v ?? '') == null ? 'Invalid' : null,
                     ),
@@ -405,6 +487,43 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                       decoration: InputDecoration(
                           labelText: 'Reference Note'),
                     ),
+                    SizedBox(height: 12),
+                    DropdownButtonFormField<LedgerTxType?>(
+                      value: _paymentMethod,
+                      dropdownColor: context.colors.surfaceElevated,
+                      decoration: InputDecoration(
+                        labelText: 'Payment Status',
+                        filled: true,
+                        fillColor: context.colors.background,
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: null, child: Text('Unpaid (Credit)')),
+                        DropdownMenuItem(value: LedgerTxType.cashPaid, child: Text('Paid in Cash')),
+                        DropdownMenuItem(value: LedgerTxType.upiPaid, child: Text('Paid via UPI')),
+                      ],
+                      onChanged: (v) {
+                        setState(() {
+                          _paymentMethod = v;
+                          if (v != null && _paidAmountCtrl.text.isEmpty) {
+                            _paidAmountCtrl.text = _invoiceAmtCtrl.text;
+                          }
+                        });
+                      },
+                    ),
+                    if (_paymentMethod != null) ...[
+                      SizedBox(height: 12),
+                      TextFormField(
+                        controller: _paidAmountCtrl,
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
+                        style: TextStyle(color: context.colors.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: 'Amount Paid (₹) *',
+                          filled: true,
+                          fillColor: context.colors.background,
+                        ),
+                        validator: (v) => double.tryParse(v ?? '') == null ? 'Invalid' : null,
+                      ),
+                    ],
                   ],
                 ),
               ),

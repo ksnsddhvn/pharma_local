@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/database/app_database.dart';
 import '../../core/providers.dart';
+import '../../core/database/tables/stock_batches_table.dart';
+import '../../core/database/tables/sales_tables.dart';
+import '../../core/utils/product_icon_utils.dart';
 import '../../core/services/checkout_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
@@ -141,7 +144,11 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: context.colors.surfaceElevated,
-      builder: (ctx) => TabletCalculatorSheet(productName: product.name, packagingUnit: product.packagingUnit),
+      builder: (ctx) => TabletCalculatorSheet(
+        productName: product.name, 
+        packagingUnit: product.packagingUnit,
+        productType: product.productType,
+      ),
     );
 
     if (qty == null || qty <= 0) return;
@@ -171,6 +178,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                 gstPercentage: batch.gstPercentage,
                 hsnCode: product.hsnCode,
                 packagingUnit: product.packagingUnit,
+                productType: product.productType,
                 alternativeName: null,
               ),
             );
@@ -431,11 +439,19 @@ class _ProductResultTile extends ConsumerWidget {
 
         return ListTile(
           dense: true,
-          title: Text('${product.name} (${product.packagingUnit})',
-              style: TextStyle(
-                  color: context.colors.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500)),
+          title: Row(
+            children: [
+              Icon(ProductIconUtils.getIconForType(product.productType), size: 16, color: context.colors.primary),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text('${product.name} (${product.packagingUnit})',
+                    style: TextStyle(
+                        color: context.colors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500)),
+              ),
+            ],
+          ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -538,7 +554,11 @@ class _CartItemTile extends ConsumerWidget {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: context.colors.surfaceElevated,
-                    builder: (ctx) => TabletCalculatorSheet(productName: item.productName, packagingUnit: item.packagingUnit),
+                    builder: (ctx) => TabletCalculatorSheet(
+                      productName: item.productName, 
+                      packagingUnit: item.packagingUnit,
+                      productType: item.productType,
+                    ),
                   );
                   if (qty != null) {
                     final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, qty);

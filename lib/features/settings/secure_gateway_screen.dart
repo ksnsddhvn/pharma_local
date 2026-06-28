@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:local_auth/local_auth.dart';
 import '../../core/theme/app_theme.dart';
 import 'settings_screen.dart'; // To access securitySettingsProvider
 
@@ -18,6 +19,40 @@ class SecureGatewayScreen extends ConsumerStatefulWidget {
 class _SecureGatewayScreenState extends ConsumerState<SecureGatewayScreen> {
   final _pinCtrl = TextEditingController();
   bool _hasError = false;
+  final _localAuth = LocalAuthentication();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkBiometric();
+    });
+  }
+
+  Future<void> _checkBiometric() async {
+    final settings = await ref.read(securitySettingsProvider.future);
+    if (settings != null && settings.isBiometricEnabled) {
+      try {
+        final canCheck = await _localAuth.canCheckBiometrics || await _localAuth.isDeviceSupported();
+        if (!canCheck) return;
+        final authenticated = await _localAuth.authenticate(
+          localizedReason: 'Please authenticate to unlock Sri Ranga Medical',
+          options: const AuthenticationOptions(
+            stickyAuth: true,
+            biometricOnly: false,
+          ),
+        );
+        if (authenticated) {
+          ref.read(sessionUnlockedProvider.notifier).state = true;
+          if (mounted) {
+            context.go(widget.redirectPath.isEmpty || widget.redirectPath == '/secure-gateway' ? '/' : widget.redirectPath);
+          }
+        }
+      } catch (e) {
+        // Silently fallback to PIN
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -81,14 +116,31 @@ class _SecureGatewayScreenState extends ConsumerState<SecureGatewayScreen> {
                 ),
               ),
               SizedBox(height: 32),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.colors.primary,
-                  padding: EdgeInsets.symmetric(horizontal: 48, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                onPressed: _verifyPin,
-                child: Text('Unlock', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.colors.primary,
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: _verifyPin,
+                      child: Text('Unlock', style: TextStyle(fontSize: 16, color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  IconButton(
+                    style: IconButton.styleFrom(
+                      backgroundColor: context.colors.surfaceElevated,
+                      padding: EdgeInsets.all(16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    icon: Icon(Icons.fingerprint, size: 24, color: context.colors.primary),
+                    onPressed: _checkBiometric,
+                  ),
+                ],
               ),
             ],
           ),

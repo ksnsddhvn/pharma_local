@@ -5,7 +5,8 @@ import 'package:pharma_local/core/theme/app_theme.dart';
 class TabletCalculatorSheet extends StatefulWidget {
   final String productName;
   final String packagingUnit;
-  TabletCalculatorSheet({super.key, required this.productName, required this.packagingUnit});
+  final String productType;
+  TabletCalculatorSheet({super.key, required this.productName, required this.packagingUnit, this.productType = 'Tablet'});
 
   @override
   State<TabletCalculatorSheet> createState() => _TabletCalculatorSheetState();
@@ -30,11 +31,12 @@ class _TabletCalculatorSheetState extends State<TabletCalculatorSheet> {
   }
 
   void _submit() {
+    final isTabletLike = widget.productType == 'Tablet' || widget.productType == 'Capsule';
     final strips = int.tryParse(_stripsCtrl.text) ?? 0;
     final perStrip = int.tryParse(_perStripCtrl.text) ?? 10;
     final loose = int.tryParse(_looseCtrl.text) ?? 0;
     
-    final total = (strips * perStrip) + loose;
+    final total = isTabletLike ? (strips * perStrip) + loose : loose;
     Navigator.pop(context, total);
   }
 
@@ -53,22 +55,31 @@ class _TabletCalculatorSheetState extends State<TabletCalculatorSheet> {
         children: [
           Text('Quantity: ${widget.productName}', style: TextStyle(color: context.colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
           SizedBox(height: 16),
-          TextField(
-            controller: _stripsCtrl,
-            keyboardType: TextInputType.number,
-            style: TextStyle(color: context.colors.textPrimary),
-            decoration: InputDecoration(
-              labelText: 'Strips/Sheets',
-              hintText: '1 Sheet = ${_perStripCtrl.text} Units',
+          if (widget.productType == 'Tablet' || widget.productType == 'Capsule') ...[
+            TextField(
+              controller: _stripsCtrl,
+              keyboardType: TextInputType.number,
+              style: TextStyle(color: context.colors.textPrimary),
+              decoration: InputDecoration(
+                labelText: 'Strips/Sheets',
+                hintText: '1 Sheet = ${_perStripCtrl.text} Units',
+              ),
             ),
-          ),
-          SizedBox(height: 16),
-          TextField(
-            controller: _looseCtrl,
-            keyboardType: TextInputType.number,
-            style: TextStyle(color: context.colors.textPrimary),
-            decoration: InputDecoration(labelText: 'Loose Units (e.g. single tablets)'),
-          ),
+            SizedBox(height: 16),
+            TextField(
+              controller: _looseCtrl,
+              keyboardType: TextInputType.number,
+              style: TextStyle(color: context.colors.textPrimary),
+              decoration: InputDecoration(labelText: 'Loose Units (e.g. single tablets)'),
+            ),
+          ] else ...[
+            TextField(
+              controller: _looseCtrl,
+              keyboardType: TextInputType.number,
+              style: TextStyle(color: context.colors.textPrimary),
+              decoration: InputDecoration(labelText: 'Total Quantity (e.g. Bottles, Tubes, Packs)'),
+            ),
+          ],
           SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
