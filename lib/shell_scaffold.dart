@@ -44,7 +44,7 @@ class ShellScaffold extends StatelessWidget {
                     label: t.label,
                   ))
               .toList(),
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         ),
       ),
     );

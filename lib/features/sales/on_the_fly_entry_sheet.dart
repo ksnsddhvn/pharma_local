@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/daos/stock_batches_dao.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/tablet_calculator_sheet.dart';
 
 class OnTheFlyEntrySheet extends ConsumerStatefulWidget {
   final String initialName;
@@ -105,8 +106,26 @@ class _OnTheFlyEntrySheetState extends ConsumerState<OnTheFlyEntrySheet> {
                 Expanded(
                   child: TextFormField(
                     controller: _qtyCtrl,
+                    readOnly: true,
+                    onTap: () async {
+                      if (_nameCtrl.text.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Please enter product name first'), backgroundColor: AppColors.warning),
+                        );
+                        return;
+                      }
+                      final qty = await showModalBottomSheet<int>(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: AppColors.surfaceElevated,
+                        builder: (ctx) => TabletCalculatorSheet(productName: _nameCtrl.text),
+                      );
+                      if (qty != null) {
+                        _qtyCtrl.text = qty.toString();
+                      }
+                    },
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Quantity *'),
+                    decoration: const InputDecoration(labelText: 'Quantity *', hintText: 'Tap to calculate'),
                     validator: (v) => int.tryParse(v ?? '') == null ? 'Invalid' : null,
                   ),
                 ),
