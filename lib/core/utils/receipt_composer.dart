@@ -61,7 +61,7 @@ class ReceiptComposer {
         buffer.writeln("📝 *Note:* ${invoice.customerNotes}");
       }
     }
-    return Uri.encodeComponent(buffer.toString());
+    return buffer.toString();
   }
 
   /// Opens WhatsApp with a pre-filled receipt message.

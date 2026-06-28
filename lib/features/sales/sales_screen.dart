@@ -2,95 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/database/app_database.dart';
+import '../../core/database/tables/sales_tables.dart';
 import '../../core/providers.dart';
-import '../../core/services/checkout_service.dart';
 import '../../core/theme/app_theme.dart';
-import '../../core/utils/fuzzy_search.dart';
 import '../../core/utils/formatters.dart';
-import 'on_the_fly_entry_sheet.dart';
-
-// Provider to hold the current cart
-final cartProvider =
-    StateNotifierProvider<CartNotifier, List<CartItem>>((ref) => CartNotifier());
-
-class CartNotifier extends StateNotifier<List<CartItem>> {
-  CartNotifier() : super([]);
-
-  void addItem(CartItem item) {
-    final idx =
-        state.indexWhere((i) => i.batchId == item.batchId);
-    if (idx >= 0) {
-      final updated = List<CartItem>.from(state);
-      updated[idx] = CartItem(
-        batchId: item.batchId,
-        productId: item.productId,
-        productName: item.productName,
-        batchNumber: item.batchNumber,
-        quantity: updated[idx].quantity + item.quantity,
-        mrp: item.mrp,
-        gstPercentage: item.gstPercentage,
-        category: item.category,
-        discountPercent: updated[idx].discountPercent,
-        composition: item.composition,
-        alternativeName: item.alternativeName,
-      );
-      state = updated;
-    } else {
-      state = [...state, item];
-    }
-  }
-
-  void removeItem(int batchId) =>
-      state = state.where((i) => i.batchId != batchId).toList();
-
-  void updateDiscount(int batchId, double discount) {
-    state = state.map((i) {
-      if (i.batchId == batchId) {
-        return CartItem(
-          batchId: i.batchId,
-          productId: i.productId,
-          productName: i.productName,
-          batchNumber: i.batchNumber,
-          quantity: i.quantity,
-          mrp: i.mrp,
-          gstPercentage: i.gstPercentage,
-          category: i.category,
-          discountPercent: discount,
-          composition: i.composition,
-          alternativeName: i.alternativeName,
-        );
-      }
-      return i;
-    }).toList();
-  }
-
-  void updateQuantity(int batchId, int qty) {
-    if (qty <= 0) {
-      removeItem(batchId);
-      return;
-    }
-    state = state.map((i) {
-      if (i.batchId == batchId) {
-        return CartItem(
-          batchId: i.batchId,
-          productId: i.productId,
-          productName: i.productName,
-          batchNumber: i.batchNumber,
-          quantity: qty,
-          mrp: i.mrp,
-          gstPercentage: i.gstPercentage,
-          category: i.category,
-          discountPercent: i.discountPercent,
-          composition: i.composition,
-          alternativeName: i.alternativeName,
-        );
-      }
-      return i;
-    }).toList();
-  }
-
-  void clear() => state = [];
-}
 
 class SalesScreen extends ConsumerStatefulWidget {
   const SalesScreen({super.key});
@@ -99,388 +14,196 @@ class SalesScreen extends ConsumerStatefulWidget {
   ConsumerState<SalesScreen> createState() => _SalesScreenState();
 }
 
-class _SalesScreenState extends ConsumerState<SalesScreen> {
-  final _searchCtrl = TextEditingController();
-  String _query = '';
+class _SalesScreenState extends ConsumerState<SalesScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    _tab = TabController(length: 2, vsync: this);
+  }
 
   @override
   void dispose() {
-    _searchCtrl.dispose();
+    _tab.dispose();
     super.dispose();
   }
 
-
-
-  Future<void> _addToCart(StockBatch batch, Product product) async {
-    String? altName;
-    if (product.composition.isNotEmpty) {
-      final alternatives = await ref
-          .read(productsDaoProvider)
-          .watchSubstitutesForComposition(product.composition, product.id)
-          .first;
-      if (alternatives.isNotEmpty) {
-        altName = alternatives.first.name;
-      }
-    }
-
-    ref.read(cartProvider.notifier).addItem(
-          CartItem(
-            batchId: batch.id,
-            productId: product.id,
-            productName: product.name,
-            batchNumber: batch.batchNumber,
-            quantity: 1,
-            mrp: batch.mrp,
-            gstPercentage: batch.gstPercentage,
-            category: product.category,
-            composition: product.composition,
-            alternativeName: altName,
-          ),
-        );
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${product.name} added to cart'),
-        duration: const Duration(seconds: 1),
-        backgroundColor: AppColors.success,
-      ));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final cart = ref.watch(cartProvider);
-    final cartTotal = cart.fold(0.0, (s, i) => s + i.lineTotal);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Point of Sale'),
-        actions: [
-          if (cart.isNotEmpty)
-            TextButton.icon(
-              onPressed: () => ref.read(cartProvider.notifier).clear(),
-              icon: const Icon(Icons.delete_outline,
-                  color: AppColors.error, size: 18),
-              label: const Text('Clear',
-                  style: TextStyle(color: AppColors.error)),
-            ),
+        title: const Text('Sales & Accounts Dashboard'),
+        bottom: TabBar(
+          controller: _tab,
+          indicatorColor: AppColors.primary,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textMuted,
+          tabs: const [
+            Tab(icon: Icon(Icons.history, size: 18), text: 'Paid Transactions'),
+            Tab(icon: Icon(Icons.account_balance_wallet_outlined, size: 18), text: 'Outstanding Accounts'),
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tab,
+        children: const [
+          _PaidTransactionsTab(),
+          _OutstandingAccountsTab(),
         ],
       ),
-      body: Column(
-        children: [
-          // Barcode / search row
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _searchCtrl,
-                    autofocus: true,
-                    onChanged: (v) => setState(() => _query = v),
-                    decoration: const InputDecoration(
-                      hintText: 'Search inventory manually...',
-                      prefixIcon: Icon(Icons.search,
-                          color: AppColors.textMuted, size: 20),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Product search results
-          if (_query.isNotEmpty) _SearchResults(
-            query: _query,
-            onAdd: (batch, product) {
-              _addToCart(batch, product);
-              _searchCtrl.clear();
-              setState(() => _query = '');
-            },
-          ),
-
-          // Cart
-          Expanded(
-            child: cart.isEmpty
-                ? _EmptyCartPlaceholder()
-                : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 120),
-                    itemCount: cart.length,
-                    itemBuilder: (_, i) => _CartItemTile(item: cart[i]),
-                  ),
-          ),
-        ],
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/sales/new'),
+        backgroundColor: AppColors.primary,
+        icon: const Icon(Icons.add_shopping_cart, color: Colors.black),
+        label: const Text('New Sale', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
       ),
+    );
+  }
+}
 
-      // Checkout bottom bar
-      bottomNavigationBar: cart.isEmpty
-          ? null
-          : Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                border: Border(
-                    top: BorderSide(color: AppColors.surfaceBorder)),
+class _PaidTransactionsTab extends ConsumerWidget {
+  const _PaidTransactionsTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final recentInvoicesAsync = ref.watch(recentInvoicesStreamProvider);
+
+    return recentInvoicesAsync.when(
+      data: (invoices) {
+        final paidInvoices = invoices.where((inv) => inv.paymentMode != PaymentMode.credit).toList();
+        
+        if (paidInvoices.isEmpty) {
+          return const Center(
+            child: Text('No paid transactions found.', style: TextStyle(color: AppColors.textSecondary)),
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: paidInvoices.length,
+          itemBuilder: (_, i) {
+            final inv = paidInvoices[i];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.surfaceBorder),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('${cart.length} item(s)',
-                            style: const TextStyle(
-                                color: AppColors.textSecondary, fontSize: 12)),
-                        Text(
-                          AppFormatters.currency(cartTotal),
-                          style: const TextStyle(
-                            color: AppColors.primary,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(inv.invoiceNumber, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                      Text(AppFormatters.currency(inv.totalAmount), style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                  ElevatedButton.icon(
-                    onPressed: () => context.push('/sales/checkout'),
-                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                    label: const Text('Checkout'),
-                    style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 14)),
+                  const SizedBox(height: 8),
+                  Text('Customer: ${inv.customerName}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  Text('Date: ${AppFormatters.date(inv.createdAt)}', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text(inv.paymentMode.name.toUpperCase(), style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                   ),
                 ],
               ),
-            ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
 }
 
-class _SearchResults extends ConsumerStatefulWidget {
-  final String query;
-  final Function(StockBatch, Product) onAdd;
-  const _SearchResults({required this.query, required this.onAdd});
-
-  @override
-  ConsumerState<_SearchResults> createState() => _SearchResultsState();
-}
-
-class _SearchResultsState extends ConsumerState<_SearchResults> {
-  List<Product> _products = [];
-  String _lastQuery = '';
-
-  @override
-  void didUpdateWidget(_SearchResults old) {
-    super.didUpdateWidget(old);
-    if (widget.query != _lastQuery) {
-      _lastQuery = widget.query;
-      _search(widget.query);
-    }
-  }
-
-  Future<void> _search(String q) async {
-    final all = await ref.read(productsDaoProvider).getAllProducts();
-    final filtered = FuzzySearch.filter<Product>(
-        query: q,
-        candidates: all,
-        keyOf: (p) => '${p.name} ${p.composition ?? ''}',
-      );
-    if (mounted) setState(() => _products = filtered.take(6).toList());
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_lastQuery != widget.query) _search(widget.query);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
-      child: Column(
-        children: _products.map((p) => _ProductResultTile(
-          product: p,
-          onAdd: widget.onAdd,
-        )).toList(),
-      ),
-    );
-  }
-}
-
-class _ProductResultTile extends ConsumerWidget {
-  final Product product;
-  final Function(StockBatch, Product) onAdd;
-  const _ProductResultTile({required this.product, required this.onAdd});
+class _OutstandingAccountsTab extends ConsumerWidget {
+  const _OutstandingAccountsTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListTile(
-      dense: true,
-      title: Text(product.name,
-          style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w500)),
-      subtitle: Text(product.composition ?? '',
-          style: const TextStyle(
-              color: AppColors.textMuted, fontSize: 11)),
-      trailing: IconButton(
-        icon: const Icon(Icons.add_circle_outline,
-            color: AppColors.primary, size: 22),
-        onPressed: () async {
-          final batches = await ref
-              .read(stockBatchesDaoProvider)
-              .getBatchesForProduct(product.id);
-          if (batches.isEmpty) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                  content: Text('No stock available'),
-                  backgroundColor: AppColors.warning));
-            }
-            return;
-          }
-          // FEFO — take first (nearest expiry) batch with stock
-          final batch = batches.first;
-          onAdd(batch, product);
-        },
-      ),
-    );
-  }
-}
+    final recentInvoicesAsync = ref.watch(recentInvoicesStreamProvider);
 
-class _CartItemTile extends ConsumerWidget {
-  final CartItem item;
-  const _CartItemTile({required this.item});
+    return recentInvoicesAsync.when(
+      data: (invoices) {
+        final outstandingAccounts = invoices.where((inv) => inv.creditBalanceAdded > 0).toList();
+        
+        if (outstandingAccounts.isEmpty) {
+          return const Center(
+            child: Text('No outstanding accounts found.', style: TextStyle(color: AppColors.textSecondary)),
+          );
+        }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.productName,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14)),
-                    Text(
-                      'Batch: ${item.batchNumber} | MRP: ${AppFormatters.currency(item.mrp)}',
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 11),
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: outstandingAccounts.length,
+          itemBuilder: (_, i) {
+            final inv = outstandingAccounts[i];
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.error.withOpacity(0.5)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(inv.customerName, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                      Text(AppFormatters.currency(inv.creditBalanceAdded), style: const TextStyle(color: AppColors.error, fontWeight: FontWeight.bold, fontSize: 16)),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.phone, size: 14, color: AppColors.textMuted),
+                      const SizedBox(width: 4),
+                      Text(inv.customerMobile, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_today, size: 14, color: AppColors.textMuted),
+                      const SizedBox(width: 4),
+                      Text('Transaction Date: ${AppFormatters.date(inv.createdAt)}', style: const TextStyle(color: AppColors.textMuted, fontSize: 12)),
+                    ],
+                  ),
+                  if (inv.customerNotes != null && inv.customerNotes!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('Note: ${inv.customerNotes}', style: const TextStyle(color: AppColors.warning, fontSize: 12)),
                     ),
                   ],
-                ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.close,
-                    size: 16, color: AppColors.textMuted),
-                onPressed: () => ref
-                    .read(cartProvider.notifier)
-                    .removeItem(item.batchId),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              // Quantity control
-              _QtyButton(
-                icon: Icons.remove,
-                onTap: () => ref
-                    .read(cartProvider.notifier)
-                    .updateQuantity(item.batchId, item.quantity - 1),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('${item.quantity}',
-                    style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16)),
-              ),
-              _QtyButton(
-                icon: Icons.add,
-                onTap: () => ref
-                    .read(cartProvider.notifier)
-                    .updateQuantity(item.batchId, item.quantity + 1),
-              ),
-              const Spacer(),
-              // Line total
-              Text(
-                AppFormatters.currency(item.lineTotal),
-                style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _QtyButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _QtyButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.surfaceBorder),
-        ),
-        child: Icon(icon, size: 16, color: AppColors.primary),
-      ),
-    );
-  }
-}
-
-class _EmptyCartPlaceholder extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.shopping_cart_outlined,
-              size: 56, color: AppColors.textMuted),
-          SizedBox(height: 16),
-          Text('Cart is empty',
-              style: TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500)),
-          SizedBox(height: 8),
-          Text('Search for a product manually to begin',
-              style: TextStyle(
-                  color: AppColors.textMuted, fontSize: 13),
-              textAlign: TextAlign.center),
-        ],
-      ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
 }

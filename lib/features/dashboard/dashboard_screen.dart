@@ -328,10 +328,10 @@ class _QuickActionsSection extends StatelessWidget {
         Row(
           children: [
             _ActionTile(
-              icon: Icons.qr_code_scanner,
-              label: 'Scan & Sell',
+              icon: Icons.point_of_sale,
+              label: 'New Sale',
               color: AppColors.primary,
-              onTap: () => context.go('/sales'),
+              onTap: () => context.push('/sales/new'),
             ),
             const SizedBox(width: 10),
             _ActionTile(
@@ -343,7 +343,7 @@ class _QuickActionsSection extends StatelessWidget {
             const SizedBox(width: 10),
             _ActionTile(
               icon: Icons.medication_outlined,
-              label: 'Add Product',
+              label: 'New Medicine',
               color: AppColors.success,
               onTap: () => context.push('/products/add'),
             ),

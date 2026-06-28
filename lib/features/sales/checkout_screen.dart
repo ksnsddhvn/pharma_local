@@ -7,7 +7,7 @@ import '../../core/services/checkout_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/receipt_composer.dart';
-import 'sales_screen.dart';
+import 'new_sale_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});

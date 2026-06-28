@@ -6,6 +6,7 @@ import '../features/products/add_edit_product_screen.dart';
 import '../features/inventory/inventory_screen.dart';
 import '../features/inventory/receive_stock_screen.dart';
 import '../features/sales/sales_screen.dart';
+import '../features/sales/new_sale_screen.dart';
 import '../features/sales/checkout_screen.dart';
 import '../features/suppliers/suppliers_screen.dart';
 import '../features/suppliers/supplier_detail_screen.dart';
@@ -39,6 +40,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/inventory/receive',
       builder: (_, __) => const ReceiveStockScreen(),
+    ),
+    GoRoute(
+      path: '/sales/new',
+      builder: (_, __) => const NewSaleScreen(),
     ),
     GoRoute(
       path: '/sales/checkout',

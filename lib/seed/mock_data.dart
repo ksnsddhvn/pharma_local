@@ -274,6 +274,16 @@ class MockDataSeeder {
   Future<void> _seedSalesHistory(List<int> productIds) async {
     final now = DateTime.now();
 
+    final creditCustomers = [
+      ('Sharma ji', '9876543210'),
+      ('Verma ji', '9911223344'),
+      ('Gupta ji', '9922334455'),
+      ('Mishra ji', '9933445566'),
+      ('Ramesh Kumar', '9823456789'),
+      ('Suresh Singh', '9845612370'),
+      ('Arun Patel', '9900112233'),
+    ];
+
     // 30 sample invoices over the past 30 days
     for (var day = 0; day < 30; day++) {
       final saleDate = now.subtract(Duration(days: day));
@@ -284,19 +294,46 @@ class MockDataSeeder {
         const qty = 2;
         const mrp = 12.0;
         const gst = 12.0;
-        const lineTotal = mrp * qty;
+        final lineTotal = mrp * qty;
+
+        final isCredit = (day * 3 + s) % 5 == 0;
+        final mode = isCredit
+            ? PaymentMode.credit
+            : ((day * 3 + s) % 5 == 1 ? PaymentMode.upi : PaymentMode.cash);
+
+        String customerName = 'Cash Customer';
+        String customerMobile = '0000000000';
+        double amountPaid = lineTotal;
+        double creditBalanceAdded = 0.0;
+        String? notes;
+
+        if (mode == PaymentMode.credit) {
+          final custIdx = (day * 3 + s) % creditCustomers.length;
+          customerName = creditCustomers[custIdx].$1;
+          customerMobile = creditCustomers[custIdx].$2;
+          amountPaid = (lineTotal * 0.3).roundToDouble();
+          creditBalanceAdded = lineTotal - amountPaid;
+          notes = 'Udhaar balance, will pay next month';
+        } else if (mode == PaymentMode.upi) {
+          customerName = 'UPI Customer';
+          amountPaid = lineTotal;
+          creditBalanceAdded = 0.0;
+        }
 
         await db.salesDao.createInvoiceWithItems(
           SalesInvoicesCompanion.insert(
             invoiceNumber: 'PL-${saleDate.year}-${(day * 10 + s).toString().padLeft(4, '0')}',
             createdAt: Value(saleDate),
-            customerName: 'Cash Customer',
-            customerMobile: '0000000000',
+            customerName: customerName,
+            customerMobile: customerMobile,
             subtotal: lineTotal,
             totalGst: lineTotal * gst / (100 + gst),
             totalDiscount: const Value(0.0),
             totalAmount: lineTotal,
-            paymentMode: const Value(PaymentMode.cash),
+            paymentMode: Value(mode),
+            amountPaid: Value(amountPaid),
+            creditBalanceAdded: Value(creditBalanceAdded),
+            customerNotes: Value(notes),
             doctorName: pidx >= 18 && pidx <= 29 ? 'Dr. R. K. Gupta' : 'Self',
             doctorPlace: 'Local',
           ),

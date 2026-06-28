@@ -65,10 +65,7 @@ class _ShortbookTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shortbookAsync = ref.watch(
-      FutureProvider<List<ShortbookItem>>((ref) =>
-          ref.watch(shortbookServiceProvider).getShortbookItems()),
-    );
+    final shortbookAsync = ref.watch(shortbookItemsProvider);
 
     return shortbookAsync.when(
       data: (items) {
@@ -184,10 +181,7 @@ class _ExpiryTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final expiryAsync = ref.watch(
-      FutureProvider<List<BatchWithProduct>>((ref) =>
-          ref.watch(stockBatchesDaoProvider).getExpiringBatches(90)),
-    );
+    final expiryAsync = ref.watch(expiringBatchesProvider(90));
 
     return expiryAsync.when(
       data: (items) {

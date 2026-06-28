@@ -51,10 +51,7 @@ class _ProductInventoryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final batchesAsync = ref.watch(
-      StreamProvider<List<StockBatch>>((ref) => ref.watch(stockBatchesDaoProvider)
-          .watchBatchesForProduct(product.id)),
-    );
+    final batchesAsync = ref.watch(batchesForProductProvider(product.id));
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

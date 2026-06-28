@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'database/app_database.dart';
+import 'database/daos/stock_batches_dao.dart';
 import 'services/inventory_service.dart';
 import 'services/checkout_service.dart';
 import 'services/supplier_service.dart';
@@ -58,6 +59,9 @@ final allSuppliersStreamProvider = StreamProvider(
 final recentInvoicesStreamProvider = StreamProvider(
     (ref) => ref.watch(salesDaoProvider).watchRecentInvoices());
 
+final batchesForProductProvider = StreamProvider.family<List<StockBatch>, int>(
+    (ref, productId) => ref.watch(stockBatchesDaoProvider).watchBatchesForProduct(productId));
+
 // ── Dashboard Data ────────────────────────────────────────────────────────────
 final todaysSalesTotalProvider = FutureProvider(
     (ref) => ref.watch(salesDaoProvider).getTodaysSalesTotal());
@@ -67,11 +71,17 @@ final shortbookCountProvider = FutureProvider((ref) async {
   return items.length;
 });
 
+final shortbookItemsProvider = FutureProvider((ref) => 
+    ref.watch(shortbookServiceProvider).getShortbookItems());
+
 final expiringBatchesCountProvider = FutureProvider((ref) async {
   final batches =
       await ref.watch(stockBatchesDaoProvider).getExpiringBatches(30);
   return batches.length;
 });
+
+final expiringBatchesProvider = FutureProvider.family<List<BatchWithProduct>, int>((ref, days) => 
+    ref.watch(stockBatchesDaoProvider).getExpiringBatches(days));
 
 final weeklySalesProvider = FutureProvider(
     (ref) => ref.watch(salesDaoProvider).getDailySalesTotals(7));

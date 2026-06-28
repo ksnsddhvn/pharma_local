@@ -36,7 +36,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,16 +55,12 @@ class AppDatabase extends _$AppDatabase {
               'CREATE INDEX IF NOT EXISTS idx_invoices_date ON sales_invoices (created_at)');
         },
         onUpgrade: (m, from, to) async {
-          if (from < 2) {
-            // v1 → v2: Add new columns
-            await customStatement(
-                'ALTER TABLE stock_batches ADD COLUMN is_opening_stock INTEGER NOT NULL DEFAULT 0');
-            await customStatement(
-                'ALTER TABLE suppliers ADD COLUMN contact_person TEXT');
-            await customStatement(
-                'ALTER TABLE supplier_ledgers ADD COLUMN invoice_number TEXT');
-            await customStatement(
-                'ALTER TABLE sales_invoices ADD COLUMN doctor_name TEXT');
+          if (from < 4) {
+            // Drop all tables and recreate to apply massive dev schema changes & re-seed
+            for (final table in allTables) {
+              await m.drop(table);
+            }
+            await m.createAll();
           }
         },
       );
