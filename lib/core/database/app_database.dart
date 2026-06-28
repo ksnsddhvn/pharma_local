@@ -2,6 +2,8 @@ import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 
 import 'tables/products_table.dart';
+import 'tables/product_categories_table.dart';
+import 'tables/security_settings_table.dart';
 import 'tables/stock_batches_table.dart';
 import 'tables/suppliers_table.dart';
 import 'tables/supplier_ledgers_table.dart';
@@ -17,6 +19,8 @@ part 'app_database.g.dart';
 
 @DriftDatabase(
   tables: [
+    ProductCategories,
+    SecuritySettings,
     Products,
     StockBatches,
     Suppliers,
@@ -36,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -55,7 +59,7 @@ class AppDatabase extends _$AppDatabase {
               'CREATE INDEX IF NOT EXISTS idx_invoices_date ON sales_invoices (created_at)');
         },
         onUpgrade: (m, from, to) async {
-          if (from < 4) {
+          if (from < 5) {
             // Drop all tables and recreate to apply massive dev schema changes & re-seed
             for (final table in allTables) {
               await m.drop(table);

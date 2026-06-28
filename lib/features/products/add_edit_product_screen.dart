@@ -25,7 +25,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   late TextEditingController _rackCtrl;
   late TextEditingController _thresholdCtrl;
 
-  ProductCategory _category = ProductCategory.otc;
+  // category removed
   bool _loading = false;
   bool _initialized = false;
 
@@ -65,7 +65,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         _hsnCtrl.text = product.hsnCode ?? '';
         _rackCtrl.text = product.rackLocation ?? '';
         _thresholdCtrl.text = product.minStockThreshold.toStringAsFixed(0);
-        _category = product.category;
+        // category removed
       });
     }
   }
@@ -84,7 +84,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         composition: drift.Value(_compositionCtrl.text.trim()),
         hsnCode: drift.Value(
             _hsnCtrl.text.trim().isEmpty ? null : _hsnCtrl.text.trim()),
-        category: drift.Value(_category),
+        categoryId: const drift.Value(null),
         rackLocation: drift.Value(
             _rackCtrl.text.trim().isEmpty ? null : _rackCtrl.text.trim()),
         minStockThreshold:
@@ -172,11 +172,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                 _field('HSN Code', _hsnCtrl,
                     hint: 'e.g. 3004',
                     keyboardType: TextInputType.number),
-                const SizedBox(height: 12),
-                _CategoryDropdown(
-                  value: _category,
-                  onChanged: (v) => setState(() => _category = v),
-                ),
+
               ],
             ),
             const SizedBox(height: 16),
@@ -249,25 +245,4 @@ class _FormSection extends StatelessWidget {
   }
 }
 
-class _CategoryDropdown extends StatelessWidget {
-  final ProductCategory value;
-  final ValueChanged<ProductCategory> onChanged;
-  const _CategoryDropdown({required this.value, required this.onChanged});
 
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<ProductCategory>(
-      value: value,
-      dropdownColor: AppColors.surfaceElevated,
-      style: const TextStyle(color: AppColors.textPrimary),
-      decoration: const InputDecoration(labelText: 'Category'),
-      items: const [
-        DropdownMenuItem(value: ProductCategory.otc, child: Text('OTC — Over the Counter')),
-        DropdownMenuItem(value: ProductCategory.rx, child: Text('Rx — Prescription only')),
-        DropdownMenuItem(value: ProductCategory.scheduleH, child: Text('Schedule H')),
-        DropdownMenuItem(value: ProductCategory.scheduleH1, child: Text('Schedule H1')),
-      ],
-      onChanged: (v) => onChanged(v!),
-    );
-  }
-}

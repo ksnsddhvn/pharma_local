@@ -23,9 +23,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   go_router: ^17.0.0
 
-  # ── Barcode Scanning (Android/iOS only) ──────────────────
-  google_mlkit_barcode_scanning: ^0.14.2
-  camera: ^0.11.1
+  # ── Security ──────────────────────────────────────────────
+  local_auth: ^2.3.0
 
   # ── Backup / Archive ─────────────────────────────────────
   archive: ^4.0.9

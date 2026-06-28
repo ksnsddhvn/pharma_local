@@ -125,9 +125,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final totalGst = cart.fold(0.0, (s, i) => s + i.gstAmount);
     final total = cart.fold(0.0, (s, i) => s + i.lineTotal);
 
-    final needsDoctor = cart.any((item) =>
-        item.category == ProductCategory.scheduleH ||
-        item.category == ProductCategory.scheduleH1);
+    final needsDoctor = true; // Doctor name may be required for certain items, now default visible
 
     // ── Success state ────────────────────────────────────────
     if (_result != null) {

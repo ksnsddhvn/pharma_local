@@ -12,7 +12,6 @@ class CartItem {
   int quantity;
   final double mrp;
   final double gstPercentage;
-  final ProductCategory category;
   double discountPercent;
   final String composition;
   final String? alternativeName;
@@ -25,7 +24,6 @@ class CartItem {
     required this.quantity,
     required this.mrp,
     required this.gstPercentage,
-    required this.category,
     this.discountPercent = 0.0,
     this.composition = '',
     this.alternativeName,

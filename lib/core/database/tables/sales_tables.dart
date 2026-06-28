@@ -10,8 +10,8 @@ class SalesInvoices extends Table {
   TextColumn get invoiceNumber => text()(); // e.g. "PL-2025-0001"
   TextColumn get customerName => text()();
   TextColumn get customerMobile => text()();
-  TextColumn get doctorName => text()();
-  TextColumn get doctorPlace => text()(); // Clinic/Hospital locality tracking
+  TextColumn get doctorName => text().withDefault(const Constant(''))();
+  TextColumn get doctorPlace => text().withDefault(const Constant(''))(); // Clinic/Hospital locality tracking
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();
   RealColumn get subtotal => real()(); // before GST
@@ -29,13 +29,13 @@ class SalesInvoices extends Table {
 @DataClassName('SalesInvoiceItem')
 class SalesInvoiceItems extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get invoiceId => integer().references(SalesInvoices, #id)();
+  IntColumn get invoiceId => integer().references(SalesInvoices, #id, onDelete: KeyAction.cascade)();
   IntColumn get batchId => integer()(); // batch id (denormalised — batch may be updated)
   IntColumn get productId => integer()(); // denormalised
   TextColumn get productName => text()(); // denormalised for receipts
   TextColumn get batchNumber => text()(); // denormalised for receipts
-  IntColumn get totalTabletsSold => integer()(); // Tracks individual pill counts cut from strips
-  RealColumn get mrpPerTablet => real()();
+  IntColumn get totalTabletsSold => integer().withDefault(const Constant(1))(); // Tracks individual pill counts cut from strips
+  RealColumn get mrpPerTablet => real().withDefault(const Constant(0.0))();
   RealColumn get gstPercentage => real()();
   RealColumn get discountPercent => real().withDefault(const Constant(0.0))();
   RealColumn get lineTotal => real()(); // qty * mrp * (1 - discount)

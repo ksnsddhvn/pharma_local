@@ -6,7 +6,6 @@ import '../../core/database/tables/products_table.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
-import 'widgets/product_category_badge.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
   const ProductsScreen({super.key});
@@ -18,7 +17,6 @@ class ProductsScreen extends ConsumerStatefulWidget {
 class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
-  ProductCategory? _selectedCategory;
 
   @override
   void dispose() {
@@ -67,23 +65,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             ),
           ),
 
-          // Category filter chips
-          _CategoryFilter(
-            selected: _selectedCategory,
-            onChanged: (cat) => setState(() => _selectedCategory = cat),
-          ),
-
           // Product list
           Expanded(
             child: productsAsync.when(
               data: (allProducts) {
                 List<Product> filtered = allProducts;
-
-                if (_selectedCategory != null) {
-                  filtered = filtered
-                      .where((p) => p.category == _selectedCategory)
-                      .toList();
-                }
 
                 if (_query.isNotEmpty) {
                   filtered = FuzzySearch.filter<Product>(
@@ -125,77 +111,7 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
   }
 }
 
-class _CategoryFilter extends StatelessWidget {
-  final ProductCategory? selected;
-  final ValueChanged<ProductCategory?> onChanged;
-  const _CategoryFilter({required this.selected, required this.onChanged});
 
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Row(
-        children: [
-          _chip(null, 'All'),
-          const SizedBox(width: 8),
-          _chip(ProductCategory.otc, 'OTC'),
-          const SizedBox(width: 8),
-          _chip(ProductCategory.rx, 'Rx'),
-          const SizedBox(width: 8),
-          _chip(ProductCategory.scheduleH, 'Sch-H'),
-          const SizedBox(width: 8),
-          _chip(ProductCategory.scheduleH1, 'Sch-H1'),
-          const SizedBox(width: 8),
-          _chip(ProductCategory.cosmetics, 'Cosmetics'),
-        ],
-      ),
-    );
-  }
-
-  Widget _chip(ProductCategory? cat, String label) {
-    final isSelected = selected == cat;
-    final color = cat == null ? AppColors.primary : _categoryColor(cat);
-    return GestureDetector(
-      onTap: () => onChanged(cat),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? color.withValues(alpha: 0.2)
-              : AppColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-              color: isSelected ? color : AppColors.surfaceBorder),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? color : AppColors.textSecondary,
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Color _categoryColor(ProductCategory cat) {
-    switch (cat) {
-      case ProductCategory.otc:
-        return AppColors.otcColor;
-      case ProductCategory.rx:
-        return AppColors.rxColor;
-      case ProductCategory.scheduleH:
-        return AppColors.scheduleHColor;
-      case ProductCategory.scheduleH1:
-        return AppColors.scheduleH1Color;
-      case ProductCategory.cosmetics:
-        return AppColors.cosmeticsColor;
-    }
-  }
-}
 
 class _ProductTile extends ConsumerWidget {
   final Product product;
@@ -223,7 +139,6 @@ class _ProductTile extends ConsumerWidget {
                     fontSize: 14),
               ),
             ),
-            ProductCategoryBadge(category: product.category),
           ],
         ),
         subtitle: Column(
