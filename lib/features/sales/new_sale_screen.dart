@@ -113,11 +113,21 @@ class NewSaleScreen extends ConsumerStatefulWidget {
 
 class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
   final _searchCtrl = TextEditingController();
+  final _searchFocusNode = FocusNode();
   String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchFocusNode.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -244,6 +254,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                 Expanded(
                   child: TextField(
                     controller: _searchCtrl,
+                    focusNode: _searchFocusNode,
                     autofocus: true,
                     onChanged: (v) => setState(() => _query = v),
                     decoration: const InputDecoration(
@@ -257,25 +268,46 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
             ),
           ),
 
-          // Product search results
-          if (_query.isNotEmpty) _SearchResults(
-            query: _query,
-            onAdd: (batch, product) {
-              _addToCart(batch, product);
-              _searchCtrl.clear();
-              setState(() => _query = '');
-            },
-          ),
-
-          // Cart
+          // Cart & Search Dropdown
           Expanded(
-            child: cart.isEmpty
-                ? _EmptyCartPlaceholder()
-                : ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 120),
-                    itemCount: cart.length,
-                    itemBuilder: (_, i) => _CartItemTile(item: cart[i]),
+            child: Stack(
+              children: [
+                // Cart
+                cart.isEmpty
+                    ? _EmptyCartPlaceholder()
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 120),
+                        itemCount: cart.length,
+                        itemBuilder: (_, i) => _CartItemTile(item: cart[i]),
+                      ),
+                
+                // Product search results dropdown
+                if (_searchFocusNode.hasFocus || _query.isNotEmpty)
+                  Positioned(
+                    top: 0,
+                    left: 16,
+                    right: 16,
+                    bottom: 0,
+                    child: Material(
+                      elevation: 8,
+                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.surface,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: _SearchResults(
+                          query: _query,
+                          onAdd: (batches, product) {
+                            _searchFocusNode.unfocus();
+                            _addToCart(batches, product);
+                            _searchCtrl.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                      ),
+                    ),
                   ),
+              ],
+            ),
           ),
         ],
       ),
@@ -371,20 +403,21 @@ class _SearchResultsState extends ConsumerState<_SearchResults> {
 
   @override
   Widget build(BuildContext context) {
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.surfaceBorder),
-      ),
-      child: Column(
-        children: _products.map((p) => _ProductResultTile(
-          product: p,
-          onAdd: widget.onAdd,
-        )).toList(),
-      ),
+    return ListView.builder(
+      padding: EdgeInsets.zero,
+      itemCount: _products.length,
+      itemBuilder: (context, index) {
+        return Column(
+          children: [
+            _ProductResultTile(
+              product: _products[index],
+              onAdd: widget.onAdd,
+            ),
+            if (index < _products.length - 1)
+              const Divider(height: 1, indent: 16, endIndent: 16),
+          ],
+        );
+      },
     );
   }
 }
