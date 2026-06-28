@@ -8,7 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 
 class DashboardScreen extends ConsumerWidget {
-  const DashboardScreen({super.key});
+  DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,12 +18,12 @@ class DashboardScreen extends ConsumerWidget {
     final weeklySales = ref.watch(weeklySalesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       body: CustomScrollView(
         slivers: [
           _buildAppBar(context),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 // Summary Cards Row
@@ -38,11 +38,11 @@ class DashboardScreen extends ConsumerWidget {
                           error: (_, __) => '—',
                         ),
                         icon: Icons.point_of_sale,
-                        color: AppColors.primary,
+                        color: context.colors.primary,
                         onTap: () => context.go('/sales'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: _SummaryCard(
                         title: 'Low Stock',
@@ -52,13 +52,13 @@ class DashboardScreen extends ConsumerWidget {
                           error: (_, __) => '—',
                         ),
                         icon: Icons.warning_amber_rounded,
-                        color: AppColors.warning,
+                        color: context.colors.warning,
                         onTap: () => context.go('/reports'),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
@@ -70,27 +70,27 @@ class DashboardScreen extends ConsumerWidget {
                           error: (_, __) => '—',
                         ),
                         icon: Icons.hourglass_bottom_rounded,
-                        color: AppColors.expiryCritical,
+                        color: context.colors.expiryCritical,
                         onTap: () => context.go('/reports'),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Expanded(
                       child: _SummaryCard(
                         title: 'Quick Sale',
                         value: 'Tap to open',
                         icon: Icons.add_shopping_cart_rounded,
-                        color: AppColors.info,
+                        color: context.colors.info,
                         onTap: () => context.go('/sales'),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
 
                 // 7-day sales chart
                 _WeeklySalesChart(weeklySales: weeklySales),
-                const SizedBox(height: 24),
+                SizedBox(height: 24),
 
                 // Quick Actions
                 _QuickActionsSection(),
@@ -106,26 +106,43 @@ class DashboardScreen extends ConsumerWidget {
     return SliverAppBar(
       expandedHeight: 120,
       pinned: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.colors.surface,
+      actions: [
+        IconButton(
+          icon: Icon(Icons.settings, color: context.colors.textPrimary),
+          onPressed: () => context.push('/settings'),
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
-        titlePadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+        titlePadding: EdgeInsets.fromLTRB(16, 0, 16, 14),
         title: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'PharmaLocal',
-              style: TextStyle(
-                color: AppColors.primary,
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
-              ),
+            Row(
+              children: [
+                Image.asset(
+                  'assets/logo.png',
+                  height: 32,
+                  width: 32,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Sri Ranga Medical',
+                  style: TextStyle(
+                    color: context.colors.primary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              ],
             ),
             Text(
               DateFormat('EEEE, d MMMM yyyy').format(DateTime.now()),
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: context.colors.textSecondary,
                 fontSize: 11,
                 fontWeight: FontWeight.w400,
               ),
@@ -157,11 +174,11 @@ class _SummaryCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.surfaceElevated,
+          color: context.colors.surfaceElevated,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.surfaceBorder),
+          border: Border.all(color: context.colors.surfaceBorder),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -169,7 +186,7 @@ class _SummaryCard extends StatelessWidget {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
@@ -178,7 +195,7 @@ class _SummaryCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               value,
               style: TextStyle(
@@ -187,11 +204,11 @@ class _SummaryCard extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: 2),
             Text(
               title,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: context.colors.textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -209,33 +226,33 @@ class _WeeklySalesChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: context.colors.surfaceElevated,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: context.colors.surfaceBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             '7-Day Sales',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: context.colors.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           SizedBox(
             height: 120,
             child: weeklySales.when(
-              data: (data) => _buildChart(data),
-              loading: () => const Center(
+              data: (data) => _buildChart(context, data),
+              loading: () => Center(
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: AppColors.primary)),
+                      strokeWidth: 2, color: context.colors.primary)),
               error: (_, __) =>
-                  const Center(child: Text('Chart unavailable')),
+                  Center(child: Text('Chart unavailable')),
             ),
           ),
         ],
@@ -243,7 +260,7 @@ class _WeeklySalesChart extends StatelessWidget {
     );
   }
 
-  Widget _buildChart(Map<DateTime, double> data) {
+  Widget _buildChart(BuildContext context, Map<DateTime, double> data) {
     final days = List.generate(7, (i) {
       final d = DateTime.now().subtract(Duration(days: 6 - i));
       return DateTime(d.year, d.month, d.day);
@@ -256,9 +273,9 @@ class _WeeklySalesChart extends StatelessWidget {
         barRods: [
           BarChartRodData(
             toY: val,
-            color: AppColors.primary,
+            color: context.colors.primary,
             width: 24,
-            borderRadius: const BorderRadius.only(
+            borderRadius: BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
             ),
@@ -274,15 +291,15 @@ class _WeeklySalesChart extends StatelessWidget {
           show: true,
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) => FlLine(
-            color: AppColors.surfaceBorder,
+            color: context.colors.surfaceBorder,
             strokeWidth: 1,
           ),
         ),
         borderData: FlBorderData(show: false),
         titlesData: FlTitlesData(
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -290,8 +307,8 @@ class _WeeklySalesChart extends StatelessWidget {
                 final day = days[val.toInt()];
                 return Text(
                   DateFormat('E').format(day),
-                  style: const TextStyle(
-                      color: AppColors.textSecondary, fontSize: 11),
+                  style: TextStyle(
+                      color: context.colors.textSecondary, fontSize: 11),
                 );
               },
             ),
@@ -299,10 +316,10 @@ class _WeeklySalesChart extends StatelessWidget {
         ),
         barTouchData: BarTouchData(
           touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => AppColors.surfaceBorder,
+            getTooltipColor: (_) => context.colors.surfaceBorder,
             getTooltipItem: (group, _, rod, __) => BarTooltipItem(
               AppFormatters.currency(rod.toY),
-              const TextStyle(color: AppColors.primary, fontSize: 12),
+              TextStyle(color: context.colors.primary, fontSize: 12),
             ),
           ),
         ),
@@ -317,41 +334,41 @@ class _QuickActionsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quick Actions',
           style: TextStyle(
-              color: AppColors.textPrimary,
+              color: context.colors.textPrimary,
               fontSize: 15,
               fontWeight: FontWeight.w600),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         Row(
           children: [
             _ActionTile(
               icon: Icons.point_of_sale,
               label: 'New Sale',
-              color: AppColors.primary,
+              color: context.colors.primary,
               onTap: () => context.push('/sales/new'),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             _ActionTile(
               icon: Icons.add_box_outlined,
               label: 'Receive Stock',
-              color: AppColors.info,
+              color: context.colors.info,
               onTap: () => context.push('/inventory/receive'),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             _ActionTile(
               icon: Icons.medication_outlined,
               label: 'New Medicine',
-              color: AppColors.success,
+              color: context.colors.success,
               onTap: () => context.push('/products/add'),
             ),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             _ActionTile(
               icon: Icons.book_outlined,
               label: 'Shortbook',
-              color: AppColors.warning,
+              color: context.colors.warning,
               onTap: () => context.go('/reports'),
             ),
           ],
@@ -379,7 +396,7 @@ class _ActionTile extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+          padding: EdgeInsets.symmetric(vertical: 14, horizontal: 6),
           decoration: BoxDecoration(
             color: color.withOpacity(0.08),
             borderRadius: BorderRadius.circular(12),
@@ -388,7 +405,7 @@ class _ActionTile extends StatelessWidget {
           child: Column(
             children: [
               Icon(icon, color: color, size: 22),
-              const SizedBox(height: 6),
+              SizedBox(height: 6),
               Text(
                 label,
                 textAlign: TextAlign.center,

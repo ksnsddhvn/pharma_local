@@ -1,4 +1,6 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'database/app_database.dart';
 import 'database/daos/stock_batches_dao.dart';
 import 'services/inventory_service.dart';
@@ -7,6 +9,34 @@ import 'services/supplier_service.dart';
 import 'services/shortbook_service.dart';
 import 'services/backup_service.dart';
 import 'services/opening_stock_service.dart';
+
+// --- Shared Preferences ---
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw UnimplementedError(); // Override in main()
+});
+
+final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
+  final prefs = ref.read(sharedPreferencesProvider);
+  return ThemeModeNotifier(prefs);
+});
+
+class ThemeModeNotifier extends StateNotifier<ThemeMode> {
+  final SharedPreferences prefs;
+  
+  ThemeModeNotifier(this.prefs) : super(_loadThemeMode(prefs));
+
+  static ThemeMode _loadThemeMode(SharedPreferences prefs) {
+    final val = prefs.getString('theme_mode') ?? 'light';
+    if (val == 'dark') return ThemeMode.dark;
+    if (val == 'system') return ThemeMode.system;
+    return ThemeMode.light;
+  }
+
+  void setThemeMode(ThemeMode mode) {
+    state = mode;
+    prefs.setString('theme_mode', mode.name);
+  }
+}
 
 // ── Database singleton ──────────────────────────────────────────────────────
 final databaseProvider = Provider<AppDatabase>((ref) {

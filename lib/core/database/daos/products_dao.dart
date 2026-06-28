@@ -23,19 +23,14 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
           ..where(
             (p) =>
                 p.name.lower().contains(q) |
-                p.composition.lower().contains(q),
+                p.hsnCode.lower().contains(q),
           )
           ..orderBy([(p) => OrderingTerm.asc(p.name)])
           ..limit(100))
         .get();
   }
 
-  Stream<List<Product>> watchSubstitutesForComposition(String compositionValue, int currentProductId) {
-    return (select(products)
-      ..where((t) => t.composition.equals(compositionValue))
-      ..where((t) => t.id.equals(currentProductId).not()))
-      .watch();
-  }
+
 
   Future<Product?> getProductById(int id) =>
       (select(products)..where((p) => p.id.equals(id))).getSingleOrNull();

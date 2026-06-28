@@ -9,7 +9,7 @@ import '../../core/utils/fuzzy_search.dart';
 import '../../core/widgets/tablet_calculator_sheet.dart';
 
 class ReceiveStockScreen extends ConsumerStatefulWidget {
-  const ReceiveStockScreen({super.key});
+  ReceiveStockScreen({super.key});
 
   @override
   ConsumerState<ReceiveStockScreen> createState() => _ReceiveStockScreenState();
@@ -29,7 +29,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
   final _noteCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
   final _gstCtrl = TextEditingController(text: '12');
-  DateTime _expiry = DateTime.now().add(const Duration(days: 365));
+  DateTime _expiry = DateTime.now().add(Duration(days: 365));
   bool _loading = false;
   bool _showSearch = false;
   bool _isOpeningStock = false;
@@ -53,10 +53,10 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
       context: context,
       initialDate: _expiry,
       firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      lastDate: DateTime.now().add(Duration(days: 3650)),
       builder: (ctx, child) => Theme(
         data: ThemeData.dark().copyWith(
-          colorScheme: const ColorScheme.dark(primary: AppColors.primary),
+          colorScheme: ColorScheme.dark(primary: context.colors.primary),
         ),
         child: child!,
       ),
@@ -67,15 +67,15 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedProduct == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Please select a product'),
-          backgroundColor: AppColors.warning));
+          backgroundColor: context.colors.warning));
       return;
     }
     if (!_isOpeningStock && _selectedSupplierId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Please select a supplier'),
-          backgroundColor: AppColors.warning));
+          backgroundColor: context.colors.warning));
       return;
     }
 
@@ -111,16 +111,16 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Stock received successfully ✓'),
-            backgroundColor: AppColors.success));
+            backgroundColor: context.colors.success));
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Error: $e'),
-            backgroundColor: AppColors.error));
+            backgroundColor: context.colors.error));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -132,73 +132,73 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
     final suppliersAsync = ref.watch(allSuppliersStreamProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Receive Stock'),
+        title: Text('Receive Stock'),
         actions: [
           if (_loading)
-            const Padding(
+            Padding(
                 padding: EdgeInsets.all(16),
                 child: SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.primary)))
+                        strokeWidth: 2, color: context.colors.primary)))
           else
             TextButton(
                 onPressed: _submit,
-                child: const Text('Save',
+                child: Text('Save',
                     style: TextStyle(
-                        color: AppColors.primary,
+                        color: context.colors.primary,
                         fontWeight: FontWeight.w600))),
         ],
       ),
       body: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           children: [
             SwitchListTile(
-              title: const Text('Opening Stock Mode', style: TextStyle(color: AppColors.textPrimary)),
-              subtitle: const Text('Bypass supplier and purchase rate for legacy stock', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              title: Text('Opening Stock Mode', style: TextStyle(color: context.colors.textPrimary)),
+              subtitle: Text('Bypass supplier and purchase rate for legacy stock', style: TextStyle(color: context.colors.textSecondary, fontSize: 12)),
               value: _isOpeningStock,
-              activeColor: AppColors.primary,
+              activeColor: context.colors.primary,
               onChanged: (v) => setState(() => _isOpeningStock = v),
               contentPadding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Product selector
             _sectionLabel('Select Product'),
             GestureDetector(
               onTap: () => setState(() => _showSearch = !_showSearch),
               child: Container(
-                padding: const EdgeInsets.all(14),
+                padding: EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
+                  color: context.colors.surfaceElevated,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
                       color: _selectedProduct != null
-                          ? AppColors.primary
-                          : AppColors.surfaceBorder),
+                          ? context.colors.primary
+                          : context.colors.surfaceBorder),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.medication_outlined,
-                        color: AppColors.textMuted, size: 18),
-                    const SizedBox(width: 10),
+                    Icon(Icons.medication_outlined,
+                        color: context.colors.textMuted, size: 18),
+                    SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _selectedProduct?.name ?? 'Tap to select product...',
                         style: TextStyle(
                           color: _selectedProduct != null
-                              ? AppColors.textPrimary
-                              : AppColors.textMuted,
+                              ? context.colors.textPrimary
+                              : context.colors.textMuted,
                         ),
                       ),
                     ),
-                    const Icon(Icons.arrow_drop_down,
-                        color: AppColors.textMuted),
+                    Icon(Icons.arrow_drop_down,
+                        color: context.colors.textMuted),
                   ],
                 ),
               ),
@@ -209,80 +209,80 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                 _showSearch = false;
               }),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Batch details
             _sectionLabel('Batch Details'),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: context.colors.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.surfaceBorder),
+                border: Border.all(color: context.colors.surfaceBorder),
               ),
               child: Column(
                 children: [
                   TextFormField(
                     controller: _batchCtrl,
-                    style: const TextStyle(color: AppColors.textPrimary),
-                    decoration: const InputDecoration(labelText: 'Batch Number *'),
+                    style: TextStyle(color: context.colors.textPrimary),
+                    decoration: InputDecoration(labelText: 'Batch Number *'),
                     validator: (v) => v!.isEmpty ? 'Required' : null,
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   GestureDetector(
                     onTap: _pickExpiry,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                           horizontal: 16, vertical: 14),
                       decoration: BoxDecoration(
-                        color: AppColors.background,
+                        color: context.colors.background,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppColors.surfaceBorder),
+                        border: Border.all(color: context.colors.surfaceBorder),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calendar_today_outlined,
-                              size: 16, color: AppColors.textMuted),
-                          const SizedBox(width: 10),
+                          Icon(Icons.calendar_today_outlined,
+                              size: 16, color: context.colors.textMuted),
+                          SizedBox(width: 10),
                           Text(
                             'Expiry: ${_expiry.day}/${_expiry.month}/${_expiry.year}',
-                            style: const TextStyle(color: AppColors.textPrimary),
+                            style: TextStyle(color: context.colors.textPrimary),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
                         child: TextFormField(
                           controller: _mrpCtrl,
                           keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: AppColors.textPrimary),
+                              TextInputType.numberWithOptions(decimal: true),
+                          style: TextStyle(color: context.colors.textPrimary),
                           decoration:
-                              const InputDecoration(labelText: 'MRP (₹) *'),
+                              InputDecoration(labelText: 'MRP (₹) *'),
                           validator: (v) =>
                               double.tryParse(v ?? '') == null ? 'Invalid' : null,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       if (!_isOpeningStock) Expanded(
                         child: TextFormField(
                           controller: _rateCtrl,
                           keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: AppColors.textPrimary),
+                              TextInputType.numberWithOptions(decimal: true),
+                          style: TextStyle(color: context.colors.textPrimary),
                           decoration:
-                              const InputDecoration(labelText: 'Purchase Rate (₹) *'),
+                              InputDecoration(labelText: 'Purchase Rate (₹) *'),
                           validator: (v) =>
                               double.tryParse(v ?? '') == null ? 'Invalid' : null,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
@@ -292,37 +292,37 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                           onTap: () async {
                             if (_selectedProduct == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Please select a product first', style: TextStyle(color: AppColors.textPrimary)), backgroundColor: AppColors.warning),
+                                SnackBar(content: Text('Please select a product first', style: TextStyle(color: context.colors.textPrimary)), backgroundColor: context.colors.warning),
                               );
                               return;
                             }
                             final qty = await showModalBottomSheet<int>(
                               context: context,
                               isScrollControlled: true,
-                              backgroundColor: AppColors.surfaceElevated,
-                              builder: (ctx) => TabletCalculatorSheet(productName: _selectedProduct!.name),
+                              backgroundColor: context.colors.surfaceElevated,
+                              builder: (ctx) => TabletCalculatorSheet(productName: _selectedProduct!.name, packagingUnit: _selectedProduct!.packagingUnit),
                             );
                             if (qty != null) {
                               _qtyCtrl.text = qty.toString();
                             }
                           },
                           keyboardType: TextInputType.number,
-                          style: const TextStyle(color: AppColors.textPrimary),
+                          style: TextStyle(color: context.colors.textPrimary),
                           decoration:
-                              const InputDecoration(labelText: 'Quantity *', hintText: 'Tap to calculate'),
+                              InputDecoration(labelText: 'Quantity *', hintText: 'Tap to calculate'),
                           validator: (v) =>
                               int.tryParse(v ?? '') == null ? 'Invalid' : null,
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: TextFormField(
                           controller: _gstCtrl,
                           keyboardType:
-                              const TextInputType.numberWithOptions(decimal: true),
-                          style: const TextStyle(color: AppColors.textPrimary),
+                              TextInputType.numberWithOptions(decimal: true),
+                          style: TextStyle(color: context.colors.textPrimary),
                           decoration:
-                              const InputDecoration(labelText: 'GST % *'),
+                              InputDecoration(labelText: 'GST % *'),
                           validator: (v) =>
                               double.tryParse(v ?? '') == null ? 'Invalid' : null,
                         ),
@@ -332,27 +332,27 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
 
             // Supplier
             if (!_isOpeningStock) ...[
               _sectionLabel('Supplier'),
               suppliersAsync.when(
                 data: (suppliers) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: 16),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceElevated,
+                    color: context.colors.surfaceElevated,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.surfaceBorder),
+                    border: Border.all(color: context.colors.surfaceBorder),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<int>(
                       value: _selectedSupplierId,
-                      dropdownColor: AppColors.surfaceElevated,
+                      dropdownColor: context.colors.surfaceElevated,
                       isExpanded: true,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      hint: const Text('Select Supplier',
-                          style: TextStyle(color: AppColors.textMuted)),
+                      style: TextStyle(color: context.colors.textPrimary),
+                      hint: Text('Select Supplier',
+                          style: TextStyle(color: context.colors.textMuted)),
                       items: suppliers
                           .map((s) => DropdownMenuItem(
                               value: s.id,
@@ -363,56 +363,56 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                     ),
                   ),
                 ),
-                loading: () => const LinearProgressIndicator(),
-                error: (_, __) => const Text('Error loading suppliers'),
+                loading: () => LinearProgressIndicator(),
+                error: (_, __) => Text('Error loading suppliers'),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
 
             // Invoice
             if (!_isOpeningStock) ...[
               _sectionLabel('Invoice Details'),
               Container(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceElevated,
+                  color: context.colors.surfaceElevated,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.surfaceBorder),
+                  border: Border.all(color: context.colors.surfaceBorder),
                 ),
                 child: Column(
                   children: [
                     TextFormField(
                       controller: _invoiceAmtCtrl,
                       keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
-                      style: const TextStyle(color: AppColors.textPrimary),
+                          TextInputType.numberWithOptions(decimal: true),
+                      style: TextStyle(color: context.colors.textPrimary),
                       decoration:
-                          const InputDecoration(labelText: 'Invoice Amount (₹) *'),
+                          InputDecoration(labelText: 'Invoice Amount (₹) *'),
                       validator: (v) =>
                           double.tryParse(v ?? '') == null ? 'Invalid' : null,
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     TextFormField(
                       controller: _invoiceNoCtrl,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: context.colors.textPrimary),
+                      decoration: InputDecoration(
                           labelText: 'Invoice No.'),
                     ),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     TextFormField(
                       controller: _noteCtrl,
-                      style: const TextStyle(color: AppColors.textPrimary),
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: context.colors.textPrimary),
+                      decoration: InputDecoration(
                           labelText: 'Reference Note'),
                     ),
                   ],
                 ),
               ),
             ],
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
             ElevatedButton(
               onPressed: _loading ? null : _submit,
-              child: const Text('Receive Stock'),
+              child: Text('Receive Stock'),
             ),
           ],
         ),
@@ -421,10 +421,10 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
   }
 
   Widget _sectionLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.only(bottom: 8),
         child: Text(text,
-            style: const TextStyle(
-                color: AppColors.textSecondary,
+            style: TextStyle(
+                color: context.colors.textSecondary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.8)),
@@ -462,20 +462,20 @@ class _ProductSearchWidgetState extends ConsumerState<_ProductSearchWidget> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 8),
+      margin: EdgeInsets.only(top: 8),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: context.colors.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+        border: Border.all(color: context.colors.primary.withOpacity(0.4)),
       ),
       child: Column(
         children: [
           TextField(
             controller: _ctrl,
             autofocus: true,
-            style: const TextStyle(color: AppColors.textPrimary),
+            style: TextStyle(color: context.colors.textPrimary),
             onChanged: _load,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Search product...',
               prefixIcon: Icon(Icons.search, size: 18),
               border: InputBorder.none,
@@ -483,16 +483,16 @@ class _ProductSearchWidgetState extends ConsumerState<_ProductSearchWidget> {
                   EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1),
           ..._results.map(
             (p) => ListTile(
               dense: true,
               title: Text(p.name,
-                  style: const TextStyle(
-                      color: AppColors.textPrimary, fontSize: 13)),
-              subtitle: Text(p.composition ?? '',
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 11)),
+                  style: TextStyle(
+                      color: context.colors.textPrimary, fontSize: 13)),
+              subtitle: Text('HSN: ${p.hsnCode}',
+                  style: TextStyle(
+                      color: context.colors.textMuted, fontSize: 11)),
               onTap: () => widget.onSelected(p),
             ),
           ),

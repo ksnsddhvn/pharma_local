@@ -45,17 +45,19 @@ class OpeningStockService {
     required DateTime expiryDate,
     required double mrp,
     required int quantity,
-    String? composition,
+    String hsnCode = '0000',
     String? barcode,
     double gstPercentage = 0.0,
+    String packagingUnit = "10's",
   }) async {
     return db.transaction(() async {
       // 1. Create the product record
       final productId = await db.productsDao.insertProduct(
         ProductsCompanion.insert(
           name: name,
-          composition: composition ?? '',
-          categoryId: const Value(null),
+          hsnCode: hsnCode,
+          packagingUnit: Value(packagingUnit),
+          categoryId: Value(null),
         ),
       );
 

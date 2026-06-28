@@ -4,7 +4,7 @@ import 'core/theme/app_theme.dart';
 
 class ShellScaffold extends StatelessWidget {
   final Widget child;
-  const ShellScaffold({super.key, required this.child});
+  ShellScaffold({super.key, required this.child});
 
   static const _tabs = [
     (path: '/', icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Dashboard'),
@@ -29,9 +29,9 @@ class ShellScaffold extends StatelessWidget {
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           border: Border(
-            top: BorderSide(color: AppColors.surfaceBorder, width: 1),
+            top: BorderSide(color: context.colors.surfaceBorder, width: 1),
           ),
         ),
         child: NavigationBar(

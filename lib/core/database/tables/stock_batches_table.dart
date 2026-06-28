@@ -11,10 +11,10 @@ class StockBatches extends Table {
   RealColumn get mrp => real()();
   RealColumn get purchaseRate => real()();
   RealColumn get gstPercentage =>
-      real().withDefault(const Constant(12.0))(); // 5.0 | 12.0 | 18.0
+      real().withDefault(Constant(12.0))(); // 5.0 | 12.0 | 18.0
   IntColumn get currentStock =>
-      integer().withDefault(const Constant(0))();
+      integer().withDefault(Constant(0))();
   TextColumn get barcode => text().nullable()(); // optional EAN/UPC barcode
   BoolColumn get isOpeningStock =>
-      boolean().withDefault(const Constant(false))(); // TRUE = legacy shelf stock
+      boolean().withDefault(Constant(false))(); // TRUE = legacy shelf stock
 }

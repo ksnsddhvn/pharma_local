@@ -8,19 +8,19 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 
 class SuppliersScreen extends ConsumerWidget {
-  const SuppliersScreen({super.key});
+  SuppliersScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final suppliersAsync = ref.watch(allSuppliersStreamProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Suppliers'),
+        title: Text('Suppliers'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: Icon(Icons.add),
             onPressed: () => _showAddSupplier(context, ref),
           ),
         ],
@@ -28,15 +28,15 @@ class SuppliersScreen extends ConsumerWidget {
       body: suppliersAsync.when(
         data: (suppliers) {
           if (suppliers.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.local_shipping_outlined,
-                      size: 48, color: AppColors.textMuted),
+                      size: 48, color: context.colors.textMuted),
                   SizedBox(height: 12),
                   Text('No suppliers added',
-                      style: TextStyle(color: AppColors.textSecondary)),
+                      style: TextStyle(color: context.colors.textSecondary)),
                 ],
               ),
             );
@@ -50,24 +50,24 @@ class SuppliersScreen extends ConsumerWidget {
               // Total outstanding banner
               if (totalOwed > 0)
                 Container(
-                  margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  padding: const EdgeInsets.symmetric(
+                  margin: EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  padding: EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.1),
+                    color: context.colors.warning.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                     border:
-                        Border.all(color: AppColors.warning.withOpacity(0.3)),
+                        Border.all(color: context.colors.warning.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.account_balance_wallet_outlined,
-                          color: AppColors.warning, size: 18),
-                      const SizedBox(width: 10),
+                      Icon(Icons.account_balance_wallet_outlined,
+                          color: context.colors.warning, size: 18),
+                      SizedBox(width: 10),
                       Text(
                         'Total Outstanding: ${AppFormatters.currency(totalOwed)}',
-                        style: const TextStyle(
-                            color: AppColors.warning,
+                        style: TextStyle(
+                            color: context.colors.warning,
                             fontWeight: FontWeight.w600),
                       ),
                     ],
@@ -76,25 +76,25 @@ class SuppliersScreen extends ConsumerWidget {
 
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 80, top: 8),
+                  padding: EdgeInsets.only(bottom: 80, top: 8),
                   itemCount: suppliers.length,
                   itemBuilder: (_, i) {
                     final s = suppliers[i];
                     return Container(
-                      margin: const EdgeInsets.symmetric(
+                      margin: EdgeInsets.symmetric(
                           horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceElevated,
+                        color: context.colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.surfaceBorder),
+                        border: Border.all(color: context.colors.surfaceBorder),
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.all(16),
+                        contentPadding: EdgeInsets.all(16),
                         leading: Container(
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.15),
+                            color: context.colors.primary.withOpacity(0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
@@ -102,26 +102,26 @@ class SuppliersScreen extends ConsumerWidget {
                               s.name.isNotEmpty
                                   ? s.name[0].toUpperCase()
                                   : '?',
-                              style: const TextStyle(
-                                  color: AppColors.primary,
+                              style: TextStyle(
+                                  color: context.colors.primary,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 18),
                             ),
                           ),
                         ),
                         title: Text(s.name,
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
+                            style: TextStyle(
+                                color: context.colors.textPrimary,
                                 fontWeight: FontWeight.w600)),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             if (s.phone != null)
                               Text(s.phone!,
-                                  style: const TextStyle(
-                                      color: AppColors.textMuted,
+                                  style: TextStyle(
+                                      color: context.colors.textMuted,
                                       fontSize: 12)),
-                            const SizedBox(height: 4),
+                            SizedBox(height: 4),
                             Text(
                               s.currentBalance == 0
                                   ? 'Settled ✓'
@@ -130,10 +130,10 @@ class SuppliersScreen extends ConsumerWidget {
                                       : 'Advance: ${AppFormatters.currency(-s.currentBalance)}',
                               style: TextStyle(
                                 color: s.currentBalance == 0
-                                    ? AppColors.success
+                                    ? context.colors.success
                                     : s.currentBalance > 0
-                                        ? AppColors.warning
-                                        : AppColors.info,
+                                        ? context.colors.warning
+                                        : context.colors.info,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -151,7 +151,7 @@ class SuppliersScreen extends ConsumerWidget {
           );
         },
         loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            Center(child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
     );
@@ -164,8 +164,8 @@ class SuppliersScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surfaceElevated,
-      shape: const RoundedRectangleBorder(
+      backgroundColor: context.colors.surfaceElevated,
+      shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (_) => Padding(
         padding: EdgeInsets.only(
@@ -177,32 +177,32 @@ class SuppliersScreen extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Add Supplier',
+            Text('Add Supplier',
                 style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: context.colors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w700)),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             TextField(
               controller: nameCtrl,
               autofocus: true,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(labelText: 'Supplier Name *'),
+              style: TextStyle(color: context.colors.textPrimary),
+              decoration: InputDecoration(labelText: 'Supplier Name *'),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             TextField(
               controller: phoneCtrl,
               keyboardType: TextInputType.phone,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(labelText: 'Phone'),
+              style: TextStyle(color: context.colors.textPrimary),
+              decoration: InputDecoration(labelText: 'Phone'),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             TextField(
               controller: contactCtrl,
-              style: const TextStyle(color: AppColors.textPrimary),
-              decoration: const InputDecoration(labelText: 'Contact Person'),
+              style: TextStyle(color: context.colors.textPrimary),
+              decoration: InputDecoration(labelText: 'Contact Person'),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             ElevatedButton(
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
@@ -220,8 +220,8 @@ class SuppliersScreen extends ConsumerWidget {
                 if (context.mounted) Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(48)),
-              child: const Text('Add Supplier'),
+                  minimumSize: Size.fromHeight(48)),
+              child: Text('Add Supplier'),
             ),
           ],
         ),

@@ -120,7 +120,7 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
           gstPercentage: Value(gstPercentage),
           currentStock: Value(quantity),
           barcode: Value(barcode),
-          isOpeningStock: const Value(true),
+          isOpeningStock: Value(true),
         ),
       );
 

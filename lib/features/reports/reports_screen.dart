@@ -8,7 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
-  const ReportsScreen({super.key});
+  ReportsScreen({super.key});
 
   @override
   ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
@@ -33,14 +33,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Reports'),
+        title: Text('Reports'),
         bottom: TabBar(
           controller: _tab,
-          indicatorColor: AppColors.primary,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: AppColors.textMuted,
+          indicatorColor: context.colors.primary,
+          labelColor: context.colors.primary,
+          unselectedLabelColor: context.colors.textMuted,
           tabs: const [
             Tab(icon: Icon(Icons.warning_amber_rounded, size: 18), text: 'Shortbook'),
             Tab(icon: Icon(Icons.hourglass_bottom, size: 18), text: 'Expiry'),
@@ -70,21 +70,21 @@ class _ShortbookTab extends ConsumerWidget {
     return shortbookAsync.when(
       data: (items) {
         if (items.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.check_circle_outline,
-                    size: 48, color: AppColors.success),
+                    size: 48, color: context.colors.success),
                 SizedBox(height: 12),
                 Text('All products are well-stocked!',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                    style: TextStyle(color: context.colors.textSecondary)),
               ],
             ),
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           itemCount: items.length,
           itemBuilder: (_, i) {
             final item = items[i];
@@ -92,15 +92,15 @@ class _ShortbookTab extends ConsumerWidget {
                 ? item.currentStock / item.threshold
                 : 0.0;
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(16),
+              margin: EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: context.colors.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                     color: ratio == 0
-                        ? AppColors.expiryCritical.withValues(alpha: 0.4)
-                        : AppColors.warning.withValues(alpha: 0.4)),
+                        ? context.colors.expiryCritical.withValues(alpha: 0.4)
+                        : context.colors.warning.withValues(alpha: 0.4)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,25 +109,25 @@ class _ShortbookTab extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(item.product.name,
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
+                            style: TextStyle(
+                                color: context.colors.textPrimary,
                                 fontWeight: FontWeight.w600)),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: ratio == 0
-                              ? AppColors.expiryCritical.withValues(alpha: 0.15)
-                              : AppColors.warning.withValues(alpha: 0.15),
+                              ? context.colors.expiryCritical.withValues(alpha: 0.15)
+                              : context.colors.warning.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
                           ratio == 0 ? 'OUT OF STOCK' : 'LOW STOCK',
                           style: TextStyle(
                             color: ratio == 0
-                                ? AppColors.expiryCritical
-                                : AppColors.warning,
+                                ? context.colors.expiryCritical
+                                : context.colors.warning,
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                           ),
@@ -135,31 +135,31 @@ class _ShortbookTab extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   Row(
                     children: [
                       Text(
                         'Current: ${item.currentStock}',
-                        style: const TextStyle(
-                            color: AppColors.textSecondary, fontSize: 12),
+                        style: TextStyle(
+                            color: context.colors.textSecondary, fontSize: 12),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: 16),
                       Text(
                         'Min: ${item.threshold.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: 12),
+                        style: TextStyle(
+                            color: context.colors.textMuted, fontSize: 12),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: 8),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
                       value: ratio.clamp(0.0, 1.0),
-                      backgroundColor: AppColors.surfaceBorder,
+                      backgroundColor: context.colors.surfaceBorder,
                       color: ratio == 0
-                          ? AppColors.expiryCritical
-                          : AppColors.warning,
+                          ? context.colors.expiryCritical
+                          : context.colors.warning,
                       minHeight: 6,
                     ),
                   ),
@@ -170,7 +170,7 @@ class _ShortbookTab extends ConsumerWidget {
         );
       },
       loading: () =>
-          const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          Center(child: CircularProgressIndicator(color: context.colors.primary)),
       error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
@@ -186,38 +186,38 @@ class _ExpiryTab extends ConsumerWidget {
     return expiryAsync.when(
       data: (items) {
         if (items.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.check_circle_outline,
-                    size: 48, color: AppColors.success),
+                    size: 48, color: context.colors.success),
                 SizedBox(height: 12),
                 Text('No batches expiring in 90 days',
-                    style: TextStyle(color: AppColors.textSecondary)),
+                    style: TextStyle(color: context.colors.textSecondary)),
               ],
             ),
           );
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           itemCount: items.length,
           itemBuilder: (_, i) {
             final bwp = items[i];
             final days =
                 bwp.batch.expiryDate.difference(DateTime.now()).inDays;
             final color = days < 0
-                ? AppColors.expiryCritical
+                ? context.colors.expiryCritical
                 : days <= 30
-                    ? AppColors.expiryCritical
-                    : AppColors.expiryWarning;
+                    ? context.colors.expiryCritical
+                    : context.colors.expiryWarning;
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(16),
+              margin: EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+                color: context.colors.surfaceElevated,
                 borderRadius: BorderRadius.circular(12),
                 border:
                     Border.all(color: color.withValues(alpha: 0.35)),
@@ -231,19 +231,19 @@ class _ExpiryTab extends ConsumerWidget {
                         color: color,
                         borderRadius: BorderRadius.circular(2)),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(bwp.product.name,
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
+                            style: TextStyle(
+                                color: context.colors.textPrimary,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 13)),
                         Text('Batch: ${bwp.batch.batchNumber}',
-                            style: const TextStyle(
-                                color: AppColors.textMuted, fontSize: 11)),
+                            style: TextStyle(
+                                color: context.colors.textMuted, fontSize: 11)),
                         Text(
                           AppFormatters.expiryLabel(bwp.batch.expiryDate),
                           style: TextStyle(
@@ -255,8 +255,8 @@ class _ExpiryTab extends ConsumerWidget {
                     ),
                   ),
                   Text('${bwp.batch.currentStock} qty',
-                      style: const TextStyle(
-                          color: AppColors.textSecondary,
+                      style: TextStyle(
+                          color: context.colors.textSecondary,
                           fontWeight: FontWeight.w600)),
                 ],
               ),
@@ -265,7 +265,7 @@ class _ExpiryTab extends ConsumerWidget {
         );
       },
       loading: () =>
-          const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          Center(child: CircularProgressIndicator(color: context.colors.primary)),
       error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
@@ -292,9 +292,9 @@ class _BackupTabState extends ConsumerState<_BackupTab> {
 
   Future<void> _export() async {
     if (_passphraseCtrl.text.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('Passphrase must be at least 6 characters'),
-          backgroundColor: AppColors.warning));
+          backgroundColor: context.colors.warning));
       return;
     }
     setState(() => _loading = true);
@@ -306,13 +306,13 @@ class _BackupTabState extends ConsumerState<_BackupTab> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Backup saved: $path'),
-            backgroundColor: AppColors.success));
+            backgroundColor: context.colors.success));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Backup failed: $e'),
-            backgroundColor: AppColors.error));
+            backgroundColor: context.colors.error));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -322,101 +322,101 @@ class _BackupTabState extends ConsumerState<_BackupTab> {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: AppColors.surfaceElevated,
+            color: context.colors.surfaceElevated,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.surfaceBorder),
+            border: Border.all(color: context.colors.surfaceBorder),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.shield_outlined, color: AppColors.primary, size: 20),
+                  Icon(Icons.shield_outlined, color: context.colors.primary, size: 20),
                   SizedBox(width: 10),
                   Text('AES-256 Encrypted Backup',
                       style: TextStyle(
-                          color: AppColors.textPrimary,
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: 15)),
                 ],
               ),
-              const SizedBox(height: 8),
-              const Text(
+              SizedBox(height: 8),
+              Text(
                 'Your database will be encrypted with AES-256 and saved '
                 'to your documents folder. Use the same passphrase to restore.',
                 style: TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12, height: 1.5),
+                    color: context.colors.textSecondary, fontSize: 12, height: 1.5),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               TextField(
                 controller: _passphraseCtrl,
                 obscureText: _obscure,
-                style: const TextStyle(color: AppColors.textPrimary),
+                style: TextStyle(color: context.colors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Backup Passphrase',
                   hintText: 'Min 6 characters',
                   suffixIcon: IconButton(
                     icon: Icon(
                         _obscure ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.textMuted, size: 18),
+                        color: context.colors.textMuted, size: 18),
                     onPressed: () =>
                         setState(() => _obscure = !_obscure),
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: _loading ? null : _export,
-                icon: const Icon(Icons.download_outlined, size: 18),
+                icon: Icon(Icons.download_outlined, size: 18),
                 label: _loading
-                    ? const SizedBox(
+                    ? SizedBox(
                         height: 18,
                         width: 18,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.black))
-                    : const Text('Export Backup'),
+                    : Text('Export Backup'),
                 style: ElevatedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(48)),
+                    minimumSize: Size.fromHeight(48)),
               ),
               if (_lastBackupPath != null) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () => ref
                       .read(backupServiceProvider)
                       .shareBackup(_lastBackupPath!),
-                  icon: const Icon(Icons.share_outlined, size: 18),
-                  label: const Text('Share Backup File'),
+                  icon: Icon(Icons.share_outlined, size: 18),
+                  label: Text('Share Backup File'),
                   style: OutlinedButton.styleFrom(
-                      minimumSize: const Size.fromHeight(48)),
+                      minimumSize: Size.fromHeight(48)),
                 ),
               ],
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: 16),
         Container(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.info.withValues(alpha: 0.08),
+            color: context.colors.info.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.info.withValues(alpha: 0.25)),
+            border: Border.all(color: context.colors.info.withValues(alpha: 0.25)),
           ),
-          child: const Row(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline, color: AppColors.info, size: 18),
+              Icon(Icons.info_outline, color: context.colors.info, size: 18),
               SizedBox(width: 10),
               Expanded(
                 child: Text(
                   'Transfer the .pharmaenc file to any device and use the same passphrase to restore. '
                   'Keep your passphrase safe — it cannot be recovered.',
                   style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: context.colors.textSecondary,
                       fontSize: 12,
                       height: 1.5),
                 ),

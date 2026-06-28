@@ -35,7 +35,8 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
         mrp: item.mrp,
         gstPercentage: item.gstPercentage,
         discountPercent: updated[idx].discountPercent,
-        composition: item.composition,
+        hsnCode: item.hsnCode,
+        packagingUnit: item.packagingUnit,
         alternativeName: item.alternativeName,
       );
       state = updated;
@@ -62,7 +63,8 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           mrp: i.mrp,
           gstPercentage: i.gstPercentage,
           discountPercent: discount,
-          composition: i.composition,
+          hsnCode: i.hsnCode,
+          packagingUnit: i.packagingUnit,
           alternativeName: i.alternativeName,
         );
       }
@@ -92,7 +94,8 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           mrp: i.mrp,
           gstPercentage: i.gstPercentage,
           discountPercent: i.discountPercent,
-          composition: i.composition,
+          hsnCode: i.hsnCode,
+          packagingUnit: i.packagingUnit,
           alternativeName: i.alternativeName,
         );
       }
@@ -105,7 +108,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
 }
 
 class NewSaleScreen extends ConsumerStatefulWidget {
-  const NewSaleScreen({super.key});
+  NewSaleScreen({super.key});
 
   @override
   ConsumerState<NewSaleScreen> createState() => _NewSaleScreenState();
@@ -137,22 +140,11 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
     final qty = await showModalBottomSheet<int>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surfaceElevated,
-      builder: (ctx) => TabletCalculatorSheet(productName: product.name),
+      backgroundColor: context.colors.surfaceElevated,
+      builder: (ctx) => TabletCalculatorSheet(productName: product.name, packagingUnit: product.packagingUnit),
     );
 
     if (qty == null || qty <= 0) return;
-
-    String? altName;
-    if (product.composition.isNotEmpty) {
-      final alternatives = await ref
-          .read(productsDaoProvider)
-          .watchSubstitutesForComposition(product.composition, product.id)
-          .first;
-      if (alternatives.isNotEmpty) {
-        altName = alternatives.first.name;
-      }
-    }
 
     final cart = ref.read(cartProvider);
     int remainingQty = qty;
@@ -177,8 +169,9 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                 maxQuantity: batch.currentStock,
                 mrp: batch.mrp,
                 gstPercentage: batch.gstPercentage,
-                composition: product.composition,
-                alternativeName: altName,
+                hsnCode: product.hsnCode,
+                packagingUnit: product.packagingUnit,
+                alternativeName: null,
               ),
             );
             
@@ -192,10 +185,10 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
         showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.surface,
-            title: const Row(
+            backgroundColor: context.colors.surface,
+            title: Row(
               children: [
-                Icon(Icons.warning_amber_rounded, color: AppColors.error),
+                Icon(Icons.warning_amber_rounded, color: context.colors.error),
                 SizedBox(width: 8),
                 Text('Insufficient Stock'),
               ],
@@ -206,7 +199,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx), 
-                child: const Text('OK', style: TextStyle(color: AppColors.primary)),
+                child: Text('OK', style: TextStyle(color: context.colors.primary)),
               ),
             ],
           ),
@@ -218,8 +211,8 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text('${product.name} added to cart ($qty tablets)'),
-        duration: const Duration(seconds: 1),
-        backgroundColor: AppColors.success,
+        duration: Duration(seconds: 1),
+        backgroundColor: context.colors.success,
       ));
     }
   }
@@ -230,17 +223,17 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
     final cartTotal = cart.fold(0.0, (s, i) => s + i.lineTotal);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Point of Sale'),
+        title: Text('Point of Sale'),
         actions: [
           if (cart.isNotEmpty)
             TextButton.icon(
               onPressed: () => ref.read(cartProvider.notifier).clear(),
-              icon: const Icon(Icons.delete_outline,
-                  color: AppColors.error, size: 18),
-              label: const Text('Clear',
-                  style: TextStyle(color: AppColors.error)),
+              icon: Icon(Icons.delete_outline,
+                  color: context.colors.error, size: 18),
+              label: Text('Clear',
+                  style: TextStyle(color: context.colors.error)),
             ),
         ],
       ),
@@ -248,7 +241,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
         children: [
           // Barcode / search row
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: Row(
               children: [
                 Expanded(
@@ -257,10 +250,10 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                     focusNode: _searchFocusNode,
                     autofocus: true,
                     onChanged: (v) => setState(() => _query = v),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Search inventory manually...',
                       prefixIcon: Icon(Icons.search,
-                          color: AppColors.textMuted, size: 20),
+                          color: context.colors.textMuted, size: 20),
                     ),
                   ),
                 ),
@@ -276,7 +269,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                 cart.isEmpty
                     ? _EmptyCartPlaceholder()
                     : ListView.builder(
-                        padding: const EdgeInsets.only(bottom: 120),
+                        padding: EdgeInsets.only(bottom: 120),
                         itemCount: cart.length,
                         itemBuilder: (_, i) => _CartItemTile(item: cart[i]),
                       ),
@@ -291,7 +284,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                     child: Material(
                       elevation: 8,
                       borderRadius: BorderRadius.circular(10),
-                      color: AppColors.surface,
+                      color: context.colors.surface,
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(10),
                         child: _SearchResults(
@@ -316,11 +309,11 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       bottomNavigationBar: cart.isEmpty
           ? null
           : Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
+              padding: EdgeInsets.fromLTRB(16, 12, 16, 24),
+              decoration: BoxDecoration(
+                color: context.colors.surface,
                 border: Border(
-                    top: BorderSide(color: AppColors.surfaceBorder)),
+                    top: BorderSide(color: context.colors.surfaceBorder)),
               ),
               child: Row(
                 children: [
@@ -330,12 +323,12 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text('${cart.length} item(s)',
-                            style: const TextStyle(
-                                color: AppColors.textSecondary, fontSize: 12)),
+                            style: TextStyle(
+                                color: context.colors.textSecondary, fontSize: 12)),
                         Text(
                           AppFormatters.currency(cartTotal),
-                          style: const TextStyle(
-                            color: AppColors.primary,
+                          style: TextStyle(
+                            color: context.colors.primary,
                             fontSize: 22,
                             fontWeight: FontWeight.w700,
                           ),
@@ -345,10 +338,10 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                   ),
                   ElevatedButton.icon(
                     onPressed: () => context.push('/sales/checkout'),
-                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                    label: const Text('Checkout'),
+                    icon: Icon(Icons.receipt_long_outlined, size: 18),
+                    label: Text('Checkout'),
                     style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
+                        padding: EdgeInsets.symmetric(
                             horizontal: 24, vertical: 14)),
                   ),
                 ],
@@ -396,7 +389,7 @@ class _SearchResultsState extends ConsumerState<_SearchResults> {
     final filtered = FuzzySearch.filter<Product>(
         query: q,
         candidates: all,
-        keyOf: (p) => '${p.name} ${p.composition ?? ''}',
+        keyOf: (p) => '${p.name} ${p.hsnCode}',
       );
     if (mounted) setState(() => _products = filtered.take(6).toList());
   }
@@ -414,7 +407,7 @@ class _SearchResultsState extends ConsumerState<_SearchResults> {
               onAdd: widget.onAdd,
             ),
             if (index < _products.length - 1)
-              const Divider(height: 1, indent: 16, endIndent: 16),
+              Divider(height: 1, indent: 16, endIndent: 16),
           ],
         );
       },
@@ -438,25 +431,25 @@ class _ProductResultTile extends ConsumerWidget {
 
         return ListTile(
           dense: true,
-          title: Text(product.name,
-              style: const TextStyle(
-                  color: AppColors.textPrimary,
+          title: Text('${product.name} (${product.packagingUnit})',
+              style: TextStyle(
+                  color: context.colors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w500)),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(product.composition ?? '',
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 11)),
-              const SizedBox(height: 4),
+              Text('HSN: ${product.hsnCode}',
+                  style: TextStyle(
+                      color: context.colors.textMuted, fontSize: 11)),
+              SizedBox(height: 4),
               if (isLoading)
-                const Text('Loading stock...', style: TextStyle(color: AppColors.textMuted, fontSize: 11))
+                Text('Loading stock...', style: TextStyle(color: context.colors.textMuted, fontSize: 11))
               else
                 Text(
                   totalStock > 0 ? 'In Stock: $totalStock' : 'Out of Stock',
                   style: TextStyle(
-                    color: totalStock > 0 ? AppColors.success : AppColors.error,
+                    color: totalStock > 0 ? context.colors.success : context.colors.error,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -464,20 +457,20 @@ class _ProductResultTile extends ConsumerWidget {
             ],
           ),
           trailing: isLoading
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
               : (totalStock > 0
                   ? IconButton(
-                      icon: const Icon(Icons.add_circle_outline, color: AppColors.primary, size: 22),
+                      icon: Icon(Icons.add_circle_outline, color: context.colors.primary, size: 22),
                       onPressed: () => onAdd(batches, product),
                     )
                   : Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
+                        color: context.colors.error.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                        border: Border.all(color: context.colors.error.withOpacity(0.3)),
                       ),
-                      child: const Text('Out of Stock', style: TextStyle(color: AppColors.error, fontSize: 10, fontWeight: FontWeight.bold)),
+                      child: Text('Out of Stock', style: TextStyle(color: context.colors.error, fontSize: 10, fontWeight: FontWeight.bold)),
                     )),
         );
       },
@@ -492,12 +485,12 @@ class _CartItemTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: const EdgeInsets.all(12),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: context.colors.surfaceElevated,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: context.colors.surfaceBorder),
       ),
       child: Column(
         children: [
@@ -507,29 +500,29 @@ class _CartItemTile extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.productName,
-                        style: const TextStyle(
-                            color: AppColors.textPrimary,
+                    Text('${item.productName} (${item.packagingUnit})',
+                        style: TextStyle(
+                            color: context.colors.textPrimary,
                             fontWeight: FontWeight.w600,
                             fontSize: 14)),
                     Text(
                       'Batch: ${item.batchNumber} | MRP: ${AppFormatters.currency(item.mrp)}',
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 11),
+                      style: TextStyle(
+                          color: context.colors.textMuted, fontSize: 11),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.close,
-                    size: 16, color: AppColors.textMuted),
+                icon: Icon(Icons.close,
+                    size: 16, color: context.colors.textMuted),
                 onPressed: () => ref
                     .read(cartProvider.notifier)
                     .removeItem(item.batchId),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Row(
             children: [
               // Quantity control
@@ -544,24 +537,24 @@ class _CartItemTile extends ConsumerWidget {
                   final qty = await showModalBottomSheet<int>(
                     context: context,
                     isScrollControlled: true,
-                    backgroundColor: AppColors.surfaceElevated,
-                    builder: (ctx) => TabletCalculatorSheet(productName: item.productName),
+                    backgroundColor: context.colors.surfaceElevated,
+                    builder: (ctx) => TabletCalculatorSheet(productName: item.productName, packagingUnit: item.packagingUnit),
                   );
                   if (qty != null) {
                     final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, qty);
                     if (!success && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: Text('Cannot exceed available stock (${item.maxQuantity}) for this batch.'),
-                        backgroundColor: AppColors.error,
+                        backgroundColor: context.colors.error,
                       ));
                     }
                   }
                 },
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: EdgeInsets.symmetric(horizontal: 12),
                   child: Text('${item.quantity}',
-                      style: const TextStyle(
-                          color: AppColors.textPrimary,
+                      style: TextStyle(
+                          color: context.colors.textPrimary,
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
                           decoration: TextDecoration.underline)),
@@ -574,17 +567,17 @@ class _CartItemTile extends ConsumerWidget {
                   if (!success && context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                       content: Text('Cannot exceed available stock (${item.maxQuantity})'),
-                      backgroundColor: AppColors.error,
+                      backgroundColor: context.colors.error,
                     ));
                   }
                 },
               ),
-              const Spacer(),
+              Spacer(),
               // Line total
               Text(
                 AppFormatters.currency(item.lineTotal),
-                style: const TextStyle(
-                    color: AppColors.primary,
+                style: TextStyle(
+                    color: context.colors.primary,
                     fontWeight: FontWeight.w700,
                     fontSize: 15),
               ),
@@ -606,13 +599,13 @@ class _QtyButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(6),
+        padding: EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: context.colors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.surfaceBorder),
+          border: Border.all(color: context.colors.surfaceBorder),
         ),
-        child: Icon(icon, size: 16, color: AppColors.primary),
+        child: Icon(icon, size: 16, color: context.colors.primary),
       ),
     );
   }
@@ -621,22 +614,22 @@ class _QtyButton extends StatelessWidget {
 class _EmptyCartPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.shopping_cart_outlined,
-              size: 56, color: AppColors.textMuted),
+              size: 56, color: context.colors.textMuted),
           SizedBox(height: 16),
           Text('Cart is empty',
               style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: context.colors.textSecondary,
                   fontSize: 16,
                   fontWeight: FontWeight.w500)),
           SizedBox(height: 8),
           Text('Search for a product manually to begin',
               style: TextStyle(
-                  color: AppColors.textMuted, fontSize: 13),
+                  color: context.colors.textMuted, fontSize: 13),
               textAlign: TextAlign.center),
         ],
       ),

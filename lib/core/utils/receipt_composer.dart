@@ -11,7 +11,8 @@ class ReceiptLineItem {
   final double discountPercent;
   final double gstPercent;
   final double lineTotal;
-  final String composition;
+  final String hsnCode;
+  final String packagingUnit;
   final String? alternativeName;
 
   ReceiptLineItem({
@@ -22,7 +23,8 @@ class ReceiptLineItem {
     required this.discountPercent,
     required this.gstPercent,
     required this.lineTotal,
-    this.composition = '',
+    required this.hsnCode,
+    this.packagingUnit = "10's Pack",
     this.alternativeName,
   });
 }
@@ -37,30 +39,40 @@ class ReceiptComposer {
     required List<ReceiptLineItem> items,
   }) {
     final buffer = StringBuffer();
-    buffer.writeln("📝 *MEDICINE RECEIPT*");
-    buffer.writeln("--------------------------------");
-    buffer.writeln("👤 *Patient:* ${invoice.customerName} (${invoice.customerMobile})");
-    buffer.writeln("👨⚕️ *Dr.:* ${invoice.doctorName} [${invoice.doctorPlace}]");
-    buffer.writeln("--------------------------------");
+    buffer.writeln("==================================");
+    buffer.writeln("       BILL OF SUPPLY");
+    buffer.writeln("   RANGA MEDICAL STORES");
+    buffer.writeln("==================================");
+    buffer.writeln("📍 O.V. Road, KANDUKUR-523105");
+    buffer.writeln("📞 Cell: 9849500749");
+    buffer.writeln("📜 Lic No: 20-228/AP/PS(O)/1996/R");
+    buffer.writeln("            21-228/AP/PS(O)/1996/R");
+    buffer.writeln("🆔 GSTIN: 37AIRPD4121G1ZF");
+    buffer.writeln("⚠️ Composition Taxable person, not eligible to collect tax on suppliers");
+    buffer.writeln("----------------------------------");
+    
+    final dateStr = DateFormat('dd-MM-yyyy').format(invoice.createdAt);
+    buffer.writeln("Bill No: #${invoice.id}          Date: $dateStr");
+    buffer.writeln("Pt. Name: ${invoice.customerName}   Place: ${invoice.customerNotes ?? ''}");
+    buffer.writeln("Dr. Name: ${invoice.doctorName}   Place: ${invoice.doctorPlace}");
+    buffer.writeln("----------------------------------");
+    buffer.writeln("PARTICULARS:");
+    buffer.writeln("----------------------------------");
     
     for (var item in items) {
-      buffer.writeln("💊 ${item.productName} (${item.batchNumber})");
-      buffer.writeln("   ${item.quantity} Tabs @ ₹${item.mrp}/tab = ₹${item.lineTotal.toStringAsFixed(2)}");
-      if (item.alternativeName != null && item.alternativeName!.isNotEmpty) {
-        buffer.writeln("*Alternative Available: ${item.alternativeName}*");
-      }
+      buffer.writeln("💊 ${item.productName} (${item.packagingUnit})");
+      buffer.writeln("   HSN: ${item.hsnCode} | Batch: ${item.batchNumber}");
+      buffer.writeln("   Qty: ${item.quantity} | Amount: ₹${item.lineTotal.toStringAsFixed(2)}");
+      buffer.writeln();
     }
     
-    buffer.writeln("--------------------------------");
-    buffer.writeln("💵 *Total Bill:* ₹${invoice.totalAmount.toStringAsFixed(2)}");
-    buffer.writeln("💰 *Paid:* ₹${invoice.amountPaid.toStringAsFixed(2)}");
+    buffer.writeln("----------------------------------");
+    buffer.writeln("💰 TOTAL AMOUNT: ₹${invoice.totalAmount.toStringAsFixed(2)}");
+    buffer.writeln("----------------------------------");
+    buffer.writeln("Notebook Status: ${_paymentLabel(invoice.paymentMode)}");
+    buffer.writeln("Thank you! Visit again.");
+    buffer.writeln("==================================");
     
-    if (invoice.creditBalanceAdded > 0) {
-      buffer.writeln("📌 *Pending Credit:* ₹${invoice.creditBalanceAdded.toStringAsFixed(2)}");
-      if (invoice.customerNotes != null && invoice.customerNotes!.isNotEmpty) {
-        buffer.writeln("📝 *Note:* ${invoice.customerNotes}");
-      }
-    }
     return buffer.toString();
   }
 
@@ -72,8 +84,8 @@ class ReceiptComposer {
   }) async {
     final encoded = Uri.encodeComponent(text);
     final url = phone != null && phone.isNotEmpty
-        ? 'https://api.whatsapp.com/send?phone=$phone&text=$encoded'
-        : 'https://api.whatsapp.com/send?text=$encoded';
+        ? 'whatsapp://send?phone=$phone&text=$encoded'
+        : 'whatsapp://send?text=$encoded';
 
     final uri = Uri.parse(url);
     try {

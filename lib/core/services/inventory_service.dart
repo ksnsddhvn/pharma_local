@@ -60,7 +60,7 @@ class InventoryService {
             gstPercentage: Value(gstPercentage),
             currentStock: Value(quantity),
             barcode: Value(barcode),
-            isOpeningStock: const Value(false),
+            isOpeningStock: Value(false),
           ),
         );
       }

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import 'package:pharma_local/core/theme/app_theme.dart';
 
 class TabletCalculatorSheet extends StatefulWidget {
   final String productName;
-  const TabletCalculatorSheet({super.key, required this.productName});
+  final String packagingUnit;
+  TabletCalculatorSheet({super.key, required this.productName, required this.packagingUnit});
 
   @override
   State<TabletCalculatorSheet> createState() => _TabletCalculatorSheetState();
@@ -11,8 +13,21 @@ class TabletCalculatorSheet extends StatefulWidget {
 
 class _TabletCalculatorSheetState extends State<TabletCalculatorSheet> {
   final _stripsCtrl = TextEditingController(text: '0');
-  final _perStripCtrl = TextEditingController(text: '10');
+  late final TextEditingController _perStripCtrl;
   final _looseCtrl = TextEditingController(text: '0');
+
+  @override
+  void initState() {
+    super.initState();
+    int perStrip = 1;
+    final unitStr = widget.packagingUnit.toLowerCase();
+    if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
+      final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
+      perStrip = int.tryParse(numStr) ?? 1;
+    }
+    if (perStrip <= 0) perStrip = 1;
+    _perStripCtrl = TextEditingController(text: perStrip.toString());
+  }
 
   void _submit() {
     final strips = int.tryParse(_stripsCtrl.text) ?? 0;
@@ -36,43 +51,31 @@ class _TabletCalculatorSheetState extends State<TabletCalculatorSheet> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Quantity: ${widget.productName}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _stripsCtrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(labelText: 'Strips/Sheets'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _perStripCtrl,
-                  keyboardType: TextInputType.number,
-                  style: const TextStyle(color: AppColors.textPrimary),
-                  decoration: const InputDecoration(labelText: 'Tablets per Strip'),
-                ),
-              ),
-            ],
+          Text('Quantity: ${widget.productName}', style: TextStyle(color: context.colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+          SizedBox(height: 16),
+          TextField(
+            controller: _stripsCtrl,
+            keyboardType: TextInputType.number,
+            style: TextStyle(color: context.colors.textPrimary),
+            decoration: InputDecoration(
+              labelText: 'Strips/Sheets',
+              hintText: '1 Sheet = ${_perStripCtrl.text} Units',
+            ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           TextField(
             controller: _looseCtrl,
             keyboardType: TextInputType.number,
-            style: const TextStyle(color: AppColors.textPrimary),
-            decoration: const InputDecoration(labelText: 'Loose Tablets'),
+            style: TextStyle(color: context.colors.textPrimary),
+            decoration: InputDecoration(labelText: 'Loose Units (e.g. single tablets)'),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 14)),
+              style: ElevatedButton.styleFrom(backgroundColor: context.colors.primary, padding: EdgeInsets.symmetric(vertical: 14)),
               onPressed: _submit,
-              child: const Text('Set Quantity', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: Text('Set Quantity', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             ),
           ),
         ],

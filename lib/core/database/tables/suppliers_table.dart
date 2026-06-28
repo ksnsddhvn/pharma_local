@@ -10,5 +10,5 @@ class Suppliers extends Table {
   TextColumn get gstinNumber => text().nullable()(); // supplier GSTIN
   TextColumn get address => text().nullable()();
   RealColumn get currentBalance =>
-      real().withDefault(const Constant(0.0))(); // positive = we owe them
+      real().withDefault(Constant(0.0))(); // positive = we owe them
 }

@@ -8,7 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
-  const ProductsScreen({super.key});
+  ProductsScreen({super.key});
 
   @override
   ConsumerState<ProductsScreen> createState() => _ProductsScreenState();
@@ -29,12 +29,12 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
     final productsAsync = ref.watch(allProductsStreamProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.colors.background,
       appBar: AppBar(
-        title: const Text('Products'),
+        title: Text('Products'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add),
+            icon: Icon(Icons.add),
             tooltip: 'Add product',
             onPressed: () => context.push('/products/add'),
           ),
@@ -44,17 +44,17 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
         children: [
           // Search bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               controller: _searchCtrl,
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
                 hintText: 'Search by name or composition...',
-                prefixIcon: const Icon(Icons.search,
-                    color: AppColors.textMuted, size: 20),
+                prefixIcon: Icon(Icons.search,
+                    color: context.colors.textMuted, size: 20),
                 suffixIcon: _query.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: AppColors.textMuted),
+                        icon: Icon(Icons.clear, color: context.colors.textMuted),
                         onPressed: () {
                           _searchCtrl.clear();
                           setState(() => _query = '');
@@ -75,33 +75,33 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
                   filtered = FuzzySearch.filter<Product>(
                     query: _query,
                     candidates: filtered,
-                    keyOf: (p) => '${p.name} ${p.composition ?? ''}',
+                    keyOf: (p) => '${p.name} ${p.hsnCode}',
                   );
                 }
 
                 if (filtered.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.medication_outlined,
-                            size: 48, color: AppColors.textMuted),
+                            size: 48, color: context.colors.textMuted),
                         SizedBox(height: 12),
                         Text('No products found',
-                            style: TextStyle(color: AppColors.textSecondary)),
+                            style: TextStyle(color: context.colors.textSecondary)),
                       ],
                     ),
                   );
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.only(bottom: 80),
+                  padding: EdgeInsets.only(bottom: 80),
                   itemCount: filtered.length,
                   itemBuilder: (_, i) => _ProductTile(product: filtered[i]),
                 );
               },
-              loading: () => const Center(
-                  child: CircularProgressIndicator(color: AppColors.primary)),
+              loading: () => Center(
+                  child: CircularProgressIndicator(color: context.colors.primary)),
               error: (e, _) => Center(child: Text('Error: $e')),
             ),
           ),
@@ -120,21 +120,21 @@ class _ProductTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceElevated,
+        color: context.colors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.surfaceBorder),
+        border: Border.all(color: context.colors.surfaceBorder),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Row(
           children: [
             Expanded(
               child: Text(
                 product.name,
-                style: const TextStyle(
-                    color: AppColors.textPrimary,
+                style: TextStyle(
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.w600,
                     fontSize: 14),
               ),
@@ -144,43 +144,31 @@ class _ProductTile extends ConsumerWidget {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (product.composition != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                product.composition!,
-                style: const TextStyle(
-                    color: AppColors.textSecondary, fontSize: 12),
-              ),
-            ],
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
+            Text(
+              'HSN: ${product.hsnCode} | Unit: ${product.packagingUnit}',
+              style: TextStyle(
+                  color: context.colors.textSecondary, fontSize: 12),
+            ),
+            SizedBox(height: 4),
             Row(
               children: [
-                if (product.rackLocation != null) ...[
-                  const Icon(Icons.shelves,
-                      size: 12, color: AppColors.textMuted),
-                  const SizedBox(width: 4),
-                  Text(
-                    product.rackLocation!,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 11),
-                  ),
-                  const SizedBox(width: 12),
-                ],
-                const Icon(Icons.qr_code_2,
-                    size: 12, color: AppColors.textMuted),
-                const SizedBox(width: 4),
+
+                Icon(Icons.qr_code_2,
+                    size: 12, color: context.colors.textMuted),
+                SizedBox(width: 4),
                 Text(
                   product.hsnCode ?? 'No HSN',
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: 11),
+                  style: TextStyle(
+                      color: context.colors.textMuted, fontSize: 11),
                 ),
               ],
             ),
           ],
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.edit_outlined,
-              color: AppColors.textMuted, size: 18),
+          icon: Icon(Icons.edit_outlined,
+              color: context.colors.textMuted, size: 18),
           onPressed: () => context.push('/products/edit/${product.id}'),
         ),
         onTap: () => context.push('/products/edit/${product.id}'),

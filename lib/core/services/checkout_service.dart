@@ -14,7 +14,8 @@ class CartItem {
   final double mrp;
   final double gstPercentage;
   double discountPercent;
-  final String composition;
+  final String hsnCode;
+  final String packagingUnit;
   final String? alternativeName;
 
   CartItem({
@@ -26,14 +27,15 @@ class CartItem {
     required this.maxQuantity,
     required this.mrp,
     required this.gstPercentage,
+    required this.hsnCode,
     this.discountPercent = 0.0,
-    this.composition = '',
+    this.packagingUnit = "10's",
     this.alternativeName,
   });
 
-  double get lineTotal => mrp * quantity * (1 - discountPercent / 100);
-  double get gstAmount =>
-      lineTotal * gstPercentage / (100 + gstPercentage);
+  double get baseTotal => mrp * quantity * (1 - discountPercent / 100);
+  double get gstAmount => baseTotal * (gstPercentage / 100);
+  double get lineTotal => baseTotal + gstAmount;
 }
 
 class CheckoutResult {
@@ -127,6 +129,7 @@ class CheckoutService {
                 batchId: i.batchId,
                 productId: i.productId,
                 productName: i.productName,
+                packagingUnit: Value(i.packagingUnit),
                 batchNumber: i.batchNumber,
                 totalTabletsSold: Value(i.quantity),
                 mrpPerTablet: Value(i.mrp),

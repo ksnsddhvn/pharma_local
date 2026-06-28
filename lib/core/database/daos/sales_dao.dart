@@ -53,8 +53,8 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
     await (update(salesInvoices)..where((i) => i.id.equals(invoiceId))).write(
       SalesInvoicesCompanion(
         amountPaid: Value(invoice.totalAmount),
-        creditBalanceAdded: const Value(0.0),
-        paymentMode: const Value(PaymentMode.cash),
+        creditBalanceAdded: Value(0.0),
+        paymentMode: Value(PaymentMode.cash),
       ),
     );
   }
@@ -76,7 +76,7 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
   Future<double> getTodaysSalesTotal() async {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
-    final endOfDay = startOfDay.add(const Duration(days: 1));
+    final endOfDay = startOfDay.add(Duration(days: 1));
     final invoices =
         await getInvoicesForDateRange(startOfDay, endOfDay);
     return invoices.fold<double>(0.0, (sum, inv) => sum + inv.totalAmount);

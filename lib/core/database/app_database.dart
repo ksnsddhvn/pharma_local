@@ -40,7 +40,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -65,6 +65,9 @@ class AppDatabase extends _$AppDatabase {
               await m.drop(table);
             }
             await m.createAll();
+          } else if (from == 5) {
+            // Recreate products table to apply column removals (composition, rackLocation, minStockThreshold)
+            await m.alterTable(TableMigration(products));
           }
         },
       );

@@ -106,7 +106,7 @@ class BackupService {
   Future<void> shareBackup(String filePath) async {
     await Share.shareXFiles(
       [XFile(filePath)],
-      subject: 'PharmaLocal Backup',
+      subject: 'Sri Ranga Medical Backup',
     );
   }
 
