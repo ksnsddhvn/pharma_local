@@ -321,6 +321,10 @@ class _SearchResultsState extends ConsumerState<_SearchResults> {
 
   Future<void> _search(String q) async {
     final all = await ref.read(productsDaoProvider).getAllProducts();
+    if (q.isEmpty) {
+      if (mounted) setState(() => _products = all.take(15).toList());
+      return;
+    }
     final filtered = FuzzySearch.filter<Product>(
         query: q,
         candidates: all,
@@ -363,9 +367,33 @@ class _ProductResultTile extends ConsumerWidget {
               color: AppColors.textPrimary,
               fontSize: 13,
               fontWeight: FontWeight.w500)),
-      subtitle: Text(product.composition ?? '',
-          style: const TextStyle(
-              color: AppColors.textMuted, fontSize: 11)),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(product.composition ?? '',
+              style: const TextStyle(
+                  color: AppColors.textMuted, fontSize: 11)),
+          const SizedBox(height: 4),
+          FutureBuilder<List<StockBatch>>(
+            future: ref.read(stockBatchesDaoProvider).getBatchesForProduct(product.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Text('Loading stock...', style: TextStyle(color: AppColors.textMuted, fontSize: 11));
+              }
+              final batches = snapshot.data ?? [];
+              final totalStock = batches.fold<int>(0, (sum, b) => sum + b.currentStock);
+              return Text(
+                totalStock > 0 ? 'In Stock: $totalStock' : 'Out of Stock',
+                style: TextStyle(
+                  color: totalStock > 0 ? AppColors.success : AppColors.error,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       trailing: IconButton(
         icon: const Icon(Icons.add_circle_outline,
             color: AppColors.primary, size: 22),
