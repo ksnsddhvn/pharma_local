@@ -152,12 +152,16 @@ class _OutstandingAccountsTab extends ConsumerWidget {
             final inv = outstandingAccounts[i];
             return Container(
               margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
+              child: InkWell(
+                onTap: () => _confirmSettle(context, ref, inv),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.error.withOpacity(0.5)),
-              ),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.error.withOpacity(0.5)),
+                  ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -198,12 +202,49 @@ class _OutstandingAccountsTab extends ConsumerWidget {
                   ],
                 ],
               ),
-            );
+             ),
+            ),
+           );
           },
         );
       },
       loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
       error: (e, _) => Center(child: Text('Error: $e')),
     );
+  }
+
+  Future<void> _confirmSettle(BuildContext context, WidgetRef ref, SalesInvoice inv) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surfaceElevated,
+        title: const Text('Settle Account', style: TextStyle(color: AppColors.textPrimary)),
+        content: Text(
+          'Mark ₹${inv.creditBalanceAdded.toStringAsFixed(2)} as paid by ${inv.customerName}?',
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Confirm', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await ref.read(salesDaoProvider).settleInvoice(inv.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Account settled successfully.'),
+          backgroundColor: AppColors.success,
+        ));
+      }
+    }
   }
 }

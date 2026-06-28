@@ -45,6 +45,20 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
     });
   }
 
+  /// Settles an outstanding invoice.
+  Future<void> settleInvoice(int invoiceId) async {
+    final invoice = await getInvoiceById(invoiceId);
+    if (invoice == null || invoice.creditBalanceAdded <= 0) return;
+
+    await (update(salesInvoices)..where((i) => i.id.equals(invoiceId))).write(
+      SalesInvoicesCompanion(
+        amountPaid: Value(invoice.totalAmount),
+        creditBalanceAdded: const Value(0.0),
+        paymentMode: const Value(PaymentMode.cash),
+      ),
+    );
+  }
+
   /// Daily sales totals for dashboard chart.
   Future<Map<DateTime, double>> getDailySalesTotals(int days) async {
     final from = DateTime.now().subtract(Duration(days: days));

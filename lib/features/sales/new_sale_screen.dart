@@ -109,6 +109,18 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
 
   Future<void> _addToCart(StockBatch batch, Product product) async {
+    final qty = await showModalBottomSheet<int>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.surfaceElevated,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: _TabletCalculatorSheet(productName: product.name),
+      ),
+    );
+
+    if (qty == null || qty <= 0) return;
+
     String? altName;
     if (product.composition.isNotEmpty) {
       final alternatives = await ref
@@ -126,7 +138,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
             productId: product.id,
             productName: product.name,
             batchNumber: batch.batchNumber,
-            quantity: 1,
+            quantity: qty,
             mrp: batch.mrp,
             gstPercentage: batch.gstPercentage,
             composition: product.composition,
@@ -135,7 +147,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
         );
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('${product.name} added to cart'),
+        content: Text('${product.name} added to cart ($qty tablets)'),
         duration: const Duration(seconds: 1),
         backgroundColor: AppColors.success,
       ));
@@ -408,13 +420,30 @@ class _CartItemTile extends ConsumerWidget {
                     .read(cartProvider.notifier)
                     .updateQuantity(item.batchId, item.quantity - 1),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('${item.quantity}',
-                    style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16)),
+              GestureDetector(
+                onTap: () async {
+                  final qty = await showModalBottomSheet<int>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: AppColors.surfaceElevated,
+                    builder: (ctx) => Padding(
+                      padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+                      child: _TabletCalculatorSheet(productName: item.productName),
+                    ),
+                  );
+                  if (qty != null) {
+                    ref.read(cartProvider.notifier).updateQuantity(item.batchId, qty);
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('${item.quantity}',
+                      style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          decoration: TextDecoration.underline)),
+                ),
               ),
               _QtyButton(
                 icon: Icons.add,
@@ -481,6 +510,81 @@ class _EmptyCartPlaceholder extends StatelessWidget {
               style: TextStyle(
                   color: AppColors.textMuted, fontSize: 13),
               textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+}
+
+class _TabletCalculatorSheet extends StatefulWidget {
+  final String productName;
+  const _TabletCalculatorSheet({required this.productName});
+
+  @override
+  State<_TabletCalculatorSheet> createState() => _TabletCalculatorSheetState();
+}
+
+class _TabletCalculatorSheetState extends State<_TabletCalculatorSheet> {
+  final _stripsCtrl = TextEditingController(text: '0');
+  final _perStripCtrl = TextEditingController(text: '10');
+  final _looseCtrl = TextEditingController(text: '0');
+
+  void _submit() {
+    final strips = int.tryParse(_stripsCtrl.text) ?? 0;
+    final perStrip = int.tryParse(_perStripCtrl.text) ?? 10;
+    final loose = int.tryParse(_looseCtrl.text) ?? 0;
+    
+    final total = (strips * perStrip) + loose;
+    Navigator.pop(context, total);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Quantity: ${widget.productName}', style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _stripsCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: const InputDecoration(labelText: 'Strips/Sheets'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _perStripCtrl,
+                  keyboardType: TextInputType.number,
+                  style: const TextStyle(color: AppColors.textPrimary),
+                  decoration: const InputDecoration(labelText: 'Tablets per Strip'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _looseCtrl,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(color: AppColors.textPrimary),
+            decoration: const InputDecoration(labelText: 'Loose Tablets'),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, padding: const EdgeInsets.symmetric(vertical: 14)),
+              onPressed: _submit,
+              child: const Text('Set Quantity', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ),
         ],
       ),
     );

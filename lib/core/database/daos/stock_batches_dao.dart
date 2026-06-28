@@ -108,6 +108,7 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
     required double mrp,
     required int quantity,
     String? barcode,
+    double gstPercentage = 0.0,
   }) =>
       into(stockBatches).insert(
         StockBatchesCompanion.insert(
@@ -116,7 +117,7 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
           expiryDate: expiryDate,
           mrp: mrp,
           purchaseRate: 0.0,
-          gstPercentage: const Value(0.0),
+          gstPercentage: Value(gstPercentage),
           currentStock: Value(quantity),
           barcode: Value(barcode),
           isOpeningStock: const Value(true),

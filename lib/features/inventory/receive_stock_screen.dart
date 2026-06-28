@@ -27,8 +27,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
   final _invoiceNoCtrl = TextEditingController();
   final _noteCtrl = TextEditingController();
   final _searchCtrl = TextEditingController();
-
-  double _gst = 12.0;
+  final _gstCtrl = TextEditingController(text: '12');
   DateTime _expiry = DateTime.now().add(const Duration(days: 365));
   bool _loading = false;
   bool _showSearch = false;
@@ -44,6 +43,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
     _invoiceNoCtrl.dispose();
     _noteCtrl.dispose();
     _searchCtrl.dispose();
+    _gstCtrl.dispose();
     super.dispose();
   }
 
@@ -87,6 +87,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
               expiryDate: _expiry,
               mrp: double.parse(_mrpCtrl.text),
               quantity: int.parse(_qtyCtrl.text),
+              gstPercentage: double.parse(_gstCtrl.text),
             );
       } else {
         await ref.read(inventoryServiceProvider).receivePurchase(
@@ -95,7 +96,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
               expiryDate: _expiry,
               mrp: double.parse(_mrpCtrl.text),
               purchaseRate: double.parse(_rateCtrl.text),
-              gstPercentage: _gst,
+              gstPercentage: double.parse(_gstCtrl.text),
               quantity: int.parse(_qtyCtrl.text),
               supplierId: _selectedSupplierId!,
               invoiceAmount: double.parse(_invoiceAmtCtrl.text),
@@ -295,19 +296,16 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      if (!_isOpeningStock) Expanded(
-                        child: DropdownButtonFormField<double>(
-                          value: _gst,
-                          dropdownColor: AppColors.surfaceElevated,
+                      Expanded(
+                        child: TextFormField(
+                          controller: _gstCtrl,
+                          keyboardType:
+                              const TextInputType.numberWithOptions(decimal: true),
                           style: const TextStyle(color: AppColors.textPrimary),
-                          decoration: const InputDecoration(labelText: 'GST %'),
-                          items: const [
-                            DropdownMenuItem(value: 0.0, child: Text('0%')),
-                            DropdownMenuItem(value: 5.0, child: Text('5%')),
-                            DropdownMenuItem(value: 12.0, child: Text('12%')),
-                            DropdownMenuItem(value: 18.0, child: Text('18%')),
-                          ],
-                          onChanged: (v) => setState(() => _gst = v!),
+                          decoration:
+                              const InputDecoration(labelText: 'GST % *'),
+                          validator: (v) =>
+                              double.tryParse(v ?? '') == null ? 'Invalid' : null,
                         ),
                       ),
                     ],

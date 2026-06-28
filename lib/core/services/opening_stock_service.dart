@@ -20,6 +20,7 @@ class OpeningStockService {
     required double mrp,
     required int quantity,
     String? barcode,
+    double gstPercentage = 0.0,
   }) async {
     if (quantity <= 0) throw Exception('Quantity must be positive');
 
@@ -30,6 +31,7 @@ class OpeningStockService {
       mrp: mrp,
       quantity: quantity,
       barcode: barcode,
+      gstPercentage: gstPercentage,
     );
   }
 
@@ -45,7 +47,7 @@ class OpeningStockService {
     required int quantity,
     String? composition,
     String? barcode,
-    // category removed
+    double gstPercentage = 0.0,
   }) async {
     return db.transaction(() async {
       // 1. Create the product record
@@ -65,6 +67,7 @@ class OpeningStockService {
         mrp: mrp,
         quantity: quantity,
         barcode: barcode,
+        gstPercentage: gstPercentage,
       );
 
       // 3. Fetch the full records for the caller

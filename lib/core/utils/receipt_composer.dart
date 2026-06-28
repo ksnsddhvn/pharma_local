@@ -72,22 +72,22 @@ class ReceiptComposer {
   }) async {
     final encoded = Uri.encodeComponent(text);
     final url = phone != null && phone.isNotEmpty
-        ? 'whatsapp://send?phone=$phone&text=$encoded'
-        : 'whatsapp://send?text=$encoded';
+        ? 'https://api.whatsapp.com/send?phone=$phone&text=$encoded'
+        : 'https://api.whatsapp.com/send?text=$encoded';
 
     final uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-      return true;
-    }
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (launched) return true;
+    } catch (_) {}
+
     // Fallback to web.whatsapp.com for desktop
-    final webUrl = Uri.parse(
-        'https://web.whatsapp.com/send?text=$encoded');
-    if (await canLaunchUrl(webUrl)) {
-      await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-      return true;
+    final webUrl = Uri.parse('https://web.whatsapp.com/send?text=$encoded');
+    try {
+      return await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      return false;
     }
-    return false;
   }
 
   static String _paymentLabel(PaymentMode mode) {
