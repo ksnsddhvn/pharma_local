@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/tables/supplier_ledgers_table.dart';
+import '../../core/database/daos/suppliers_dao.dart';
 import '../../core/providers.dart';
 import '../../core/services/supplier_service.dart';
 import '../../core/theme/app_theme.dart';
@@ -13,6 +14,10 @@ final _supplierLedgerFamily = StreamProvider.family<List<SupplierLedger>, int>((
 
 final _supplierDetailFamily = StreamProvider.family<Supplier?, int>((ref, id) {
   return ref.watch(suppliersDaoProvider).watchSupplierById(id);
+});
+
+final _supplierPurchasedProductsFamily = StreamProvider.family<List<SupplierProductItem>, int>((ref, id) {
+  return ref.watch(suppliersDaoProvider).watchPurchasedProductsForSupplier(id);
 });
 
 class SupplierDetailScreen extends ConsumerWidget {
@@ -84,125 +89,132 @@ class SupplierDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Balance header
-          supplierAsync.when(
-            data: (supplier) {
-              if (supplier == null) return SizedBox.shrink();
-              return Container(
-                margin: EdgeInsets.all(16),
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: context.colors.gradientCard,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.colors.surfaceBorder),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Outstanding Balance',
+      body: DefaultTabController(
+        length: 2,
+        child: Column(
+          children: [
+            // Balance header
+            supplierAsync.when(
+              data: (supplier) {
+                if (supplier == null) return SizedBox.shrink();
+                return Container(
+                  margin: EdgeInsets.all(16),
+                  padding: EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: context.colors.gradientCard,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: context.colors.surfaceBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Outstanding Balance',
+                                style: TextStyle(
+                                    color: context.colors.textSecondary,
+                                    fontSize: 12)),
+                            SizedBox(height: 6),
+                            Text(
+                              AppFormatters.currency(
+                                  supplier.currentBalance.abs()),
                               style: TextStyle(
-                                  color: context.colors.textSecondary,
-                                  fontSize: 12)),
-                          SizedBox(height: 6),
-                          Text(
-                            AppFormatters.currency(
-                                supplier.currentBalance.abs()),
-                            style: TextStyle(
-                              color: supplier.currentBalance == 0
-                                  ? context.colors.success
-                                  : supplier.currentBalance > 0
-                                      ? context.colors.warning
-                                      : context.colors.info,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
+                                color: supplier.currentBalance == 0
+                                    ? context.colors.success
+                                    : supplier.currentBalance > 0
+                                        ? context.colors.warning
+                                        : context.colors.info,
+                                fontSize: 28,
+                                fontWeight: FontWeight.w800,
+                              ),
                             ),
-                          ),
-                          Text(
-                            supplier.currentBalance == 0
-                                ? 'Account settled'
-                                : supplier.currentBalance > 0
-                                    ? 'Amount to pay'
-                                    : 'Advance credit',
-                            style: TextStyle(
-                                color: context.colors.textMuted, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (supplier.phone != null || supplier.contactPerson != null)
-                      Column(
-                        children: [
-                          if (supplier.phone != null) ...[
-                            Icon(Icons.phone_outlined,
-                                color: context.colors.textMuted, size: 18),
-                            SizedBox(height: 4),
-                            Text(supplier.phone!,
-                                style: TextStyle(
-                                    color: context.colors.textSecondary,
-                                    fontSize: 12)),
+                            Text(
+                              supplier.currentBalance == 0
+                                  ? 'Account settled'
+                                  : supplier.currentBalance > 0
+                                      ? 'Amount to pay'
+                                      : 'Advance credit',
+                              style: TextStyle(
+                                  color: context.colors.textMuted, fontSize: 12),
+                            ),
                           ],
-                          if (supplier.contactPerson != null) ...[
-                            SizedBox(height: 8),
-                            Icon(Icons.person_outline,
-                                color: context.colors.textMuted, size: 18),
-                            SizedBox(height: 4),
-                            Text(supplier.contactPerson!,
-                                style: TextStyle(
-                                    color: context.colors.textSecondary,
-                                    fontSize: 12)),
-                          ],
-                        ],
+                        ),
                       ),
-                  ],
-                ),
-              );
-            },
-            loading: () => LinearProgressIndicator(),
-            error: (_, __) => SizedBox.shrink(),
-          ),
-
-          // Ledger header
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                Text('Transaction History',
-                    style: TextStyle(
-                        color: context.colors.textSecondary,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.8)),
-              ],
-            ),
-          ),
-
-          // Ledger list
-          Expanded(
-            child: ledgerAsync.when(
-              data: (entries) {
-                if (entries.isEmpty) {
-                  return Center(
-                    child: Text('No transactions yet',
-                        style: TextStyle(color: context.colors.textMuted)),
-                  );
-                }
-                return ListView.builder(
-                  padding: EdgeInsets.only(bottom: 80),
-                  itemCount: entries.length,
-                  itemBuilder: (_, i) => _LedgerTile(entry: entries[i]),
+                      if (supplier.phone != null || supplier.contactPerson != null)
+                        Column(
+                          children: [
+                            if (supplier.phone != null) ...[
+                              Icon(Icons.phone_outlined,
+                                  color: context.colors.textMuted, size: 18),
+                              SizedBox(height: 4),
+                              Text(supplier.phone!,
+                                  style: TextStyle(
+                                      color: context.colors.textSecondary,
+                                      fontSize: 12)),
+                            ],
+                            if (supplier.contactPerson != null) ...[
+                              SizedBox(height: 8),
+                              Icon(Icons.person_outline,
+                                  color: context.colors.textMuted, size: 18),
+                              SizedBox(height: 4),
+                              Text(supplier.contactPerson!,
+                                  style: TextStyle(
+                                      color: context.colors.textSecondary,
+                                      fontSize: 12)),
+                            ],
+                          ],
+                        ),
+                    ],
+                  ),
                 );
               },
-              loading: () => Center(
-                  child: CircularProgressIndicator(color: context.colors.primary)),
-              error: (e, _) => Center(child: Text('Error: $e')),
+              loading: () => LinearProgressIndicator(),
+              error: (_, __) => SizedBox.shrink(),
             ),
-          ),
-        ],
+
+            // TabBar
+            TabBar(
+              indicatorColor: context.colors.primary,
+              labelColor: context.colors.primary,
+              unselectedLabelColor: context.colors.textMuted,
+              tabs: const [
+                Tab(text: 'Ledger / Payments'),
+                Tab(text: 'Purchased Inventory'),
+              ],
+            ),
+            
+            // TabBarView
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // Tab 1: Transaction History
+                  ledgerAsync.when(
+                    data: (entries) {
+                      if (entries.isEmpty) {
+                        return Center(
+                          child: Text('No transactions yet',
+                              style: TextStyle(color: context.colors.textMuted)),
+                        );
+                      }
+                      return ListView.builder(
+                        padding: EdgeInsets.only(bottom: 80, top: 16),
+                        itemCount: entries.length,
+                        itemBuilder: (_, i) => _LedgerTile(entry: entries[i]),
+                      );
+                    },
+                    loading: () => Center(
+                        child: CircularProgressIndicator(color: context.colors.primary)),
+                    error: (e, _) => Center(child: Text('Error: $e')),
+                  ),
+
+                  // Tab 2: Purchased Products
+                  _PurchasedProductsTab(supplierId: supplierId),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -418,6 +430,101 @@ class _LedgerTile extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PurchasedProductsTab extends ConsumerWidget {
+  final int supplierId;
+  const _PurchasedProductsTab({required this.supplierId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final productsAsync = ref.watch(_supplierPurchasedProductsFamily(supplierId));
+
+    return productsAsync.when(
+      data: (items) {
+        if (items.isEmpty) {
+          return Center(
+            child: Text('No products purchased from this supplier yet',
+                style: TextStyle(color: context.colors.textMuted)),
+          );
+        }
+        return ListView.builder(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          itemCount: items.length,
+          itemBuilder: (ctx, i) {
+            final item = items[i];
+            return Container(
+              margin: EdgeInsets.only(bottom: 12),
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: context.colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: context.colors.surfaceBorder),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(item.product.name,
+                            style: TextStyle(
+                                color: context.colors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15)),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: context.colors.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(item.product.productType,
+                            style: TextStyle(
+                                color: context.colors.primary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 11)),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('HSN: ${item.product.hsnCode}',
+                          style: TextStyle(
+                              color: context.colors.textMuted, fontSize: 13)),
+                      Text('Batch: ${item.batch.batchNumber}',
+                          style: TextStyle(
+                              color: context.colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Stock: ${item.batch.currentStock} ${item.product.packagingUnit}',
+                          style: TextStyle(
+                              color: context.colors.textSecondary, fontSize: 13)),
+                      Text('Exp: ${AppFormatters.date(item.batch.expiryDate)}',
+                          style: TextStyle(
+                              color: item.batch.expiryDate.isBefore(DateTime.now()) 
+                                ? context.colors.error 
+                                : context.colors.textMuted, 
+                              fontSize: 13)),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
+      error: (e, _) => Center(child: Text('Error: $e')),
     );
   }
 }

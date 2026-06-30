@@ -23,6 +23,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   PaymentMode _paymentMode = PaymentMode.cash;
   final _customerNameCtrl = TextEditingController();
   final _customerMobileCtrl = TextEditingController();
+  final _customerPlaceCtrl = TextEditingController();
   final _doctorNameCtrl = TextEditingController();
   final _doctorPlaceCtrl = TextEditingController();
   final _amountPaidCtrl = TextEditingController();
@@ -42,6 +43,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void dispose() {
     _customerNameCtrl.dispose();
     _customerMobileCtrl.dispose();
+    _customerPlaceCtrl.dispose();
     _doctorNameCtrl.dispose();
     _doctorPlaceCtrl.dispose();
     _amountPaidCtrl.dispose();
@@ -65,6 +67,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 paymentMode: _paymentMode,
                 customerName: _customerNameCtrl.text.trim().isEmpty ? 'Cash Customer' : _customerNameCtrl.text.trim(),
                 customerMobile: _customerMobileCtrl.text.trim().isEmpty ? '0000000000' : _customerMobileCtrl.text.trim(),
+                customerPlace: _customerPlaceCtrl.text.trim().isEmpty ? 'Kandukur' : _customerPlaceCtrl.text.trim(),
                 doctorName: _doctorNameCtrl.text.trim().isEmpty ? 'Self' : _doctorNameCtrl.text.trim(),
                 doctorPlace: _doctorPlaceCtrl.text.trim().isEmpty ? 'Local' : _doctorPlaceCtrl.text.trim(),
                 amountPaid: amountPaid,
@@ -349,6 +352,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 TextField(
                   controller: _customerNameCtrl,
+                  textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.next,
                   onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
@@ -357,6 +361,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 SizedBox(height: 12),
                 TextField(
                   controller: _customerMobileCtrl,
+                  textCapitalization: TextCapitalization.none,
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
                   onSubmitted: (_) => FocusScope.of(context).nextFocus(),
@@ -365,7 +370,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 SizedBox(height: 12),
                 TextField(
+                  controller: _customerPlaceCtrl,
+                  textCapitalization: TextCapitalization.none,
+                  textInputAction: TextInputAction.next,
+                  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  style: TextStyle(color: context.colors.textPrimary),
+                  decoration: InputDecoration(labelText: 'Patient Place'),
+                ),
+                SizedBox(height: 12),
+                TextField(
                   controller: _doctorNameCtrl,
+                  textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.next,
                   onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
@@ -375,6 +390,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 SizedBox(height: 12),
                 TextField(
                   controller: _doctorPlaceCtrl,
+                  textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.next,
                   onSubmitted: (_) => FocusScope.of(context).nextFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
@@ -392,6 +408,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 TextField(
                   controller: _amountPaidCtrl,
+                  textCapitalization: TextCapitalization.none,
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.next,
                   onSubmitted: (_) => FocusScope.of(context).nextFocus(),
@@ -411,6 +428,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 SizedBox(height: 12),
                 TextField(
                   controller: _customerNotesCtrl,
+                  textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.done,
                   style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(labelText: 'Note Book Reminder / Comments'),

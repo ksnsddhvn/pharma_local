@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/widgets.dart';
 import 'package:archive/archive_io.dart';
 import 'package:encrypt/encrypt.dart' as enc;
 import 'package:path/path.dart' as path;
@@ -113,5 +114,30 @@ class BackupService {
   Future<String> _findDbDirectory() async {
     final docsDir = await getApplicationDocumentsDirectory();
     return docsDir.path;
+  }
+}
+
+/// Automatically backs up the database when the app goes into the detached state.
+class AutoBackupObserver extends WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      _performAutoBackup();
+    }
+  }
+
+  Future<void> _performAutoBackup() async {
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final dbFile = File(path.join(docsDir.path, 'pharma_local.sqlite'));
+      if (await dbFile.exists()) {
+        final ts = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+        final backupFile = File(path.join(docsDir.path, 'pharma_local_autobackup_$ts.sqlite'));
+        await dbFile.copy(backupFile.path);
+        print('Auto-backup completed: ${backupFile.path}');
+      }
+    } catch (e) {
+      print('Auto-backup failed: $e');
+    }
   }
 }

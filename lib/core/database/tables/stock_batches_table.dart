@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'products_table.dart';
+import 'suppliers_table.dart';
 
 /// Tracks individual medicine batches with expiry, pricing and current stock.
 @DataClassName('StockBatch')
@@ -19,4 +20,6 @@ class StockBatches extends Table {
       boolean().withDefault(Constant(false))(); // TRUE = legacy shelf stock
   BoolColumn get isDeleted => 
       boolean().withDefault(Constant(false))(); // TRUE = archived
+  IntColumn get supplierId => integer().nullable().references(Suppliers, #id)(); // v12
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)(); // v12
 }

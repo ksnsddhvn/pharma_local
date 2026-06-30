@@ -63,6 +63,7 @@ class InventoryService {
             currentStock: Value(quantity),
             barcode: Value(barcode),
             isOpeningStock: Value(false),
+            supplierId: Value(supplierId),
           ),
         );
       }

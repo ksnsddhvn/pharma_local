@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -86,6 +86,26 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 10) {
             await m.addColumn(stockBatches, stockBatches.isDeleted);
+          }
+          if (from < 11) {
+            await m.alterTable(TableMigration(salesInvoices));
+          }
+          if (from < 12) {
+            await m.alterTable(TableMigration(
+              stockBatches,
+              columnTransformer: {
+                stockBatches.supplierId: const CustomExpression('NULL'),
+                stockBatches.createdAt: currentDateAndTime,
+              },
+            ));
+          }
+          if (from < 13) {
+            await m.alterTable(TableMigration(
+              productCategories,
+              columnTransformer: {
+                productCategories.description: const CustomExpression('NULL'),
+              },
+            ));
           }
         },
       );

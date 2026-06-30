@@ -1,10 +1,12 @@
 import 'package:drift/drift.dart';
 import '../app_database.dart';
 import '../tables/suppliers_table.dart';
+import '../tables/products_table.dart';
+import '../tables/stock_batches_table.dart';
 
 part 'suppliers_dao.g.dart';
 
-@DriftAccessor(tables: [Suppliers])
+@DriftAccessor(tables: [Suppliers, Products, StockBatches])
 class SuppliersDao extends DatabaseAccessor<AppDatabase>
     with _$SuppliersDaoMixin {
   SuppliersDao(super.db);
@@ -34,4 +36,28 @@ class SuppliersDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> deleteSupplier(int id) =>
       (update(suppliers)..where((s) => s.id.equals(id))).write(SuppliersCompanion(isDeleted: Value(true)));
+
+  Stream<List<SupplierProductItem>> watchPurchasedProductsForSupplier(int supplierId) {
+    final query = select(products).join([
+      innerJoin(stockBatches, stockBatches.productId.equalsExp(products.id)),
+    ])
+      ..where(stockBatches.supplierId.equals(supplierId))
+      ..where(stockBatches.isOpeningStock.equals(false))
+      ..orderBy([OrderingTerm.desc(stockBatches.createdAt)]);
+    
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        return SupplierProductItem(
+          product: row.readTable(products),
+          batch: row.readTable(stockBatches),
+        );
+      }).toList();
+    });
+  }
+}
+
+class SupplierProductItem {
+  final Product product;
+  final StockBatch batch;
+  SupplierProductItem({required this.product, required this.batch});
 }

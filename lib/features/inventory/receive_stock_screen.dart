@@ -290,6 +290,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                 children: [
                   TextFormField(
                     controller: _batchCtrl,
+                    textCapitalization: TextCapitalization.characters,
                     style: TextStyle(color: context.colors.textPrimary),
                     decoration: InputDecoration(labelText: 'Batch Number *'),
                     validator: (v) => v!.isEmpty ? 'Required' : null,
@@ -476,6 +477,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                     SizedBox(height: 12),
                     TextFormField(
                       controller: _invoiceNoCtrl,
+                      textCapitalization: TextCapitalization.characters,
                       style: TextStyle(color: context.colors.textPrimary),
                       decoration: InputDecoration(
                           labelText: 'Invoice No.'),
@@ -483,6 +485,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                     SizedBox(height: 12),
                     TextFormField(
                       controller: _noteCtrl,
+                      textCapitalization: TextCapitalization.characters,
                       style: TextStyle(color: context.colors.textPrimary),
                       decoration: InputDecoration(
                           labelText: 'Reference Note'),
@@ -592,6 +595,7 @@ class _ProductSearchWidgetState extends ConsumerState<_ProductSearchWidget> {
           TextField(
             controller: _ctrl,
             autofocus: true,
+            textCapitalization: TextCapitalization.characters,
             style: TextStyle(color: context.colors.textPrimary),
             onChanged: _load,
             decoration: InputDecoration(

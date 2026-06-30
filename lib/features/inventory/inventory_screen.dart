@@ -60,96 +60,53 @@ class _ProductInventoryCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.colors.surfaceBorder),
       ),
-      child: ExpansionTile(
-        tilePadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        childrenPadding: EdgeInsets.zero,
-        collapsedIconColor: context.colors.textMuted,
-        iconColor: context.colors.primary,
-        title: Text(
-          '${product.name} (${product.packagingUnit})',
-          style: TextStyle(
-              color: context.colors.textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: 14),
-        ),
-        subtitle: batchesAsync.when(
-          data: (batches) {
-            final total =
-                batches.fold<int>(0, (sum, b) => sum + b.currentStock);
-            return Text(
-              '$total units across ${batches.length} batch(es)',
-              style: TextStyle(
-                color: total == 0
-                    ? context.colors.expiryCritical
-                    : total < 10
-                        ? context.colors.expiryWarning
-                        : context.colors.textSecondary,
-                fontSize: 12,
-              ),
-            );
-          },
-          loading: () =>
-              Text('Loading...', style: TextStyle(fontSize: 12)),
-          error: (_, __) => Text('Error'),
-        ),
-        children: [
-          batchesAsync.when(
-            data: (batches) => Column(
-              children: [
-                Divider(height: 1),
-                ...batches.map((b) => _BatchRow(batch: b)),
-                if (batches.isEmpty)
-                  Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('No stock batches',
-                        style: TextStyle(color: context.colors.textMuted)),
-                  ),
-                Divider(height: 1),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      final hasStock = batches.any((b) => b.currentStock > 0);
-                      
-                      final confirm = await showDialog<bool>(
-                        context: context,
-                        builder: (ctx) => AlertDialog(
-                          backgroundColor: context.colors.surfaceElevated,
-                          title: Text(hasStock ? 'Warning: Active Stock!' : 'Delete Product?'),
-                          content: Text(hasStock 
-                            ? 'This product still has active stock in your inventory. Deleting it will permanently archive the product. Are you sure you want to proceed?' 
-                            : 'This will permanently archive the product. Are you sure?'),
-                          actions: [
-                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
-                            ElevatedButton(
-                              onPressed: () => Navigator.pop(ctx, true),
-                              style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
-                              child: Text('Delete', style: TextStyle(color: Colors.white)),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirm == true) {
-                        try {
-                          await ref.read(productsDaoProvider).deleteProduct(product.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Product archived')));
-                          }
-                        } catch (e) {
-                          if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                        }
-                      }
-                    },
-                    icon: Icon(Icons.delete_outline, color: context.colors.error, size: 16),
-                    label: Text('Delete Product', style: TextStyle(color: context.colors.error, fontSize: 12)),
-                  ),
+      child: InkWell(
+        onTap: () => context.push('/inventory/product/${product.id}'),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${product.name} (${product.packagingUnit})',
+                      style: TextStyle(
+                          color: context.colors.textPrimary,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15),
+                    ),
+                    SizedBox(height: 4),
+                    batchesAsync.when(
+                      data: (batches) {
+                        final total =
+                            batches.fold<int>(0, (sum, b) => sum + b.currentStock);
+                        return Text(
+                          '$total units across ${batches.length} batch(es)',
+                          style: TextStyle(
+                            color: total == 0
+                                ? context.colors.expiryCritical
+                                : total < 10
+                                    ? context.colors.expiryWarning
+                                    : context.colors.textSecondary,
+                            fontSize: 13,
+                          ),
+                        );
+                      },
+                      loading: () =>
+                          Text('Loading...', style: TextStyle(fontSize: 13)),
+                      error: (_, __) => Text('Error'),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-            loading: () => LinearProgressIndicator(),
-            error: (_, __) => SizedBox.shrink(),
+              ),
+              Icon(Icons.chevron_right, color: context.colors.textMuted),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

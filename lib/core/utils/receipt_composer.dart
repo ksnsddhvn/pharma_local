@@ -43,17 +43,16 @@ class ReceiptComposer {
     buffer.writeln("       BILL OF SUPPLY");
     buffer.writeln("   RANGA MEDICAL STORES");
     buffer.writeln("==================================");
-    buffer.writeln("📍 O.V. Road, KANDUKUR-523105");
-    buffer.writeln("📞 Cell: 9849500749");
-    buffer.writeln("📜 Lic No: 20-228/AP/PS(O)/1996/R");
-    buffer.writeln("            21-228/AP/PS(O)/1996/R");
-    buffer.writeln("🆔 GSTIN: 37AIRPD4121G1ZF");
-    buffer.writeln("⚠️ Composition Taxable person, not eligible to collect tax on suppliers");
+    buffer.writeln("Address: O.V. Road, KANDUKUR-523105");
+    buffer.writeln("Mobile/Cell: 9849500749");
+    buffer.writeln("Drug License Numbers: 20-228/AP/PS(O)/1996/R & 21-228/AP/PS(O)/1996/R");
+    buffer.writeln("GSTIN: 37AIRPD4121G1ZF");
+    buffer.writeln("Composition Taxable person, not eligible to collect tax on suppliers");
     buffer.writeln("----------------------------------");
     
     final dateStr = DateFormat('dd-MM-yyyy').format(invoice.createdAt);
     buffer.writeln("Bill No: #${invoice.id}          Date: $dateStr");
-    buffer.writeln("Pt. Name: ${invoice.customerName}   Place: ${invoice.customerNotes ?? ''}");
+    buffer.writeln("Pt. Name: ${invoice.customerName}   Place: ${invoice.customerPlace}");
     buffer.writeln("Dr. Name: ${invoice.doctorName}   Place: ${invoice.doctorPlace}");
     buffer.writeln("----------------------------------");
     buffer.writeln("PARTICULARS:");

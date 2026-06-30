@@ -10,6 +10,7 @@ class SalesInvoices extends Table {
   TextColumn get invoiceNumber => text()(); // e.g. "PL-2025-0001"
   TextColumn get customerName => text()();
   TextColumn get customerMobile => text()();
+  TextColumn get customerPlace => text().withDefault(Constant('Kandukur'))(); // v11
   TextColumn get doctorName => text().withDefault(Constant(''))();
   TextColumn get doctorPlace => text().withDefault(Constant(''))(); // Clinic/Hospital locality tracking
   DateTimeColumn get createdAt =>

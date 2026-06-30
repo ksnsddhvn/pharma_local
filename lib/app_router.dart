@@ -7,6 +7,7 @@ import '../features/products/products_screen.dart';
 import '../features/products/add_edit_product_screen.dart';
 import '../features/inventory/inventory_screen.dart';
 import '../features/inventory/receive_stock_screen.dart';
+import '../features/inventory/product_detail_screen.dart';
 import '../features/sales/sales_screen.dart';
 import '../features/sales/new_sale_screen.dart';
 import '../features/sales/checkout_screen.dart';
@@ -71,6 +72,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/inventory/receive',
         builder: (_, __) => ReceiveStockScreen(),
+      ),
+      GoRoute(
+        path: '/inventory/product/:id',
+        builder: (_, state) => ProductDetailScreen(
+            productId: int.parse(state.pathParameters['id']!)),
       ),
       GoRoute(
         path: '/sales/new',
