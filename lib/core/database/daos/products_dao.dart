@@ -72,6 +72,41 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
       );
     });
   }
+
+  Stream<List<ProductCategory>> watchAllCategories() =>
+      (select(productCategories)..where((c) => c.isDeleted.equals(false))..orderBy([(c) => OrderingTerm.asc(c.name)])).watch();
+
+  Stream<List<ProductDetailedPayload>> watchLowStockProducts() {
+    final query = select(products).join([
+      leftOuterJoin(productCategories, productCategories.id.equalsExp(products.categoryId)),
+      innerJoin(stockBatches, stockBatches.productId.equalsExp(products.id)),
+    ])..where(products.isDeleted.equals(false));
+
+    return query.watch().map((rows) {
+      final map = <int, ProductDetailedPayload>{};
+      for (final row in rows) {
+        final product = row.readTable(products);
+        final batch = row.readTable(stockBatches);
+        if (!map.containsKey(product.id)) {
+           map[product.id] = ProductDetailedPayload(
+             product: product,
+             category: row.readTableOrNull(productCategories),
+             batches: [],
+           );
+        }
+        map[product.id]!.batches.add(batch);
+      }
+      
+      final lowStockList = <ProductDetailedPayload>[];
+      for (final payload in map.values) {
+         final totalStock = payload.batches.fold<int>(0, (sum, b) => sum + b.currentStock);
+         if (totalStock < payload.product.minStockThreshold) {
+            lowStockList.add(payload);
+         }
+      }
+      return lowStockList;
+    });
+  }
 }
 
 // English payload helper structure for UI cards

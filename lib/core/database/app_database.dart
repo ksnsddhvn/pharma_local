@@ -44,7 +44,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -106,6 +106,9 @@ class AppDatabase extends _$AppDatabase {
                 productCategories.description: const CustomExpression('NULL'),
               },
             ));
+          }
+          if (from < 14) {
+            await m.addColumn(products, products.minStockThreshold);
           }
         },
       );

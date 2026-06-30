@@ -97,6 +97,15 @@ final batchesForProductProvider = StreamProvider.family<List<StockBatch>, int>(
 final todaysSalesTotalProvider = StreamProvider(
     (ref) => ref.watch(salesDaoProvider).watchTodaysSalesTotal());
 
+final todaysCashFlowProvider = StreamProvider(
+    (ref) => ref.watch(salesDaoProvider).watchTodaysCashFlow());
+
+final allCategoriesStreamProvider = StreamProvider(
+    (ref) => ref.watch(productsDaoProvider).watchAllCategories());
+
+final lowStockAlertsProvider = StreamProvider(
+    (ref) => ref.watch(productsDaoProvider).watchLowStockProducts());
+
 final shortbookCountProvider = StreamProvider((ref) {
   return ref.watch(shortbookServiceProvider).watchShortbookItems().map((items) => items.length);
 });

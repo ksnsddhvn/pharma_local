@@ -121,6 +121,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
   final _searchCtrl = TextEditingController();
   final _searchFocusNode = FocusNode();
   String _query = '';
+  int? _selectedCategoryId;
 
   @override
   void initState() {
@@ -268,6 +269,58 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
               ],
             ),
           ),
+          
+          // Category Chips
+          Consumer(
+            builder: (context, ref, child) {
+              final categoriesAsync = ref.watch(allCategoriesStreamProvider);
+              return categoriesAsync.when(
+                data: (categories) {
+                  if (categories.isEmpty) return SizedBox.shrink();
+                  return Container(
+                    height: 50,
+                    margin: EdgeInsets.only(bottom: 8),
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: categories.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: ChoiceChip(
+                              label: Text('All'),
+                              selected: _selectedCategoryId == null,
+                              selectedColor: context.colors.primary.withOpacity(0.2),
+                              onSelected: (selected) {
+                                if (selected) setState(() => _selectedCategoryId = null);
+                              },
+                            ),
+                          );
+                        }
+                        final category = categories[index - 1];
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: ChoiceChip(
+                            label: Text(category.name),
+                            selected: _selectedCategoryId == category.id,
+                            selectedColor: context.colors.primary.withOpacity(0.2),
+                            onSelected: (selected) {
+                              setState(() {
+                                _selectedCategoryId = selected ? category.id : null;
+                              });
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+                loading: () => SizedBox.shrink(),
+                error: (_, __) => SizedBox.shrink(),
+              );
+            },
+          ),
 
           // Cart & Search Dropdown
           Expanded(
@@ -283,7 +336,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                       ),
                 
                 // Product search results dropdown
-                if (_searchFocusNode.hasFocus || _query.isNotEmpty)
+                if (_searchFocusNode.hasFocus || _query.isNotEmpty || _selectedCategoryId != null)
                   Positioned(
                     top: 0,
                     left: 16,
@@ -297,11 +350,15 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                         borderRadius: BorderRadius.circular(10),
                         child: _SearchResults(
                           query: _query,
+                          categoryId: _selectedCategoryId,
                           onAdd: (batches, product) {
                             _searchFocusNode.unfocus();
                             _addToCart(batches, product);
                             _searchCtrl.clear();
-                            setState(() => _query = '');
+                            setState(() {
+                              _query = '';
+                              _selectedCategoryId = null;
+                            });
                           },
                         ),
                       ),
@@ -361,8 +418,9 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
 class _SearchResults extends ConsumerStatefulWidget {
   final String query;
+  final int? categoryId;
   final Function(List<StockBatch>, Product) onAdd;
-  const _SearchResults({required this.query, required this.onAdd});
+  const _SearchResults({required this.query, this.categoryId, required this.onAdd});
 
   @override
   ConsumerState<_SearchResults> createState() => _SearchResultsState();
@@ -371,35 +429,44 @@ class _SearchResults extends ConsumerStatefulWidget {
 class _SearchResultsState extends ConsumerState<_SearchResults> {
   List<Product> _products = [];
   String _lastQuery = '';
+  int? _lastCategoryId;
 
   @override
   void initState() {
     super.initState();
     _lastQuery = widget.query;
-    _search(widget.query);
+    _lastCategoryId = widget.categoryId;
+    _search(widget.query, widget.categoryId);
   }
 
   @override
   void didUpdateWidget(_SearchResults old) {
     super.didUpdateWidget(old);
-    if (widget.query != _lastQuery) {
+    if (widget.query != _lastQuery || widget.categoryId != _lastCategoryId) {
       _lastQuery = widget.query;
-      _search(widget.query);
+      _lastCategoryId = widget.categoryId;
+      _search(widget.query, widget.categoryId);
     }
   }
 
-  Future<void> _search(String q) async {
+  Future<void> _search(String q, int? catId) async {
     final all = await ref.read(productsDaoProvider).getAllProducts();
+    var filtered = all;
+    if (catId != null) {
+      filtered = filtered.where((p) => p.categoryId == catId).toList();
+    }
+    
     if (q.isEmpty) {
-      if (mounted) setState(() => _products = all.take(15).toList());
+      if (mounted) setState(() => _products = filtered.take(15).toList());
       return;
     }
-    final filtered = FuzzySearch.filter<Product>(
+    
+    final searchResults = FuzzySearch.filter<Product>(
         query: q,
-        candidates: all,
+        candidates: filtered,
         keyOf: (p) => '${p.name} ${p.hsnCode}',
       );
-    if (mounted) setState(() => _products = filtered.take(6).toList());
+    if (mounted) setState(() => _products = searchResults.take(15).toList());
   }
 
   @override

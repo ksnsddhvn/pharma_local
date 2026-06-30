@@ -7,12 +7,20 @@ import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 
-class InventoryScreen extends ConsumerWidget {
+class InventoryScreen extends ConsumerStatefulWidget {
   InventoryScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<InventoryScreen> createState() => _InventoryScreenState();
+}
+
+class _InventoryScreenState extends ConsumerState<InventoryScreen> {
+  int? _selectedCategoryId;
+
+  @override
+  Widget build(BuildContext context) {
     final productsAsync = ref.watch(allProductsStreamProvider);
+    final categoriesAsync = ref.watch(allCategoriesStreamProvider);
 
     return Scaffold(
       backgroundColor: context.colors.background,
@@ -26,15 +34,73 @@ class InventoryScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: productsAsync.when(
-        data: (products) => ListView.builder(
-          padding: EdgeInsets.only(bottom: 80, top: 8),
-          itemCount: products.length,
-          itemBuilder: (_, i) => _ProductInventoryCard(product: products[i]),
-        ),
-        loading: () =>
-            Center(child: CircularProgressIndicator(color: context.colors.primary)),
-        error: (e, _) => Center(child: Text('Error: $e')),
+      body: Column(
+        children: [
+          categoriesAsync.when(
+            data: (categories) {
+              if (categories.isEmpty) return SizedBox.shrink();
+              return Container(
+                height: 50,
+                margin: EdgeInsets.symmetric(vertical: 8),
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: categories.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text('All'),
+                          selected: _selectedCategoryId == null,
+                          selectedColor: context.colors.primary.withOpacity(0.2),
+                          onSelected: (selected) {
+                            if (selected) setState(() => _selectedCategoryId = null);
+                          },
+                        ),
+                      );
+                    }
+                    final category = categories[index - 1];
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ChoiceChip(
+                        label: Text(category.name),
+                        selected: _selectedCategoryId == category.id,
+                        selectedColor: context.colors.primary.withOpacity(0.2),
+                        onSelected: (selected) {
+                          setState(() => _selectedCategoryId = selected ? category.id : null);
+                        },
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+            loading: () => SizedBox.shrink(),
+            error: (_, __) => SizedBox.shrink(),
+          ),
+          Expanded(
+            child: productsAsync.when(
+              data: (products) {
+                final filtered = _selectedCategoryId == null
+                    ? products
+                    : products.where((p) => p.categoryId == _selectedCategoryId).toList();
+                
+                if (filtered.isEmpty) {
+                   return Center(child: Text('No products in this category.', style: TextStyle(color: context.colors.textSecondary)));
+                }
+
+                return ListView.builder(
+                  padding: EdgeInsets.only(bottom: 80, top: 8),
+                  itemCount: filtered.length,
+                  itemBuilder: (_, i) => _ProductInventoryCard(product: filtered[i]),
+                );
+              },
+              loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
+              error: (e, _) => Center(child: Text('Error: $e')),
+            ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/inventory/receive'),

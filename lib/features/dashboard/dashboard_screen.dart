@@ -27,6 +27,9 @@ class DashboardScreen extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
+                // Low Stock Alerts List
+                _LowStockAlertsWidget(),
+                
                 // Summary Cards Row
                 Row(
                   children: [
@@ -496,6 +499,97 @@ class _PaymentModePieChart extends StatelessWidget {
         centerSpaceRadius: 20,
         sectionsSpace: 2,
       ),
+    );
+  }
+}
+
+class _LowStockAlertsWidget extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final alerts = ref.watch(lowStockAlertsProvider);
+    
+    return alerts.when(
+      data: (items) {
+        if (items.isEmpty) return SizedBox.shrink();
+        
+        return Container(
+          margin: EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: context.colors.warning, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Low Stock Alerts',
+                    style: TextStyle(
+                      color: context.colors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12),
+              SizedBox(
+                height: 110,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: items.length,
+                  itemBuilder: (context, index) {
+                    final item = items[index];
+                    final currentStock = item.batches.fold<int>(0, (sum, b) => sum + b.currentStock);
+                    return Container(
+                      width: 140,
+                      margin: EdgeInsets.only(right: 12),
+                      padding: EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: context.colors.warning.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: context.colors.warning.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.product.name,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Spacer(),
+                          Text(
+                            'Stock: $currentStock',
+                            style: TextStyle(
+                              color: context.colors.warning,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            'Min: ${item.product.minStockThreshold}',
+                            style: TextStyle(
+                              color: context.colors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => SizedBox.shrink(),
+      error: (_, __) => SizedBox.shrink(),
     );
   }
 }

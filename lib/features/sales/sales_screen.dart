@@ -51,11 +51,18 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tab,
-        children: const [
-          _PaidTransactionsTab(),
-          _OutstandingAccountsTab(),
+      body: Column(
+        children: [
+          _DailyCashFlowSummary(),
+          Expanded(
+            child: TabBarView(
+              controller: _tab,
+              children: const [
+                _PaidTransactionsTab(),
+                _OutstandingAccountsTab(),
+              ],
+            ),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -505,3 +512,70 @@ void showReceiptDialog(BuildContext context, WidgetRef ref, SalesInvoice invoice
     ),
   );
 }
+
+class _DailyCashFlowSummary extends ConsumerWidget {
+  const _DailyCashFlowSummary();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cashFlowAsync = ref.watch(todaysCashFlowProvider);
+
+    return cashFlowAsync.when(
+      data: (cashFlow) {
+        return Container(
+          margin: EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.colors.surfaceElevated,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.colors.surfaceBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Drawer Revenue', style: TextStyle(color: context.colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 4),
+                    Text(
+                      AppFormatters.currency(cashFlow.drawerRevenue),
+                      style: TextStyle(color: context.colors.success, fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    Text('Cash + UPI Today', style: TextStyle(color: context.colors.textMuted, fontSize: 11)),
+                  ],
+                ),
+              ),
+              Container(width: 1, height: 40, color: context.colors.surfaceBorder),
+              SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Pending Debt', style: TextStyle(color: context.colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 4),
+                    Text(
+                      AppFormatters.currency(cashFlow.pendingDebt),
+                      style: TextStyle(color: context.colors.error, fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    Text('Credit Issued Today', style: TextStyle(color: context.colors.textMuted, fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+      loading: () => SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
+      error: (e, _) => SizedBox(height: 100, child: Center(child: Text('Error: $e'))),
+    );
+  }
+}
+

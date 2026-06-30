@@ -107,6 +107,23 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
         .map((invoices) => invoices.fold<double>(0.0, (sum, inv) => sum + inv.totalAmount));
   }
 
+  Stream<CashFlowStats> watchTodaysCashFlow() {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final endOfDay = startOfDay.add(Duration(days: 1));
+    return watchInvoicesForDateRange(startOfDay, endOfDay).map((invoices) {
+      double cashUpi = 0;
+      double credit = 0;
+      for (final inv in invoices) {
+         if (inv.paymentMode == PaymentMode.cash || inv.paymentMode == PaymentMode.upi) {
+            cashUpi += inv.amountPaid;
+         }
+         credit += inv.creditBalanceAdded;
+      }
+      return CashFlowStats(cashUpi, credit);
+    });
+  }
+
   /// Breakdown of sales by payment mode over the last N days
   Future<Map<String, double>> getPaymentModeBreakdown(int days) async {
     final from = DateTime.now().subtract(Duration(days: days));
@@ -225,4 +242,10 @@ class LossItem {
   final double soldPrice;
   final double costPrice;
   LossItem(this.productName, this.profit, this.soldPrice, this.costPrice);
+}
+
+class CashFlowStats {
+  final double cashUpiRevenue;
+  final double creditAdded;
+  CashFlowStats(this.cashUpiRevenue, this.creditAdded);
 }
