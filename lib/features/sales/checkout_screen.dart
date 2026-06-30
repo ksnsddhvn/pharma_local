@@ -452,9 +452,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   .toList(),
             ),
           ),
-          SizedBox(height: 24),
-
-          ElevatedButton(
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: ElevatedButton(
             onPressed: _loading ? null : _checkout,
             style: ElevatedButton.styleFrom(
                 minimumSize: Size.fromHeight(52)),
@@ -463,14 +466,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.black))
+                        strokeWidth: 2, color: Colors.white))
                 : Text(
                     'Confirm Payment  •  ${AppFormatters.currency(total)}',
                     style: TextStyle(
-                        fontWeight: FontWeight.w700, fontSize: 15),
+                        fontWeight: FontWeight.w700, fontSize: 16),
                   ),
           ),
-        ],
+        ),
       ),
     );
   }

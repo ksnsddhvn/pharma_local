@@ -67,9 +67,8 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/sales/new'),
-        backgroundColor: context.colors.primary,
-        icon: Icon(Icons.add_shopping_cart, color: Colors.black),
-        label: Text('New Sale', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        icon: Icon(Icons.add_shopping_cart),
+        label: Text('New Sale', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -546,7 +545,7 @@ class _DailyCashFlowSummary extends ConsumerWidget {
                     Text('Drawer Revenue', style: TextStyle(color: context.colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
                     SizedBox(height: 4),
                     Text(
-                      AppFormatters.currency(cashFlow.drawerRevenue),
+                      AppFormatters.currency(cashFlow.cashUpiRevenue),
                       style: TextStyle(color: context.colors.success, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     Text('Cash + UPI Today', style: TextStyle(color: context.colors.textMuted, fontSize: 11)),
@@ -562,7 +561,7 @@ class _DailyCashFlowSummary extends ConsumerWidget {
                     Text('Pending Debt', style: TextStyle(color: context.colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
                     SizedBox(height: 4),
                     Text(
-                      AppFormatters.currency(cashFlow.pendingDebt),
+                      AppFormatters.currency(cashFlow.creditAdded),
                       style: TextStyle(color: context.colors.error, fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     Text('Credit Issued Today', style: TextStyle(color: context.colors.textMuted, fontSize: 11)),

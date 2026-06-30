@@ -84,6 +84,9 @@ final backupServiceProvider = Provider((_) => BackupService());
 final allProductsStreamProvider = StreamProvider(
     (ref) => ref.watch(productsDaoProvider).watchAllProducts());
 
+final productsBySupplierProvider = StreamProvider.family<List<Product>, int>(
+    (ref, supplierId) => ref.watch(productsDaoProvider).watchProductsBySupplier(supplierId));
+
 final allSuppliersStreamProvider = StreamProvider(
     (ref) => ref.watch(suppliersDaoProvider).watchAllSuppliers());
 

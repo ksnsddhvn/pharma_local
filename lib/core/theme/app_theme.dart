@@ -148,23 +148,23 @@ extension AppThemeContext on BuildContext {
 }
 
 class AppTheme {
-  static const _primary = Color(0xFF00BFA5);
-  static const _primaryDark = Color(0xFF00897B);
-  static const _primaryLight = Color(0xFF64FFDA);
+  static const _primary = Color(0xFF1E40AF); // Deep Corporate Blue
+  static const _primaryDark = Color(0xFF1E3A8A);
+  static const _primaryLight = Color(0xFF60A5FA);
   
-  static const _success = Color(0xFF3FB950);
-  static const _warning = Color(0xFFD29922);
-  static const _error = Color(0xFFF85149);
-  static const _info = Color(0xFF58A6FF);
+  static const _success = Color(0xFF10B981); // Paid/Settled state
+  static const _warning = Color(0xFFF59E0B);
+  static const _error = Color(0xFFEF4444); // Credit Tabs/Low Stock
+  static const _info = Color(0xFF3B82F6);
 
-  static const _otcColor = Color(0xFF3FB950);
-  static const _rxColor = Color(0xFF58A6FF);
-  static const _scheduleHColor = Color(0xFFD29922);
-  static const _scheduleH1Color = Color(0xFFF85149);
+  static const _otcColor = Color(0xFF10B981);
+  static const _rxColor = Color(0xFF3B82F6);
+  static const _scheduleHColor = Color(0xFFF59E0B);
+  static const _scheduleH1Color = Color(0xFFEF4444);
   static const _cosmeticsColor = Color(0xFFBC8F8F);
 
   static const _gradientPrimary = LinearGradient(
-    colors: [_primary, Color(0xFF0077C2)],
+    colors: [_primary, Color(0xFF1E3A8A)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -208,9 +208,9 @@ class AppTheme {
     surface: Color(0xFFFFFFFF),
     surfaceElevated: Color(0xFFFFFFFF),
     surfaceBorder: Color(0xFFE5E7EB),
-    textPrimary: Color(0xFF111827),
-    textSecondary: Color(0xFF4B5563),
-    textMuted: Color(0xFF9CA3AF),
+    textPrimary: Color(0xFF1E293B), // Dark slate
+    textSecondary: Color(0xFF475569),
+    textMuted: Color(0xFF94A3B8),
     success: _success,
     warning: _warning,
     error: _error,
@@ -264,8 +264,8 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: GoogleFonts.inter(
           color: colors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
         ),
         iconTheme: IconThemeData(color: colors.textSecondary),
       ),
@@ -302,29 +302,30 @@ class AppTheme {
         filled: true,
         fillColor: colors.surfaceElevated,
         contentPadding:
-            EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: colors.surfaceBorder),
+          borderSide: BorderSide(color: colors.surfaceBorder, width: 2),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: colors.surfaceBorder),
+          borderSide: BorderSide(color: colors.surfaceBorder, width: 2),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: colors.primary, width: 1.5),
+          borderSide: BorderSide(color: colors.primary, width: 2),
         ),
         hintStyle:
-            GoogleFonts.inter(color: colors.textMuted, fontSize: 14),
+            GoogleFonts.inter(color: colors.textMuted, fontSize: 16, fontWeight: FontWeight.w500),
         labelStyle:
-            GoogleFonts.inter(color: colors.textSecondary, fontSize: 14),
+            GoogleFonts.inter(color: colors.textSecondary, fontSize: 16, fontWeight: FontWeight.w500),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: colors.primary,
-          foregroundColor: Colors.black,
+          foregroundColor: Colors.white,
           elevation: 0,
+          minimumSize: Size(88, 52), // 52px minimum height
           padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -336,6 +337,7 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: colors.primary,
           side: BorderSide(color: colors.primary),
+          minimumSize: Size(88, 52), // 52px minimum height
           padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -345,16 +347,16 @@ class AppTheme {
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: colors.primary,
-        foregroundColor: Colors.black,
+        foregroundColor: Colors.white,
         elevation: 4,
       ),
       chipTheme: ChipThemeData(
         backgroundColor: colors.surfaceElevated,
         labelStyle:
-            GoogleFonts.inter(color: colors.textSecondary, fontSize: 12),
-        side: BorderSide(color: colors.surfaceBorder),
+            GoogleFonts.inter(color: colors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500), // Medium for filters
+        side: BorderSide(color: colors.surfaceBorder, width: 2), // 2px border
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 14), // To hit 52px minimum height ideally
       ),
       dividerTheme: DividerThemeData(
         color: colors.surfaceBorder,

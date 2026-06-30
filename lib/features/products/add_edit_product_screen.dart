@@ -120,21 +120,44 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       appBar: AppBar(
         title: Text(widget.productId != null ? 'Edit Product' : 'Add Product'),
         actions: [
-          if (_loading)
-            Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: context.colors.primary)),
-            )
-          else
-            TextButton(
-              onPressed: _save,
-              child: Text('Save',
-                  style: TextStyle(
-                      color: context.colors.primary, fontWeight: FontWeight.w600)),
+          if (widget.productId != null)
+            IconButton(
+              onPressed: () async {
+                final batches = await ref.read(stockBatchesDaoProvider).getBatchesForProduct(widget.productId!);
+                final hasStock = batches.any((b) => b.currentStock > 0);
+                
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    backgroundColor: context.colors.surfaceElevated,
+                    title: Text(hasStock ? 'Warning: Active Stock!' : 'Delete Product?'),
+                    content: Text(hasStock 
+                      ? 'This product still has active stock in your inventory. Deleting it will permanently archive the product. Are you sure you want to proceed?' 
+                      : 'This will permanently archive the product. Are you sure?'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
+                        child: Text('Delete', style: TextStyle(color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirm == true) {
+                  try {
+                    await ref.read(productsDaoProvider).deleteProduct(widget.productId!);
+                    if (context.mounted) {
+                      Navigator.pop(context); // Go back
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Product deleted')));
+                    }
+                  } catch (e) {
+                    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                  }
+                }
+              },
+              icon: Icon(Icons.delete_outline, color: context.colors.error),
+              tooltip: 'Delete Product',
             ),
         ],
       ),
@@ -214,53 +237,24 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: widget.productId != null
-          ? Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final batches = await ref.read(stockBatchesDaoProvider).getBatchesForProduct(widget.productId!);
-                  final hasStock = batches.any((b) => b.currentStock > 0);
-                  
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      backgroundColor: context.colors.surfaceElevated,
-                      title: Text(hasStock ? 'Warning: Active Stock!' : 'Delete Product?'),
-                      content: Text(hasStock 
-                        ? 'This product still has active stock in your inventory. Deleting it will permanently archive the product. Are you sure you want to proceed?' 
-                        : 'This will permanently archive the product. Are you sure?'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Cancel')),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          style: ElevatedButton.styleFrom(backgroundColor: context.colors.error),
-                          child: Text('Delete', style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) {
-                    try {
-                      await ref.read(productsDaoProvider).deleteProduct(widget.productId!);
-                      if (context.mounted) {
-                        Navigator.pop(context); // Go back
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Product deleted')));
-                      }
-                    } catch (e) {
-                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                    }
-                  }
-                },
-                icon: Icon(Icons.delete_outline, color: Colors.white),
-                label: Text('Delete Product', style: TextStyle(color: Colors.white)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: context.colors.error,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-              ),
-            )
-          : null,
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: ElevatedButton(
+            onPressed: _loading ? null : _save,
+            style: ElevatedButton.styleFrom(minimumSize: Size.fromHeight(52)),
+            child: _loading
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : Text(
+                    'Save Product',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                  ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -273,6 +267,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       controller: ctrl,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
+      textInputAction: TextInputAction.next,
+      onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
       validator: validator,
       style: TextStyle(color: context.colors.textPrimary),
       decoration: InputDecoration(labelText: label, hintText: hint),

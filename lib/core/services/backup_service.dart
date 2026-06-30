@@ -121,7 +121,7 @@ class BackupService {
 class AutoBackupObserver extends WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
+    if (state == AppLifecycleState.detached || state == AppLifecycleState.paused) {
       _performAutoBackup();
     }
   }

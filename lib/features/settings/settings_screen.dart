@@ -10,6 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/database/tables/security_settings_table.dart';
 import 'archived_items_screen.dart';
 import '../../core/database/app_database.dart';
+import '../../core/database/tables/sales_tables.dart';
 import '../../core/providers.dart';
 
 final securitySettingsProvider = FutureProvider<SecuritySetting?>((ref) async {
@@ -149,70 +150,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     try {
       final db = ref.read(databaseProvider);
       
-      final existingCat = await (db.select(db.productCategories)..where((c) => c.name.equals('General Medicine'))).getSingleOrNull();
-      final catId = existingCat?.id ?? await db.into(db.productCategories).insert(
-        ProductCategoriesCompanion.insert(name: 'General Medicine'),
-      );
-      
       final existingSup = await (db.select(db.suppliers)..where((s) => s.name.equals('Pharma Distributors Inc.'))).getSingleOrNull();
-      final supId = existingSup?.id ?? await db.into(db.suppliers).insert(
-        SuppliersCompanion.insert(
-          name: 'Pharma Distributors Inc.', 
-          contactPerson: Value('John Doe'),
-          phone: Value('9876543210'),
-        ),
-      );
+      if (existingSup != null) {
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Mock data already exists!'), backgroundColor: context.colors.warning));
+        return;
+      }
+      
+      final cat1Id = await db.into(db.productCategories).insert(ProductCategoriesCompanion.insert(name: 'General Medicine'));
+      final cat2Id = await db.into(db.productCategories).insert(ProductCategoriesCompanion.insert(name: 'Supplements'));
+      
+      final sup1Id = await db.into(db.suppliers).insert(SuppliersCompanion.insert(name: 'Pharma Distributors Inc.', contactPerson: Value('John Doe'), phone: Value('9876543210')));
+      final sup2Id = await db.into(db.suppliers).insert(SuppliersCompanion.insert(name: 'Apollo Agencies', contactPerson: Value('Jane Smith'), phone: Value('9876543211')));
 
-      final p1 = await db.into(db.products).insert(
-        ProductsCompanion.insert(
-          name: 'Paracetamol 500mg Tablet',
-          hsnCode: '3004',
-          packagingUnit: Value("10's"),
-          categoryId: Value(catId),
-        ),
-      );
+      final p1 = await db.into(db.products).insert(ProductsCompanion.insert(name: 'Paracetamol 500mg Tablet', hsnCode: '3004', packagingUnit: Value("10's"), categoryId: Value(cat1Id)));
+      final p2 = await db.into(db.products).insert(ProductsCompanion.insert(name: 'Cough Syrup 100ml', hsnCode: '300490', packagingUnit: Value("100ml"), categoryId: Value(cat1Id)));
+      final p3 = await db.into(db.products).insert(ProductsCompanion.insert(name: 'Vitamin C 500mg', hsnCode: '2936', packagingUnit: Value("15's"), categoryId: Value(cat2Id)));
+      final p4 = await db.into(db.products).insert(ProductsCompanion.insert(name: 'D3 60k Softgel', hsnCode: '2936', packagingUnit: Value("4's"), categoryId: Value(cat2Id)));
 
-      final p2 = await db.into(db.products).insert(
-        ProductsCompanion.insert(
-          name: 'Cough Syrup 100ml',
-          hsnCode: '300490',
-          packagingUnit: Value("100ml"),
-          categoryId: Value(catId),
-        ),
-      );
+      final b1 = await db.into(db.stockBatches).insert(StockBatchesCompanion.insert(productId: p1, batchNumber: 'B1001', expiryDate: DateTime.now().add(Duration(days: 365)), mrp: 50.0, purchaseRate: 35.0, currentStock: Value(100), supplierId: Value(sup1Id)));
+      final b2 = await db.into(db.stockBatches).insert(StockBatchesCompanion.insert(productId: p1, batchNumber: 'B1002', expiryDate: DateTime.now().add(Duration(days: 400)), mrp: 55.0, purchaseRate: 40.0, currentStock: Value(50), supplierId: Value(sup2Id)));
+      final b3 = await db.into(db.stockBatches).insert(StockBatchesCompanion.insert(productId: p2, batchNumber: 'C2002', expiryDate: DateTime.now().add(Duration(days: 180)), mrp: 120.0, purchaseRate: 90.0, currentStock: Value(50), supplierId: Value(sup1Id)));
+      final b4 = await db.into(db.stockBatches).insert(StockBatchesCompanion.insert(productId: p3, batchNumber: 'V3003', expiryDate: DateTime.now().add(Duration(days: 700)), mrp: 65.0, purchaseRate: 45.0, currentStock: Value(200), supplierId: Value(sup2Id)));
+      final b5 = await db.into(db.stockBatches).insert(StockBatchesCompanion.insert(productId: p4, batchNumber: 'D4004', expiryDate: DateTime.now().add(Duration(days: 500)), mrp: 150.0, purchaseRate: 110.0, currentStock: Value(120), supplierId: Value(sup1Id)));
 
-      await db.into(db.stockBatches).insert(
-        StockBatchesCompanion.insert(
-          productId: p1,
-          batchNumber: 'B1001',
-          expiryDate: DateTime.now().add(Duration(days: 365)),
-          mrp: 50.0,
-          purchaseRate: 35.0,
-          currentStock: Value(100),
-        ),
-      );
+      final s1 = await db.into(db.salesInvoices).insert(SalesInvoicesCompanion.insert(invoiceNumber: 'INV-${DateTime.now().millisecondsSinceEpoch}-1', totalAmount: 150.0, subtotal: 150.0, totalGst: 0.0, paymentMode: Value(PaymentMode.cash), customerName: 'Cash Customer', customerMobile: '0000000000'));
+      await db.into(db.salesInvoiceItems).insert(SalesInvoiceItemsCompanion.insert(invoiceId: s1, batchId: b1, productId: p1, productName: 'Paracetamol 500mg Tablet', batchNumber: 'B1001', gstPercentage: 12.0, lineTotal: 50.0));
+      await db.into(db.salesInvoiceItems).insert(SalesInvoiceItemsCompanion.insert(invoiceId: s1, batchId: b3, productId: p2, productName: 'Cough Syrup 100ml', batchNumber: 'C2002', gstPercentage: 12.0, lineTotal: 100.0));
 
-      await db.into(db.stockBatches).insert(
-        StockBatchesCompanion.insert(
-          productId: p2,
-          batchNumber: 'C2002',
-          expiryDate: DateTime.now().add(Duration(days: 180)),
-          mrp: 120.0,
-          purchaseRate: 90.0,
-          currentStock: Value(50),
-        ),
-      );
+      final s2 = await db.into(db.salesInvoices).insert(SalesInvoicesCompanion.insert(invoiceNumber: 'INV-${DateTime.now().millisecondsSinceEpoch}-2', totalAmount: 300.0, subtotal: 300.0, totalGst: 0.0, paymentMode: Value(PaymentMode.upi), customerName: 'Alice', customerMobile: '9999999999'));
+      await db.into(db.salesInvoiceItems).insert(SalesInvoiceItemsCompanion.insert(invoiceId: s2, batchId: b5, productId: p4, productName: 'D3 60k Softgel', batchNumber: 'D4004', gstPercentage: 12.0, lineTotal: 300.0));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Mock Data Generated Successfully!'), backgroundColor: context.colors.success),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Comprehensive Mock Data Generated!'), backgroundColor: context.colors.success));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to generate mock data: $e'), backgroundColor: context.colors.error),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to generate mock data: $e'), backgroundColor: context.colors.error));
       }
     }
   }

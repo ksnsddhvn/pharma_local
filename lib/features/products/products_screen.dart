@@ -35,13 +35,6 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
       backgroundColor: context.colors.background,
       appBar: AppBar(
         title: Text('Products'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add),
-            tooltip: 'Add product',
-            onPressed: () => context.push('/products/add'),
-          ),
-        ],
       ),
       body: Column(
         children: [
@@ -109,6 +102,11 @@ class _ProductsScreenState extends ConsumerState<ProductsScreen> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/products/add'),
+        icon: Icon(Icons.add),
+        label: Text('Add Product'),
       ),
     );
   }

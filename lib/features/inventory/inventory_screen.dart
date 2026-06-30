@@ -15,12 +15,14 @@ class InventoryScreen extends ConsumerStatefulWidget {
 }
 
 class _InventoryScreenState extends ConsumerState<InventoryScreen> {
-  int? _selectedCategoryId;
+  int? _selectedSupplierId;
 
   @override
   Widget build(BuildContext context) {
-    final productsAsync = ref.watch(allProductsStreamProvider);
-    final categoriesAsync = ref.watch(allCategoriesStreamProvider);
+    final productsAsync = _selectedSupplierId == null 
+        ? ref.watch(allProductsStreamProvider)
+        : ref.watch(productsBySupplierProvider(_selectedSupplierId!));
+    final suppliersAsync = ref.watch(allSuppliersStreamProvider);
 
     return Scaffold(
       backgroundColor: context.colors.background,
@@ -36,39 +38,39 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
       ),
       body: Column(
         children: [
-          categoriesAsync.when(
-            data: (categories) {
-              if (categories.isEmpty) return SizedBox.shrink();
+          suppliersAsync.when(
+            data: (suppliers) {
+              if (suppliers.isEmpty) return SizedBox.shrink();
               return Container(
                 height: 50,
                 margin: EdgeInsets.symmetric(vertical: 8),
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: categories.length + 1,
+                  itemCount: suppliers.length + 1,
                   itemBuilder: (context, index) {
                     if (index == 0) {
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: ChoiceChip(
                           label: Text('All'),
-                          selected: _selectedCategoryId == null,
+                          selected: _selectedSupplierId == null,
                           selectedColor: context.colors.primary.withOpacity(0.2),
                           onSelected: (selected) {
-                            if (selected) setState(() => _selectedCategoryId = null);
+                            if (selected) setState(() => _selectedSupplierId = null);
                           },
                         ),
                       );
                     }
-                    final category = categories[index - 1];
+                    final supplier = suppliers[index - 1];
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: ChoiceChip(
-                        label: Text(category.name),
-                        selected: _selectedCategoryId == category.id,
+                        label: Text(supplier.name),
+                        selected: _selectedSupplierId == supplier.id,
                         selectedColor: context.colors.primary.withOpacity(0.2),
                         onSelected: (selected) {
-                          setState(() => _selectedCategoryId = selected ? category.id : null);
+                          setState(() => _selectedSupplierId = selected ? supplier.id : null);
                         },
                       ),
                     );
@@ -82,12 +84,10 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
           Expanded(
             child: productsAsync.when(
               data: (products) {
-                final filtered = _selectedCategoryId == null
-                    ? products
-                    : products.where((p) => p.categoryId == _selectedCategoryId).toList();
+                final filtered = products;
                 
                 if (filtered.isEmpty) {
-                   return Center(child: Text('No products in this category.', style: TextStyle(color: context.colors.textSecondary)));
+                   return Center(child: Text('No products in this supplier group.', style: TextStyle(color: context.colors.textSecondary)));
                 }
 
                 return ListView.builder(

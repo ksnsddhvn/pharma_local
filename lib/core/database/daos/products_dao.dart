@@ -33,6 +33,23 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
         .get();
   }
 
+  Stream<List<Product>> watchProductsBySupplier(int supplierId) {
+    final query = select(products).join([
+      innerJoin(stockBatches, stockBatches.productId.equalsExp(products.id)),
+    ])..where(products.isDeleted.equals(false) & stockBatches.supplierId.equals(supplierId));
+
+    return query.watch().map((rows) {
+      final uniqueProducts = <int, Product>{};
+      for (final row in rows) {
+        final p = row.readTable(products);
+        uniqueProducts[p.id] = p;
+      }
+      final list = uniqueProducts.values.toList();
+      list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return list;
+    });
+  }
+
 
 
   Future<Product?> getProductById(int id) =>
