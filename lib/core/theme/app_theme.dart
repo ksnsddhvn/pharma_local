@@ -170,31 +170,35 @@ class AppTheme {
   );
 
   static final _darkColors = AppColorsExtension(
-    primary: _primary,
-    primaryDark: _primaryDark,
-    primaryLight: _primaryLight,
-    background: Color(0xFF0D1117),
-    surface: Color(0xFF161B22),
-    surfaceElevated: Color(0xFF1E2530),
-    surfaceBorder: Color(0xFF30363D),
-    textPrimary: Color(0xFFE6EDF3),
-    textSecondary: Color(0xFF8B949E),
-    textMuted: Color(0xFF484F58),
-    success: _success,
-    warning: _warning,
-    error: _error,
-    info: _info,
-    otcColor: _otcColor,
-    rxColor: _rxColor,
-    scheduleHColor: _scheduleHColor,
-    scheduleH1Color: _scheduleH1Color,
-    cosmeticsColor: _cosmeticsColor,
-    expiryGood: _success,
-    expiryWarning: _warning,
-    expiryCritical: _error,
-    gradientPrimary: _gradientPrimary,
+    primary: _primaryLight, // Use lighter primary for dark mode to improve visibility
+    primaryDark: _primary,
+    primaryLight: Color(0xFF93C5FD),
+    background: Color(0xFF0F172A), // slate-900
+    surface: Color(0xFF1E293B), // slate-800
+    surfaceElevated: Color(0xFF334155), // slate-700
+    surfaceBorder: Color(0xFF475569), // slate-600
+    textPrimary: Color(0xFFF8FAFC), // slate-50 (almost white)
+    textSecondary: Color(0xFFCBD5E1), // slate-300 (light gray)
+    textMuted: Color(0xFF94A3B8), // slate-400 (medium gray, better contrast)
+    success: Color(0xFF34D399), // lighter emerald
+    warning: Color(0xFFFBBF24), // lighter amber
+    error: Color(0xFFF87171), // lighter red
+    info: Color(0xFF60A5FA), // lighter blue
+    otcColor: Color(0xFF34D399),
+    rxColor: Color(0xFF60A5FA),
+    scheduleHColor: Color(0xFFFBBF24),
+    scheduleH1Color: Color(0xFFF87171),
+    cosmeticsColor: Color(0xFFF472B6), // pink-400
+    expiryGood: Color(0xFF34D399),
+    expiryWarning: Color(0xFFFBBF24),
+    expiryCritical: Color(0xFFF87171),
+    gradientPrimary: LinearGradient(
+      colors: [_primaryLight, _primary],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
     gradientCard: LinearGradient(
-      colors: [Color(0xFF1E2530), Color(0xFF161B22)],
+      colors: [Color(0xFF334155), Color(0xFF1E293B)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
