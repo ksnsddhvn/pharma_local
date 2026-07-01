@@ -7,7 +7,6 @@ import 'package:path/path.dart' as p;
 
 import 'package:drift/drift.dart' hide Column;
 import '../../core/theme/app_theme.dart';
-import '../../core/database/tables/security_settings_table.dart';
 import 'archived_items_screen.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/tables/sales_tables.dart';
@@ -19,7 +18,7 @@ final securitySettingsProvider = FutureProvider<SecuritySetting?>((ref) async {
 });
 
 class SettingsScreen extends ConsumerStatefulWidget {
-  SettingsScreen({super.key});
+  const SettingsScreen({super.key});
 
   @override
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();

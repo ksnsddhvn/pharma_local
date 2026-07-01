@@ -20,6 +20,18 @@ final _supplierPurchasedProductsFamily = StreamProvider.family<List<SupplierProd
   return ref.watch(suppliersDaoProvider).watchPurchasedProductsForSupplier(id);
 });
 
+final _supplierProductsByDateFamily = StreamProvider.family<Map<DateTime, List<SupplierProductItem>>, int>((ref, id) {
+  return ref.watch(_supplierPurchasedProductsFamily(id).stream).map((items) {
+    final map = <DateTime, List<SupplierProductItem>>{};
+    for (var item in items) {
+      final d = item.batch.createdAt;
+      final date = DateTime(d.year, d.month, d.day);
+      map.putIfAbsent(date, () => []).add(item);
+    }
+    return map;
+  });
+});
+
 class SupplierDetailScreen extends ConsumerWidget {
   final int supplierId;
   SupplierDetailScreen({super.key, required this.supplierId});
@@ -307,7 +319,7 @@ class SupplierDetailScreen extends ConsumerWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: sel ? context.colors.primary.withOpacity(0.15) : context.colors.surface,
+          color: sel ? context.colors.primary.withValues(alpha: 0.15) : context.colors.surface,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
               color: sel ? context.colors.primary : context.colors.surfaceBorder),
@@ -340,16 +352,18 @@ class _LedgerTile extends ConsumerWidget {
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: context.colors.surfaceBorder),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 16),
-          ),
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 16),
+              ),
           SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -430,8 +444,49 @@ class _LedgerTile extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
+      if (isCredit)
+        Consumer(
+          builder: (context, ref, child) {
+            final productsByDateAsync = ref.watch(_supplierProductsByDateFamily(entry.supplierId));
+            return productsByDateAsync.when(
+              data: (map) {
+                final d = entry.timestamp;
+                final date = DateTime(d.year, d.month, d.day);
+                final items = map[date] ?? [];
+                if (items.isEmpty) return SizedBox.shrink();
+                
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Divider(height: 24, color: context.colors.surfaceBorder),
+                    Text('Items in this invoice:', style: TextStyle(color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 8),
+                    ...items.map((item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text('${item.product.name} (Batch: ${item.batch.batchNumber})',
+                                style: TextStyle(color: context.colors.textPrimary, fontSize: 13)),
+                          ),
+                          Text('Qty: ${item.batch.currentStock}',
+                              style: TextStyle(color: context.colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                    )),
+                  ],
+                );
+              },
+              loading: () => SizedBox.shrink(),
+              error: (_, __) => SizedBox.shrink(),
+            );
+          },
+        ),
+    ],
+  ),
+);
+}
 }
 
 class _PurchasedProductsTab extends ConsumerWidget {
@@ -479,7 +534,7 @@ class _PurchasedProductsTab extends ConsumerWidget {
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: context.colors.primary.withOpacity(0.15),
+                          color: context.colors.primary.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(item.product.productType,

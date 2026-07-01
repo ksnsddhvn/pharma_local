@@ -124,6 +124,30 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
       return lowStockList;
     });
   }
+
+  Stream<List<ProductDetailedPayload>> watchShortbookFeed() {
+    final query = select(products).join([
+      leftOuterJoin(productCategories, productCategories.id.equalsExp(products.categoryId)),
+      innerJoin(stockBatches, stockBatches.productId.equalsExp(products.id)),
+    ])..where(products.isDeleted.equals(false) & stockBatches.currentStock.equals(0));
+
+    return query.watch().map((rows) {
+      final map = <int, ProductDetailedPayload>{};
+      for (final row in rows) {
+        final product = row.readTable(products);
+        final batch = row.readTable(stockBatches);
+        if (!map.containsKey(product.id)) {
+           map[product.id] = ProductDetailedPayload(
+             product: product,
+             category: row.readTableOrNull(productCategories),
+             batches: [],
+           );
+        }
+        map[product.id]!.batches.add(batch);
+      }
+      return map.values.toList();
+    });
+  }
 }
 
 // English payload helper structure for UI cards

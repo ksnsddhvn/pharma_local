@@ -10,6 +10,7 @@ import '../../core/services/checkout_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
 import '../../core/utils/formatters.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'on_the_fly_entry_sheet.dart';
 import '../../core/widgets/tablet_calculator_sheet.dart';
 
@@ -121,7 +122,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
   final _searchCtrl = TextEditingController();
   final _searchFocusNode = FocusNode();
   String _query = '';
-  int? _selectedSupplierId;
+  int? _selectedCategoryId;
 
   @override
   void initState() {
@@ -270,44 +271,44 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
             ),
           ),
           
-          // Supplier Chips
+          // Category Chips
           Consumer(
             builder: (context, ref, child) {
-              final suppliersAsync = ref.watch(allSuppliersStreamProvider);
-              return suppliersAsync.when(
-                data: (suppliers) {
-                  if (suppliers.isEmpty) return SizedBox.shrink();
+              final categoriesAsync = ref.watch(allCategoriesStreamProvider);
+              return categoriesAsync.when(
+                data: (categories) {
+                  if (categories.isEmpty) return SizedBox.shrink();
                   return Container(
                     height: 50,
                     margin: EdgeInsets.only(bottom: 8),
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: EdgeInsets.symmetric(horizontal: 16),
-                      itemCount: suppliers.length + 1,
+                      itemCount: categories.length + 1,
                       itemBuilder: (context, index) {
                         if (index == 0) {
                           return Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: ChoiceChip(
                               label: Text('All'),
-                              selected: _selectedSupplierId == null,
-                              selectedColor: context.colors.primary.withOpacity(0.2),
+                              selected: _selectedCategoryId == null,
+                              selectedColor: context.colors.primary.withValues(alpha: 0.2),
                               onSelected: (selected) {
-                                if (selected) setState(() => _selectedSupplierId = null);
+                                if (selected) setState(() => _selectedCategoryId = null);
                               },
                             ),
                           );
                         }
-                        final supplier = suppliers[index - 1];
+                        final category = categories[index - 1];
                         return Padding(
                           padding: const EdgeInsets.only(right: 8.0),
                           child: ChoiceChip(
-                            label: Text(supplier.name),
-                            selected: _selectedSupplierId == supplier.id,
-                            selectedColor: context.colors.primary.withOpacity(0.2),
+                            label: Text(category.name),
+                            selected: _selectedCategoryId == category.id,
+                            selectedColor: context.colors.primary.withValues(alpha: 0.2),
                             onSelected: (selected) {
                               setState(() {
-                                _selectedSupplierId = selected ? supplier.id : null;
+                                _selectedCategoryId = selected ? category.id : null;
                               });
                             },
                           ),
@@ -336,7 +337,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                       ),
                 
                 // Product search results dropdown
-                if (_searchFocusNode.hasFocus || _query.isNotEmpty || _selectedSupplierId != null)
+                if (_searchFocusNode.hasFocus || _query.isNotEmpty || _selectedCategoryId != null)
                   Positioned(
                     top: 0,
                     left: 16,
@@ -350,14 +351,14 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                         borderRadius: BorderRadius.circular(10),
                         child: _SearchResults(
                           query: _query,
-                          supplierId: _selectedSupplierId,
+                          categoryId: _selectedCategoryId,
                           onAdd: (batches, product) {
                             _searchFocusNode.unfocus();
                             _addToCart(batches, product);
                             _searchCtrl.clear();
                             setState(() {
                               _query = '';
-                              _selectedSupplierId = null;
+                              _selectedCategoryId = null;
                             });
                           },
                         ),
@@ -418,9 +419,9 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
 
 class _SearchResults extends ConsumerStatefulWidget {
   final String query;
-  final int? supplierId;
+  final int? categoryId;
   final Function(List<StockBatch>, Product) onAdd;
-  const _SearchResults({required this.query, this.supplierId, required this.onAdd});
+  const _SearchResults({required this.query, this.categoryId, required this.onAdd});
 
   @override
   ConsumerState<_SearchResults> createState() => _SearchResultsState();
@@ -429,30 +430,30 @@ class _SearchResults extends ConsumerStatefulWidget {
 class _SearchResultsState extends ConsumerState<_SearchResults> {
   List<Product> _products = [];
   String _lastQuery = '';
-  int? _lastSupplierId;
+  int? _lastCategoryId;
 
   @override
   void initState() {
     super.initState();
     _lastQuery = widget.query;
-    _lastSupplierId = widget.supplierId;
-    _search(widget.query, widget.supplierId);
+    _lastCategoryId = widget.categoryId;
+    _search(widget.query, widget.categoryId);
   }
 
   @override
   void didUpdateWidget(_SearchResults old) {
     super.didUpdateWidget(old);
-    if (widget.query != _lastQuery || widget.supplierId != _lastSupplierId) {
+    if (widget.query != _lastQuery || widget.categoryId != _lastCategoryId) {
       _lastQuery = widget.query;
-      _lastSupplierId = widget.supplierId;
-      _search(widget.query, widget.supplierId);
+      _lastCategoryId = widget.categoryId;
+      _search(widget.query, widget.categoryId);
     }
   }
 
-  Future<void> _search(String q, int? supId) async {
+  Future<void> _search(String q, int? catId) async {
     List<Product> filtered;
-    if (supId != null) {
-      filtered = await ref.read(productsDaoProvider).watchProductsBySupplier(supId).first;
+    if (catId != null) {
+      filtered = await ref.read(productsDaoProvider).watchProductsByCategory(catId).first;
     } else {
       filtered = await ref.read(productsDaoProvider).getAllProducts();
     }
@@ -550,9 +551,9 @@ class _ProductResultTile extends ConsumerWidget {
                   : Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: context.colors.error.withOpacity(0.1),
+                        color: context.colors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: context.colors.error.withOpacity(0.3)),
+                        border: Border.all(color: context.colors.error.withValues(alpha: 0.3)),
                       ),
                       child: Text('Out of Stock', style: TextStyle(color: context.colors.error, fontSize: 10, fontWeight: FontWeight.bold)),
                     )),
@@ -568,44 +569,53 @@ class _CartItemTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: context.colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.colors.surfaceBorder),
-      ),
-      child: Column(
+    return Slidable(
+      key: ValueKey(item.batchId),
+      endActionPane: ActionPane(
+        motion: const ScrollMotion(),
+        extentRatio: 0.25,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${item.productName} (${item.packagingUnit})',
-                        style: TextStyle(
-                            color: context.colors.textPrimary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14)),
-                    Text(
-                      'Batch: ${item.batchNumber} | MRP: ${AppFormatters.currency(item.mrp)}',
-                      style: TextStyle(
-                          color: context.colors.textMuted, fontSize: 11),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.close,
-                    size: 16, color: context.colors.textMuted),
-                onPressed: () => ref
-                    .read(cartProvider.notifier)
-                    .removeItem(item.batchId),
-              ),
-            ],
+          SlidableAction(
+            onPressed: (_) => ref.read(cartProvider.notifier).removeItem(item.batchId),
+            backgroundColor: context.colors.error,
+            foregroundColor: Colors.white,
+            icon: Icons.delete,
+            label: 'Delete',
+            borderRadius: BorderRadius.horizontal(right: Radius.circular(10)),
           ),
+        ],
+      ),
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        padding: EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: context.colors.surfaceElevated,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: context.colors.surfaceBorder),
+        ),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${item.productName} (${item.packagingUnit})',
+                          style: TextStyle(
+                              color: context.colors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14)),
+                      Text(
+                        'Batch: ${item.batchNumber} | MRP: ${AppFormatters.currency(item.mrp)}',
+                        style: TextStyle(
+                            color: context.colors.textMuted, fontSize: 11),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           SizedBox(height: 8),
           Row(
             children: [
@@ -673,8 +683,9 @@ class _CartItemTile extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _QtyButton extends StatelessWidget {

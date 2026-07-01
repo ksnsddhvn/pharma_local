@@ -8,7 +8,7 @@ part 'inventory_adjustment_dao.g.dart';
 
 @DriftAccessor(tables: [InventoryAdjustments, StockBatches, Products])
 class InventoryAdjustmentDao extends DatabaseAccessor<AppDatabase> with _$InventoryAdjustmentDaoMixin {
-  InventoryAdjustmentDao(AppDatabase db) : super(db);
+  InventoryAdjustmentDao(super.db);
 
   /// Process an expired stock return or disposal.
   /// Deducts the stock from the batch and logs the action atomically.

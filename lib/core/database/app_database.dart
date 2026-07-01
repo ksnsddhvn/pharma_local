@@ -64,17 +64,18 @@ class AppDatabase extends _$AppDatabase {
         },
         onUpgrade: (m, from, to) async {
           if (from < 5) {
-            // Drop all tables and recreate to apply massive dev schema changes & re-seed
-            for (final table in allTables) {
-              await m.drop(table);
-            }
-            await m.createAll();
-          } else if (from == 5) {
+            try {
+              await m.addColumn(products, products.packagingUnit);
+            } catch (_) {}
+          }
+          if (from < 6) {
             // Recreate products table to apply column removals (composition, rackLocation, minStockThreshold)
             await m.alterTable(TableMigration(products));
           }
           if (from < 7) {
-            await m.addColumn(products, products.productType);
+            try {
+              await m.addColumn(products, products.productType);
+            } catch (_) {}
           }
           if (from < 8) {
             await m.createTable(inventoryAdjustments);
@@ -88,7 +89,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(stockBatches, stockBatches.isDeleted);
           }
           if (from < 11) {
-            await m.alterTable(TableMigration(salesInvoices));
+            try {
+              await m.addColumn(salesInvoices, salesInvoices.customerPlace);
+            } catch (_) {}
           }
           if (from < 12) {
             await m.alterTable(TableMigration(
@@ -108,7 +111,9 @@ class AppDatabase extends _$AppDatabase {
             ));
           }
           if (from < 14) {
-            await m.addColumn(products, products.minStockThreshold);
+            try {
+              await m.addColumn(products, products.minStockThreshold);
+            } catch (_) {}
           }
         },
       );

@@ -5,7 +5,7 @@ import 'core/providers.dart';
 import 'app_router.dart';
 
 class SriRangaMedicalApp extends ConsumerWidget {
-  SriRangaMedicalApp({super.key});
+  const SriRangaMedicalApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

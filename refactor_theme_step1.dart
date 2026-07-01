@@ -24,7 +24,7 @@ void main() async {
             final insertPos = content.indexOf('\n', lastImport) + 1;
             // determine relative path to core/theme/app_theme.dart
             // Since it's complicated, we'll just use a hack: import 'package:pharma_local/core/theme/app_theme.dart';
-            content = content.substring(0, insertPos) + "import 'package:pharma_local/core/theme/app_theme.dart';\n" + content.substring(insertPos);
+            content = "${content.substring(0, insertPos)}import 'package:pharma_local/core/theme/app_theme.dart';\n${content.substring(insertPos)}";
           }
         } else {
             // Already imported, wait, if they import app_theme.dart using relative path it's fine.

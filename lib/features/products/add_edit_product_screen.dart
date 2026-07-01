@@ -2,13 +2,12 @@ import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
-import '../../core/database/tables/products_table.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 
 class AddEditProductScreen extends ConsumerStatefulWidget {
   final int? productId;
-  AddEditProductScreen({super.key, this.productId});
+  const AddEditProductScreen({super.key, this.productId});
 
   @override
   ConsumerState<AddEditProductScreen> createState() =>

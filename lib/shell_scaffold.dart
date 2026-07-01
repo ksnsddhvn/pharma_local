@@ -2,12 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 
-class ShellScaffold extends StatelessWidget {
+import 'core/services/backup_service.dart';
+
+class ShellScaffold extends StatefulWidget {
   final Widget child;
-  ShellScaffold({super.key, required this.child});
+  const ShellScaffold({super.key, required this.child});
+
+  @override
+  State<ShellScaffold> createState() => _ShellScaffoldState();
+}
+
+class _ShellScaffoldState extends State<ShellScaffold> with WidgetsBindingObserver {
+  late final AutoBackupObserver _backupObserver;
+
+  @override
+  void initState() {
+    super.initState();
+    _backupObserver = AutoBackupObserver();
+    WidgetsBinding.instance.addObserver(_backupObserver);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(_backupObserver);
+    super.dispose();
+  }
 
   static const _tabs = [
-    (path: '/', icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Dashboard'),
+    (path: '/', icon: Icons.dashboard_outlined, activeIcon: Icons.dashboard, label: 'Home'),
     (path: '/products', icon: Icons.medication_outlined, activeIcon: Icons.medication, label: 'Products'),
     (path: '/inventory', icon: Icons.inventory_2_outlined, activeIcon: Icons.inventory_2, label: 'Inventory'),
     (path: '/sales', icon: Icons.point_of_sale_outlined, activeIcon: Icons.point_of_sale, label: 'Sales'),
@@ -27,24 +49,31 @@ class ShellScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final index = _currentIndex(context);
     return Scaffold(
-      body: child,
+      body: widget.child,
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           border: Border(
             top: BorderSide(color: context.colors.surfaceBorder, width: 1),
           ),
         ),
-        child: NavigationBar(
-          selectedIndex: index,
-          onDestinationSelected: (i) => context.go(_tabs[i].path),
-          destinations: _tabs
-              .map((t) => NavigationDestination(
-                    icon: Icon(t.icon),
-                    selectedIcon: Icon(t.activeIcon),
-                    label: t.label,
-                  ))
-              .toList(),
-          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+        child: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            labelTextStyle: WidgetStateProperty.resolveWith((states) {
+              return const TextStyle(fontSize: 11, overflow: TextOverflow.visible);
+            }),
+          ),
+          child: NavigationBar(
+            selectedIndex: index,
+            onDestinationSelected: (i) => context.go(_tabs[i].path),
+            destinations: _tabs
+                .map((t) => NavigationDestination(
+                      icon: Icon(t.icon),
+                      selectedIcon: Icon(t.activeIcon),
+                      label: t.label,
+                    ))
+                .toList(),
+            labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
+          ),
         ),
       ),
     );

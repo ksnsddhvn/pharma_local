@@ -4,6 +4,8 @@ import '../../core/database/daos/products_dao.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/database/app_database.dart';
+import 'package:drift/drift.dart' as drift;
 
 final _productDetailFamily = StreamProvider.family<ProductDetailedPayload, int>((ref, id) {
   return ref.watch(productsDaoProvider).watchProductCompleteDetails(id);
@@ -125,31 +127,81 @@ class ProductDetailScreen extends ConsumerWidget {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      'Batch: ${b.batchNumber}',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 15,
-                                          color: context.colors.textPrimary),
-                                    ),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                                      decoration: BoxDecoration(
-                                        color: b.currentStock == 0
-                                            ? context.colors.expiryCritical.withOpacity(0.15)
-                                            : context.colors.primary.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        '${b.currentStock} units',
-                                        style: TextStyle(
-                                          color: b.currentStock == 0
-                                              ? context.colors.expiryCritical
-                                              : context.colors.primary,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 13,
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Batch: ${b.batchNumber}',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15,
+                                              color: context.colors.textPrimary),
                                         ),
-                                      ),
+                                        SizedBox(height: 4),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: b.isOpeningStock
+                                                ? context.colors.info.withValues(alpha: 0.1)
+                                                : context.colors.success.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: Text(
+                                            b.isOpeningStock ? 'Legacy Stock' : 'Purchased',
+                                            style: TextStyle(
+                                                color: b.isOpeningStock ? context.colors.info : context.colors.success,
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Row(
+                                      children: [
+                                        IconButton(
+                                          icon: Icon(Icons.remove_circle_outline, color: context.colors.primary),
+                                          onPressed: () {
+                                            if (b.currentStock > 0) {
+                                              ref.read(stockBatchesDaoProvider).updateBatch(
+                                                StockBatchesCompanion(
+                                                  id: drift.Value(b.id),
+                                                  currentStock: drift.Value(b.currentStock - 1),
+                                                )
+                                              );
+                                            }
+                                          },
+                                        ),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                          decoration: BoxDecoration(
+                                            color: b.currentStock == 0
+                                                ? context.colors.expiryCritical.withValues(alpha: 0.15)
+                                                : context.colors.primary.withValues(alpha: 0.1),
+                                            borderRadius: BorderRadius.circular(8),
+                                          ),
+                                          child: Text(
+                                            '${b.currentStock} units',
+                                            style: TextStyle(
+                                              color: b.currentStock == 0
+                                                  ? context.colors.expiryCritical
+                                                  : context.colors.primary,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: Icon(Icons.add_circle_outline, color: context.colors.primary),
+                                          onPressed: () {
+                                            ref.read(stockBatchesDaoProvider).updateBatch(
+                                              StockBatchesCompanion(
+                                                id: drift.Value(b.id),
+                                                currentStock: drift.Value(b.currentStock + 1),
+                                              )
+                                            );
+                                          },
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -226,7 +278,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(

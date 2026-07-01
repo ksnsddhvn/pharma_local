@@ -10,9 +10,10 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/utils/receipt_composer.dart';
 import '../../core/utils/pdf_invoice_generator.dart';
 import 'package:printing/printing.dart';
+import 'package:fl_chart/fl_chart.dart';
 
 class SalesScreen extends ConsumerStatefulWidget {
-  SalesScreen({super.key});
+  const SalesScreen({super.key});
 
   @override
   ConsumerState<SalesScreen> createState() => _SalesScreenState();
@@ -25,7 +26,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
   @override
   void initState() {
     super.initState();
-    _tab = TabController(length: 2, vsync: this);
+    _tab = TabController(length: 3, vsync: this);
   }
 
   @override
@@ -46,20 +47,26 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
           labelColor: context.colors.primary,
           unselectedLabelColor: context.colors.textMuted,
           tabs: const [
-            Tab(icon: Icon(Icons.history, size: 18), text: 'Paid Transactions'),
-            Tab(icon: Icon(Icons.account_balance_wallet_outlined, size: 18), text: 'Outstanding Accounts'),
+            Tab(icon: Icon(Icons.history, size: 18), text: 'Paid'),
+            Tab(icon: Icon(Icons.account_balance_wallet_outlined, size: 18), text: 'Outstanding'),
+            Tab(icon: Icon(Icons.shopping_cart_checkout, size: 18), text: 'Shortbook'),
           ],
         ),
       ),
       body: Column(
         children: [
-          _DailyCashFlowSummary(),
+          _HighContrastDashboardCard(),
+          SizedBox(
+            height: 150,
+            child: _WeeklySalesChart(),
+          ),
           Expanded(
             child: TabBarView(
               controller: _tab,
               children: const [
                 _PaidTransactionsTab(),
                 _OutstandingAccountsTab(),
+                _ShortbookTab(),
               ],
             ),
           ),
@@ -512,68 +519,206 @@ void showReceiptDialog(BuildContext context, WidgetRef ref, SalesInvoice invoice
   );
 }
 
-class _DailyCashFlowSummary extends ConsumerWidget {
-  const _DailyCashFlowSummary();
+class _HighContrastDashboardCard extends ConsumerWidget {
+  const _HighContrastDashboardCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cashFlowAsync = ref.watch(todaysCashFlowProvider);
+    final debtAsync = ref.watch(overallDebtProvider);
+    final revenueAsync = ref.watch(monthlyRevenueProvider);
 
-    return cashFlowAsync.when(
-      data: (cashFlow) {
+    final debt = debtAsync.valueOrNull ?? 0.0;
+    final revenue = revenueAsync.valueOrNull ?? 0.0;
+
+    return Container(
+      margin: EdgeInsets.all(16),
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [context.colors.primary, context.colors.primary.withValues(alpha: 0.8)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: context.colors.primary.withValues(alpha: 0.3),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Overall Debt', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                SizedBox(height: 4),
+                Text(
+                  AppFormatters.currency(debt),
+                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          Container(width: 1, height: 40, color: Colors.white30),
+          SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Monthly Revenue', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
+                SizedBox(height: 4),
+                Text(
+                  AppFormatters.currency(revenue),
+                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShortbookTab extends ConsumerWidget {
+  const _ShortbookTab();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final shortbookAsync = ref.watch(dynamicShortbookFeedProvider);
+
+    return shortbookAsync.when(
+      data: (items) {
+        if (items.isEmpty) {
+          return Center(child: Text('No shortbook items.', style: TextStyle(color: context.colors.textSecondary)));
+        }
+        return ListView.builder(
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          itemCount: items.length,
+          itemBuilder: (_, i) {
+            final payload = items[i];
+            return Container(
+              margin: EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: context.colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: context.colors.surfaceBorder),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(payload.product.name, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w600)),
+                        Text('Category: ${payload.category?.name ?? 'N/A'}', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: context.colors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text('Out of Stock', style: TextStyle(color: context.colors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      loading: () => Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Error: $e')),
+    );
+  }
+}
+
+class _WeeklySalesChart extends ConsumerWidget {
+  const _WeeklySalesChart();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final weeklySalesAsync = ref.watch(weeklySalesProvider);
+
+    return weeklySalesAsync.when(
+      data: (sales) {
+        if (sales.isEmpty) return SizedBox.shrink();
+        
+        final sortedKeys = sales.keys.toList()..sort();
+        if (sortedKeys.isEmpty) return SizedBox.shrink();
+
+        double maxVal = 0;
+        for (final val in sales.values) {
+          if (val > maxVal) maxVal = val;
+        }
+
         return Container(
-          margin: EdgeInsets.all(16),
-          padding: EdgeInsets.all(16),
+          margin: EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: context.colors.surfaceElevated,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: context.colors.surfaceBorder),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Drawer Revenue', style: TextStyle(color: context.colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 4),
-                    Text(
-                      AppFormatters.currency(cashFlow.cashUpiRevenue),
-                      style: TextStyle(color: context.colors.success, fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                    Text('Cash + UPI Today', style: TextStyle(color: context.colors.textMuted, fontSize: 11)),
-                  ],
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: maxVal > 0 ? maxVal * 1.2 : 100,
+              barTouchData: BarTouchData(enabled: false),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      final index = value.toInt();
+                      if (index < 0 || index >= sortedKeys.length) return SizedBox.shrink();
+                      final date = sortedKeys[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: Text(
+                          '${date.day}/${date.month}',
+                          style: TextStyle(color: context.colors.textMuted, fontSize: 10),
+                        ),
+                      );
+                    },
+                  ),
                 ),
+                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
-              Container(width: 1, height: 40, color: context.colors.surfaceBorder),
-              SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Pending Debt', style: TextStyle(color: context.colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 4),
-                    Text(
-                      AppFormatters.currency(cashFlow.creditAdded),
-                      style: TextStyle(color: context.colors.error, fontSize: 20, fontWeight: FontWeight.bold),
+              borderData: FlBorderData(show: false),
+              gridData: FlGridData(show: false),
+              barGroups: sortedKeys.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final date = entry.value;
+                final val = sales[date] ?? 0.0;
+                return BarChartGroupData(
+                  x: idx,
+                  barRods: [
+                    BarChartRodData(
+                      toY: val,
+                      color: context.colors.primary,
+                      width: 12,
+                      borderRadius: BorderRadius.circular(4),
                     ),
-                    Text('Credit Issued Today', style: TextStyle(color: context.colors.textMuted, fontSize: 11)),
                   ],
-                ),
-              ),
-            ],
+                );
+              }).toList(),
+            ),
           ),
         );
       },
-      loading: () => SizedBox(height: 100, child: Center(child: CircularProgressIndicator())),
-      error: (e, _) => SizedBox(height: 100, child: Center(child: Text('Error: $e'))),
+      loading: () => Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Chart Error: $e')),
     );
   }
 }

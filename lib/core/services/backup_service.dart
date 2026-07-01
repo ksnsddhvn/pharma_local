@@ -43,7 +43,7 @@ class BackupService {
     // Create in-memory ZIP
     final archive = Archive();
     archive.addFile(ArchiveFile('pharma_local.sqlite', dbBytes.length, dbBytes));
-    final zipBytes = ZipEncoder().encode(archive)!;
+    final zipBytes = ZipEncoder().encode(archive);
 
     // AES-256-CBC encryption
     final key = _deriveKey(passphrase);

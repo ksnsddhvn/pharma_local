@@ -109,6 +109,15 @@ final allCategoriesStreamProvider = StreamProvider(
 final lowStockAlertsProvider = StreamProvider(
     (ref) => ref.watch(productsDaoProvider).watchLowStockProducts());
 
+final overallDebtProvider = StreamProvider(
+    (ref) => ref.watch(salesDaoProvider).watchOverallDebt());
+
+final monthlyRevenueProvider = StreamProvider(
+    (ref) => ref.watch(salesDaoProvider).watchMonthlyRevenue());
+
+final dynamicShortbookFeedProvider = StreamProvider(
+    (ref) => ref.watch(productsDaoProvider).watchShortbookFeed());
+
 final shortbookCountProvider = StreamProvider((ref) {
   return ref.watch(shortbookServiceProvider).watchShortbookItems().map((items) => items.length);
 });

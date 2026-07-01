@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'package:pharma_local/core/theme/app_theme.dart';
 
 class TabletCalculatorSheet extends StatefulWidget {
   final String productName;
   final String packagingUnit;
   final String productType;
-  TabletCalculatorSheet({super.key, required this.productName, required this.packagingUnit, this.productType = 'Tablet'});
+  const TabletCalculatorSheet({super.key, required this.productName, required this.packagingUnit, this.productType = 'Tablet'});
 
   @override
   State<TabletCalculatorSheet> createState() => _TabletCalculatorSheetState();

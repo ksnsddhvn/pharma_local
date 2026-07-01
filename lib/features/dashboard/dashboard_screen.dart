@@ -196,7 +196,7 @@ class _SummaryCard extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.15),
+                    color: color.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 18),
@@ -406,9 +406,9 @@ class _ActionTile extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.symmetric(vertical: 14, horizontal: 6),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.25)),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
           ),
           child: Column(
             children: [
@@ -545,9 +545,9 @@ class _LowStockAlertsWidget extends ConsumerWidget {
                       margin: EdgeInsets.only(right: 12),
                       padding: EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: context.colors.warning.withOpacity(0.1),
+                        color: context.colors.warning.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.colors.warning.withOpacity(0.3)),
+                        border: Border.all(color: context.colors.warning.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

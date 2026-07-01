@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/database/app_database.dart';
-import '../../core/database/daos/stock_batches_dao.dart';
 import '../../core/providers.dart';
-import '../../core/services/shortbook_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/database/tables/inventory_adjustments_table.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
-  ReportsScreen({super.key});
+  const ReportsScreen({super.key});
 
   @override
   ConsumerState<ReportsScreen> createState() => _ReportsScreenState();

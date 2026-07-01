@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
-import '../database/tables/products_table.dart';
 import '../database/tables/sales_tables.dart';
 
 /// One item in the shopping cart before checkout.

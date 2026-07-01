@@ -107,6 +107,23 @@ class SalesDao extends DatabaseAccessor<AppDatabase> with _$SalesDaoMixin {
         .map((invoices) => invoices.fold<double>(0.0, (sum, inv) => sum + inv.totalAmount));
   }
 
+  Stream<double> watchOverallDebt() {
+    return select(salesInvoices).watch().map((invoices) {
+      return invoices.fold<double>(0.0, (sum, inv) => sum + inv.creditBalanceAdded);
+    });
+  }
+
+  Stream<double> watchMonthlyRevenue() {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final nextMonth = now.month == 12 ? 1 : now.month + 1;
+    final nextYear = now.month == 12 ? now.year + 1 : now.year;
+    final endOfMonth = DateTime(nextYear, nextMonth, 1);
+    
+    return watchInvoicesForDateRange(startOfMonth, endOfMonth)
+        .map((invoices) => invoices.fold<double>(0.0, (sum, inv) => sum + inv.totalAmount));
+  }
+
   Stream<CashFlowStats> watchTodaysCashFlow() {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);

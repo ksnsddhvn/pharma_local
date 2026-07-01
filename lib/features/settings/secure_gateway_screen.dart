@@ -10,7 +10,7 @@ final sessionUnlockedProvider = StateProvider<bool>((ref) => false);
 
 class SecureGatewayScreen extends ConsumerStatefulWidget {
   final String redirectPath;
-  SecureGatewayScreen({super.key, required this.redirectPath});
+  const SecureGatewayScreen({super.key, required this.redirectPath});
 
   @override
   ConsumerState<SecureGatewayScreen> createState() => _SecureGatewayScreenState();

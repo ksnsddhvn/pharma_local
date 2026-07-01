@@ -1,6 +1,5 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
-import '../database/tables/stock_batches_table.dart';
 import '../database/tables/supplier_ledgers_table.dart';
 
 /// Handles receiving new stock (purchase from supplier).

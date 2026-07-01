@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/database/app_database.dart';
-import '../../core/database/tables/products_table.dart';
-import '../../core/database/tables/stock_batches_table.dart';
-import '../../core/database/tables/product_categories_table.dart';
 import '../../core/utils/product_icon_utils.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/fuzzy_search.dart';
 
 class ProductsScreen extends ConsumerStatefulWidget {
-  ProductsScreen({super.key});
+  const ProductsScreen({super.key});
 
   @override
   ConsumerState<ProductsScreen> createState() => _ProductsScreenState();

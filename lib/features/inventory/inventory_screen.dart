@@ -55,7 +55,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                         child: ChoiceChip(
                           label: Text('All'),
                           selected: _selectedSupplierId == null,
-                          selectedColor: context.colors.primary.withOpacity(0.2),
+                          selectedColor: context.colors.primary.withValues(alpha: 0.2),
                           onSelected: (selected) {
                             if (selected) setState(() => _selectedSupplierId = null);
                           },
@@ -68,7 +68,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                       child: ChoiceChip(
                         label: Text(supplier.name),
                         selected: _selectedSupplierId == supplier.id,
-                        selectedColor: context.colors.primary.withOpacity(0.2),
+                        selectedColor: context.colors.primary.withValues(alpha: 0.2),
                         onSelected: (selected) {
                           setState(() => _selectedSupplierId = selected ? supplier.id : null);
                         },
@@ -268,8 +268,8 @@ class _BatchRow extends ConsumerWidget {
             padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: batch.currentStock == 0
-                  ? context.colors.expiryCritical.withOpacity(0.15)
-                  : context.colors.primary.withOpacity(0.1),
+                  ? context.colors.expiryCritical.withValues(alpha: 0.15)
+                  : context.colors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

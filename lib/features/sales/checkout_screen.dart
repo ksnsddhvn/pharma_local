@@ -549,7 +549,7 @@ class _PaymentChip extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? context.colors.primary.withOpacity(0.15)
+              ? context.colors.primary.withValues(alpha: 0.15)
               : context.colors.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(

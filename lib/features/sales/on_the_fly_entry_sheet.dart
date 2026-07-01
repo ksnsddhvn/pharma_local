@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/database/daos/stock_batches_dao.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/tablet_calculator_sheet.dart';
 
 class OnTheFlyEntrySheet extends ConsumerStatefulWidget {
   final String initialName;
-  OnTheFlyEntrySheet({super.key, required this.initialName});
+  const OnTheFlyEntrySheet({super.key, required this.initialName});
 
   @override
   ConsumerState<OnTheFlyEntrySheet> createState() => _OnTheFlyEntrySheetState();

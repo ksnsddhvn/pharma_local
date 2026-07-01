@@ -54,10 +54,10 @@ class SuppliersScreen extends ConsumerWidget {
                   padding: EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: context.colors.warning.withOpacity(0.1),
+                    color: context.colors.warning.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                     border:
-                        Border.all(color: context.colors.warning.withOpacity(0.3)),
+                        Border.all(color: context.colors.warning.withValues(alpha: 0.3)),
                   ),
                   child: Row(
                     children: [
@@ -94,7 +94,7 @@ class SuppliersScreen extends ConsumerWidget {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: context.colors.primary.withOpacity(0.15),
+                            color: context.colors.primary.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(

@@ -290,7 +290,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                 children: [
                   TextFormField(
                     controller: _batchCtrl,
-                    textCapitalization: TextCapitalization.characters,
+                    textCapitalization: TextCapitalization.none,
                     style: TextStyle(color: context.colors.textPrimary),
                     decoration: InputDecoration(labelText: 'Batch Number *'),
                     validator: (v) => v!.isEmpty ? 'Required' : null,
@@ -477,7 +477,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                     SizedBox(height: 12),
                     TextFormField(
                       controller: _invoiceNoCtrl,
-                      textCapitalization: TextCapitalization.characters,
+                      textCapitalization: TextCapitalization.none,
                       style: TextStyle(color: context.colors.textPrimary),
                       decoration: InputDecoration(
                           labelText: 'Invoice No.'),
@@ -485,7 +485,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                     SizedBox(height: 12),
                     TextFormField(
                       controller: _noteCtrl,
-                      textCapitalization: TextCapitalization.characters,
+                      textCapitalization: TextCapitalization.none,
                       style: TextStyle(color: context.colors.textPrimary),
                       decoration: InputDecoration(
                           labelText: 'Reference Note'),
@@ -588,14 +588,14 @@ class _ProductSearchWidgetState extends ConsumerState<_ProductSearchWidget> {
       decoration: BoxDecoration(
         color: context.colors.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: context.colors.primary.withOpacity(0.4)),
+        border: Border.all(color: context.colors.primary.withValues(alpha: 0.4)),
       ),
       child: Column(
         children: [
           TextField(
             controller: _ctrl,
             autofocus: true,
-            textCapitalization: TextCapitalization.characters,
+            textCapitalization: TextCapitalization.none,
             style: TextStyle(color: context.colors.textPrimary),
             onChanged: _load,
             decoration: InputDecoration(

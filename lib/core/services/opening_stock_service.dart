@@ -1,8 +1,6 @@
 import 'package:drift/drift.dart';
 import '../database/app_database.dart';
 import '../database/daos/stock_batches_dao.dart';
-import '../database/tables/products_table.dart';
-import '../database/tables/stock_batches_table.dart';
 
 /// Handles opening stock entry for brownfield pharmacy migration.
 /// Bypasses supplier/invoice requirements — only minimum fields needed.

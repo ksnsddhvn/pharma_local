@@ -204,7 +204,7 @@ class AppTheme {
     primary: _primary,
     primaryDark: _primaryDark,
     primaryLight: _primaryLight,
-    background: Color(0xFFF3F4F6),
+    background: Color(0xFFFFFFFF),
     surface: Color(0xFFFFFFFF),
     surfaceElevated: Color(0xFFFFFFFF),
     surfaceBorder: Color(0xFFE5E7EB),
@@ -264,7 +264,7 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: GoogleFonts.inter(
           color: colors.textPrimary,
-          fontSize: 22,
+          fontSize: 20,
           fontWeight: FontWeight.bold,
         ),
         iconTheme: IconThemeData(color: colors.textSecondary),
