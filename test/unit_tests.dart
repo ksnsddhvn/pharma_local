@@ -6,22 +6,33 @@ import 'package:pharma_local/core/database/tables/sales_tables.dart';
 void main() {
   group('Tablet Fractional Math', () {
     test('calculate total strips correctly based on perStrip unit', () {
-      int calculateTotalTablets(int qtyRequested, String packagingUnit) {
+      double calculateTotalStrips(int qty, String packagingUnit, String productType) {
+        if (productType != 'Tablet' && productType != 'Capsule') {
+          return qty.toDouble();
+        }
+
         int perStrip = 1;
-        final unitStr = packagingUnit.toLowerCase();
-        if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
-          final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
-          perStrip = int.tryParse(numStr) ?? 1;
+        final match = RegExp(r'^([\d\.]+)\s*(.*)$').firstMatch(packagingUnit);
+        if (match != null) {
+          perStrip = int.tryParse(match.group(1) ?? '1') ?? 1;
+        } else {
+          final unitStr = packagingUnit.toLowerCase();
+          if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
+            final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
+            perStrip = int.tryParse(numStr) ?? 1;
+          }
         }
         if (perStrip <= 0) perStrip = 1;
-        return (qtyRequested / perStrip).ceil(); // Assuming we want strips
+        
+        return qty / perStrip;
       }
 
-      expect(calculateTotalTablets(10, "10's"), 1);
-      expect(calculateTotalTablets(15, "10's"), 2);
-      expect(calculateTotalTablets(30, "15's"), 2);
-      expect(calculateTotalTablets(5, "10's"), 1);
-      expect(calculateTotalTablets(1, "bottle"), 1);
+      expect(calculateTotalStrips(10, "10's", 'Tablet'), 1.0);
+      expect(calculateTotalStrips(15, "10's", 'Tablet'), 1.5);
+      expect(calculateTotalStrips(30, "15 Tablets", 'Tablet'), 2.0);
+      expect(calculateTotalStrips(5, "10's", 'Tablet'), 0.5);
+      expect(calculateTotalStrips(1, "bottle", 'Syrup'), 1.0);
+      expect(calculateTotalStrips(10, "50 grams", 'Cream / Ointment'), 10.0);
     });
   });
 
