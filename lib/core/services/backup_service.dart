@@ -128,14 +128,9 @@ class AutoBackupObserver extends WidgetsBindingObserver {
 
   Future<void> _performAutoBackup() async {
     try {
-      final docsDir = await getApplicationDocumentsDirectory();
-      final dbFile = File(path.join(docsDir.path, 'pharma_local.sqlite'));
-      if (await dbFile.exists()) {
-        final ts = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
-        final backupFile = File(path.join(docsDir.path, 'pharma_local_autobackup_$ts.sqlite'));
-        await dbFile.copy(backupFile.path);
-        print('Auto-backup completed: ${backupFile.path}');
-      }
+      final backupService = BackupService();
+      final backupPath = await backupService.exportBackup(passphrase: 'PharmaAutoBackup');
+      print('Auto-backup completed securely: $backupPath');
     } catch (e) {
       print('Auto-backup failed: $e');
     }

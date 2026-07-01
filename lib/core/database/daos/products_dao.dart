@@ -11,9 +11,11 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
     with _$ProductsDaoMixin {
   ProductsDao(super.db);
 
-  /// All products ordered by name.
   Stream<List<Product>> watchAllProducts() =>
       (select(products)..where((p) => p.isDeleted.equals(false))..orderBy([(p) => OrderingTerm.asc(p.name)])).watch();
+
+  Stream<List<Product>> watchProductsByCategory(int categoryId) =>
+      (select(products)..where((p) => p.isDeleted.equals(false) & p.categoryId.equals(categoryId))..orderBy([(p) => OrderingTerm.asc(p.name)])).watch();
 
   Future<List<Product>> getAllProducts() =>
       (select(products)..where((p) => p.isDeleted.equals(false))..orderBy([(p) => OrderingTerm.asc(p.name)])).get();

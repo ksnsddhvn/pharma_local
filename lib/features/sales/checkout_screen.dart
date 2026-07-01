@@ -28,6 +28,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _doctorPlaceCtrl = TextEditingController();
   final _amountPaidCtrl = TextEditingController();
   final _customerNotesCtrl = TextEditingController();
+  
+  final _customerNameNode = FocusNode();
+  final _customerMobileNode = FocusNode();
+  final _customerPlaceNode = FocusNode();
+  final _doctorNameNode = FocusNode();
+  final _doctorPlaceNode = FocusNode();
+  final _amountPaidNode = FocusNode();
+  final _customerNotesNode = FocusNode();
   bool _loading = false;
   CheckoutResult? _result;
   List<CartItem>? _checkedOutItems;
@@ -48,6 +56,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _doctorPlaceCtrl.dispose();
     _amountPaidCtrl.dispose();
     _customerNotesCtrl.dispose();
+    _customerNameNode.dispose();
+    _customerMobileNode.dispose();
+    _customerPlaceNode.dispose();
+    _doctorNameNode.dispose();
+    _doctorPlaceNode.dispose();
+    _amountPaidNode.dispose();
+    _customerNotesNode.dispose();
     super.dispose();
   }
 
@@ -352,37 +367,41 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 TextField(
                   controller: _customerNameCtrl,
+                  focusNode: _customerNameNode,
                   textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  onSubmitted: (_) => _customerMobileNode.requestFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(labelText: 'Patient Name'),
                 ),
                 SizedBox(height: 12),
                 TextField(
                   controller: _customerMobileCtrl,
+                  focusNode: _customerMobileNode,
                   textCapitalization: TextCapitalization.none,
                   keyboardType: TextInputType.phone,
                   textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  onSubmitted: (_) => _customerPlaceNode.requestFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(labelText: 'Mobile (for WhatsApp)'),
                 ),
                 SizedBox(height: 12),
                 TextField(
                   controller: _customerPlaceCtrl,
+                  focusNode: _customerPlaceNode,
                   textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  onSubmitted: (_) => _doctorNameNode.requestFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(labelText: 'Patient Place'),
                 ),
                 SizedBox(height: 12),
                 TextField(
                   controller: _doctorNameCtrl,
+                  focusNode: _doctorNameNode,
                   textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  onSubmitted: (_) => _doctorPlaceNode.requestFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(
                       labelText: needsDoctor ? 'Doctor Name (Required for Sch-H/H1)' : 'Doctor Name'),
@@ -390,9 +409,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 SizedBox(height: 12),
                 TextField(
                   controller: _doctorPlaceCtrl,
+                  focusNode: _doctorPlaceNode,
                   textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  onSubmitted: (_) => _amountPaidNode.requestFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(labelText: 'Clinic / Hospital Locality'),
                 ),
@@ -408,10 +428,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 TextField(
                   controller: _amountPaidCtrl,
+                  focusNode: _amountPaidNode,
                   textCapitalization: TextCapitalization.none,
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                  onSubmitted: (_) => _customerNotesNode.requestFocus(),
                   style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(
                       labelText: 'Amount Paid Now (₹)',
@@ -428,6 +449,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 SizedBox(height: 12),
                 TextField(
                   controller: _customerNotesCtrl,
+                  focusNode: _customerNotesNode,
                   textCapitalization: TextCapitalization.none,
                   textInputAction: TextInputAction.done,
                   style: TextStyle(color: context.colors.textPrimary),

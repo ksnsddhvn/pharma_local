@@ -589,7 +589,7 @@ class _ShortbookTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shortbookAsync = ref.watch(dynamicShortbookFeedProvider);
+    final shortbookAsync = ref.watch(shortbookItemsProvider);
 
     return shortbookAsync.when(
       data: (items) {
@@ -601,6 +601,7 @@ class _ShortbookTab extends ConsumerWidget {
           itemCount: items.length,
           itemBuilder: (_, i) {
             final payload = items[i];
+            final ratio = payload.threshold > 0 ? payload.currentStock / payload.threshold : 0.0;
             return Container(
               margin: EdgeInsets.only(bottom: 8),
               padding: EdgeInsets.all(12),
@@ -616,17 +617,17 @@ class _ShortbookTab extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(payload.product.name, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w600)),
-                        Text('Category: ${payload.category?.name ?? 'N/A'}', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
+                        Text('Current Stock: ${payload.currentStock} / Min: ${payload.threshold.toStringAsFixed(0)}', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
                       ],
                     ),
                   ),
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: context.colors.error.withValues(alpha: 0.1),
+                      color: ratio == 0 ? context.colors.expiryCritical.withValues(alpha: 0.1) : context.colors.warning.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
-                    child: Text('Out of Stock', style: TextStyle(color: context.colors.error, fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Text(ratio == 0 ? 'Out of Stock' : 'Low Stock', style: TextStyle(color: ratio == 0 ? context.colors.expiryCritical : context.colors.warning, fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),

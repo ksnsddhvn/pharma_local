@@ -135,7 +135,7 @@ class StockBatchesDao extends DatabaseAccessor<AppDatabase>
 
   /// Aggregate stock level per product (for shortbook).
   Future<Map<int, int>> getTotalStockPerProduct() async {
-    final rows = await select(stockBatches).get();
+    final rows = await (select(stockBatches)..where((b) => b.isDeleted.equals(false))).get();
     final map = <int, int>{};
     for (final r in rows) {
       map[r.productId] = (map[r.productId] ?? 0) + r.currentStock;

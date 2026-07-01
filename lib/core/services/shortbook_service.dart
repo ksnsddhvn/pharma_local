@@ -23,11 +23,11 @@ class ShortbookService {
     final result = <ShortbookItem>[];
     for (final product in allProducts) {
       final stock = stockMap[product.id] ?? 0;
-      if (stock < 10) {
+      if (stock < product.minStockThreshold) {
         result.add(ShortbookItem(
           product: product,
           currentStock: stock,
-          threshold: 10.0,
+          threshold: product.minStockThreshold.toDouble(),
         ));
       }
     }

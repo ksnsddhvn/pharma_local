@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'core/theme/app_theme.dart';
 
 import 'core/services/backup_service.dart';
+import 'core/services/github_updater_service.dart';
 
 class ShellScaffold extends StatefulWidget {
   final Widget child;
@@ -20,6 +21,9 @@ class _ShellScaffoldState extends State<ShellScaffold> with WidgetsBindingObserv
     super.initState();
     _backupObserver = AutoBackupObserver();
     WidgetsBinding.instance.addObserver(_backupObserver);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      GithubUpdaterService.checkForUpdates(context);
+    });
   }
 
   @override

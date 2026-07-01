@@ -84,11 +84,14 @@ class SuppliersScreen extends ConsumerWidget {
                       margin: EdgeInsets.symmetric(
                           horizontal: 16, vertical: 4),
                       decoration: BoxDecoration(
-                        color: context.colors.surfaceElevated,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: context.colors.surfaceBorder),
                       ),
-                      child: ListTile(
+                      child: Material(
+                        color: context.colors.surfaceElevated,
+                        borderRadius: BorderRadius.circular(11),
+                        clipBehavior: Clip.antiAlias,
+                        child: ListTile(
                         contentPadding: EdgeInsets.all(16),
                         leading: Container(
                           width: 44,
@@ -142,6 +145,7 @@ class SuppliersScreen extends ConsumerWidget {
                         ),
                         onTap: () =>
                             context.push('/suppliers/${s.id}'),
+                        ),
                       ),
                     );
                   },

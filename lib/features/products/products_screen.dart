@@ -120,12 +120,15 @@ class _ProductTile extends ConsumerWidget {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: context.colors.surfaceElevated,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: context.colors.surfaceBorder),
       ),
-      child: ListTile(
-        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Material(
+        color: context.colors.surfaceElevated,
+        borderRadius: BorderRadius.circular(11),
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: Row(
           children: [
             Icon(ProductIconUtils.getIconForType(product.productType), size: 18, color: context.colors.primary),
@@ -172,6 +175,7 @@ class _ProductTile extends ConsumerWidget {
           onPressed: () => context.push('/products/edit/${product.id}'),
         ),
         onTap: () => context.push('/products/edit/${product.id}'),
+        ),
       ),
     );
   }
