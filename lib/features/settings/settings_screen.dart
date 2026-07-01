@@ -7,7 +7,9 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:drift/drift.dart' hide Column;
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/services/github_updater_service.dart';
 import 'archived_items_screen.dart';
 import '../../core/database/app_database.dart';
 import '../../core/database/tables/sales_tables.dart';
@@ -28,11 +30,22 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _pinCtrl = TextEditingController();
   String? _backupPath;
+  String _appVersion = 'Loading...';
 
   @override
   void initState() {
     super.initState();
     _loadBackupPath();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appVersion = info.version;
+      });
+    }
   }
 
   Future<void> _loadBackupPath() async {
@@ -443,6 +456,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       title: Text('Generate Mock Data', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
                       subtitle: Text('Seed database with sample products and inventory', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
                       onTap: _generateMockData,
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 32),
+
+              // About & Updates Section
+              Text('About & Updates', style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
+              SizedBox(height: 16),
+              Material(
+                clipBehavior: Clip.antiAlias,
+                color: context.colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
+                child: Column(
+                  children: [
+                    ListTile(
+                      leading: Icon(Icons.info_outline, color: context.colors.textPrimary),
+                      title: Text('App Version', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
+                      trailing: Text(_appVersion, style: TextStyle(color: context.colors.textMuted, fontSize: 14)),
+                    ),
+                    Divider(height: 1, indent: 16, endIndent: 16, color: context.colors.surfaceBorder),
+                    ListTile(
+                      leading: Icon(Icons.system_update_alt, color: context.colors.textPrimary),
+                      title: Text('Check for Updates', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
+                      onTap: () {
+                        GithubUpdaterService.checkForUpdates(context, manual: true);
+                      },
                     ),
                   ],
                 ),

@@ -12,7 +12,7 @@ class GithubUpdaterService {
       ? 'https://api.github.com/repos/ksnsddhvn/pharma_local/releases/latest'
       : 'https://api.github.com/repos/Kanishk-C/pharma_local/releases/latest';
 
-  static Future<void> checkForUpdates(BuildContext context) async {
+  static Future<void> checkForUpdates(BuildContext context, {bool manual = false}) async {
     try {
       final dio = Dio();
       final response = await dio.get(_latestReleaseUrl);
@@ -33,7 +33,7 @@ class GithubUpdaterService {
           final cleanTag = tagName.replaceAll('v', '').trim();
           final cleanCurrent = currentVersion.replaceAll('v', '').trim();
 
-          if (_isNewerVersion(cleanTag, cleanCurrent) && cleanTag != lastSkipped) {
+          if (_isNewerVersion(cleanTag, cleanCurrent) && (manual || cleanTag != lastSkipped)) {
             final apkAsset = assets.firstWhere(
                 (asset) => asset['name'].toString().endsWith('.apk'),
                 orElse: () => null);
@@ -42,13 +42,25 @@ class GithubUpdaterService {
               final downloadUrl = apkAsset['browser_download_url'];
               if (context.mounted) {
                 _showUpdateDialog(context, cleanTag, downloadUrl);
+                return; // Return so we don't show "Up to date"
               }
             }
           }
         }
       }
+      
+      if (manual && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('App is up to date!')),
+        );
+      }
     } catch (e) {
       debugPrint('Update check failed: $e');
+      if (manual && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to check for updates: $e')),
+        );
+      }
     }
   }
 
