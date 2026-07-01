@@ -19,7 +19,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   final _nameFocus = FocusNode();
 
   late TextEditingController _nameCtrl;
-  late TextEditingController _packagingCtrl;
+  late TextEditingController _packagingAmountCtrl;
+  late TextEditingController _packagingUnitCtrl;
   late TextEditingController _hsnCtrl;
 
   // category removed
@@ -32,7 +33,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController();
-    _packagingCtrl = TextEditingController(text: "Tablets");
+    _packagingAmountCtrl = TextEditingController(text: "10");
+    _packagingUnitCtrl = TextEditingController(text: "Tablets");
     _hsnCtrl = TextEditingController();
     _typeCtrl = TextEditingController(text: 'Tablet');
   }
@@ -40,7 +42,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _packagingCtrl.dispose();
+    _packagingAmountCtrl.dispose();
+    _packagingUnitCtrl.dispose();
     _hsnCtrl.dispose();
     _typeCtrl.dispose();
     _nameFocus.dispose();
@@ -61,16 +64,13 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         _hsnCtrl.text = product.hsnCode;
         _typeCtrl.text = product.productType;
 
-        switch(product.productType) {
-          case 'Tablet': _packagingCtrl.text = "Tablets"; break;
-          case 'Capsule': _packagingCtrl.text = "Capsules"; break;
-          case 'Syrup': _packagingCtrl.text = "ml"; break;
-          case 'Injection': _packagingCtrl.text = "Vials"; break;
-          case 'Cream / Ointment': _packagingCtrl.text = "grams"; break;
-          case 'Diaper': _packagingCtrl.text = "Packs"; break;
-          case 'Powder':
-          case 'Toothpaste': _packagingCtrl.text = "grams"; break;
-          default: _packagingCtrl.text = "Units"; break;
+        final match = RegExp(r'^([\d\.]+)\s*(.*)$').firstMatch(product.packagingUnit);
+        if (match != null) {
+          _packagingAmountCtrl.text = match.group(1) ?? '';
+          _packagingUnitCtrl.text = match.group(2) ?? '';
+        } else {
+          _packagingAmountCtrl.text = '';
+          _packagingUnitCtrl.text = product.packagingUnit;
         }
       });
     }
@@ -87,7 +87,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             ? drift.Value(widget.productId!)
             : const drift.Value.absent(),
         name: drift.Value(_nameCtrl.text.trim()),
-        packagingUnit: drift.Value(_packagingCtrl.text.trim()),
+        packagingUnit: drift.Value('${_packagingAmountCtrl.text.trim()} ${_packagingUnitCtrl.text.trim()}'.trim()),
         productType: drift.Value(_typeCtrl.text.trim()),
         hsnCode: drift.Value(_hsnCtrl.text.trim()),
         categoryId: const drift.Value(null),
@@ -227,7 +227,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                             ref.read(customProductTypesProvider.notifier).addType(newType);
                             setState(() {
                               _typeCtrl.text = newType;
-                              _packagingCtrl.text = 'Units';
+                              _packagingUnitCtrl.text = 'Units';
                             });
                           }
                           return;
@@ -237,15 +237,15 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                           _typeCtrl.text = value;
                           // Strictly set packaging unit based on product type
                           switch(value) {
-                            case 'Tablet': _packagingCtrl.text = "Tablets"; break;
-                            case 'Capsule': _packagingCtrl.text = "Capsules"; break;
-                            case 'Syrup': _packagingCtrl.text = "ml"; break;
-                            case 'Injection': _packagingCtrl.text = "Vials"; break;
-                            case 'Cream / Ointment': _packagingCtrl.text = "grams"; break;
-                            case 'Diaper': _packagingCtrl.text = "Packs"; break;
+                            case 'Tablet': _packagingUnitCtrl.text = "Tablets"; break;
+                            case 'Capsule': _packagingUnitCtrl.text = "Capsules"; break;
+                            case 'Syrup': _packagingUnitCtrl.text = "ml"; break;
+                            case 'Injection': _packagingUnitCtrl.text = "vials"; break;
+                            case 'Cream / Ointment': _packagingUnitCtrl.text = "grams"; break;
+                            case 'Diaper': _packagingUnitCtrl.text = "Packs"; break;
                             case 'Powder':
-                            case 'Toothpaste': _packagingCtrl.text = "grams"; break;
-                            default: _packagingCtrl.text = "Units"; break;
+                            case 'Toothpaste': _packagingUnitCtrl.text = "grams"; break;
+                            default: _packagingUnitCtrl.text = "Units"; break;
                           }
                         });
                       },
@@ -266,11 +266,41 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                   validator: (v) => v!.trim().isEmpty ? 'Product type is required' : null,
                 ),
                 SizedBox(height: 12),
-                _field('Unit *', _packagingCtrl,
-                    hint: "e.g. grams, ml, Tablets",
-                    readOnly: true,
-                    validator: (v) =>
-                        v!.trim().isEmpty ? 'Unit is required' : null),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: _field('Amount *', _packagingAmountCtrl,
+                          keyboardType: TextInputType.number,
+                          validator: (v) => v!.trim().isEmpty ? 'Required' : null),
+                    ),
+                    SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: _packagingUnitCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        style: TextStyle(color: context.colors.textPrimary),
+                        decoration: InputDecoration(
+                          labelText: 'Unit *',
+                          hintText: 'e.g. grams, ml, Tablets',
+                          suffixIcon: PopupMenuButton<String>(
+                            icon: Icon(Icons.arrow_drop_down, color: context.colors.textMuted),
+                            color: context.colors.surfaceElevated,
+                            onSelected: (val) {
+                              setState(() {
+                                _packagingUnitCtrl.text = val;
+                              });
+                            },
+                            itemBuilder: (ctx) => ['Tablets', 'Capsules', 'ml', 'grams', 'vials', 'Packs', 'Units', 'Large', 'Medium', 'Small'].map((u) => PopupMenuItem(value: u, child: Text(u, style: TextStyle(color: context.colors.textPrimary)))).toList(),
+                          ),
+                        ),
+                        validator: (v) => v!.trim().isEmpty ? 'Required' : null,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
             SizedBox(height: 16),
