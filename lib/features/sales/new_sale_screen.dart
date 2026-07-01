@@ -108,6 +108,28 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
     return success;
   }
 
+  void updatePackagingUnit(int batchId, String unit) {
+    state = state.map((i) {
+      if (i.batchId == batchId) {
+        return CartItem(
+          batchId: i.batchId,
+          productId: i.productId,
+          productName: i.productName,
+          batchNumber: i.batchNumber,
+          quantity: i.quantity,
+          maxQuantity: i.maxQuantity,
+          mrp: i.mrp,
+          gstPercentage: i.gstPercentage,
+          discountPercent: i.discountPercent,
+          hsnCode: i.hsnCode,
+          packagingUnit: unit,
+          alternativeName: i.alternativeName,
+        );
+      }
+      return i;
+    }).toList();
+  }
+
   void clear() => state = [];
 }
 
@@ -247,8 +269,9 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
             ),
         ],
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        child: Column(
+          children: [
           // Barcode / search row
           Padding(
             padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -369,6 +392,7 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
             ),
           ),
         ],
+      ),
       ),
 
       // Checkout bottom bar
@@ -656,26 +680,47 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
             Row(
               children: [
                 Expanded(
-                  flex: 2,
-                  child: TextFormField(
-                    controller: _qtyCtrl,
-                    textInputAction: TextInputAction.next,
-                    textCapitalization: TextCapitalization.none,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Qty (Max: ${item.maxQuantity})',
-                      isDense: true,
-                    ),
-                    onChanged: (val) {
-                      final parsed = int.tryParse(val) ?? 0;
-                      if (parsed > 0) {
-                        final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, parsed);
-                        if (!success) {
-                          _qtyCtrl.text = item.maxQuantity.toString();
-                          ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.maxQuantity);
-                        }
-                      }
-                    },
+                  flex: 3,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _qtyCtrl,
+                          textInputAction: TextInputAction.next,
+                          textCapitalization: TextCapitalization.none,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            labelText: 'Qty (Max: ${item.maxQuantity})',
+                            isDense: true,
+                          ),
+                          onChanged: (val) {
+                            final parsed = int.tryParse(val) ?? 0;
+                            if (parsed > 0) {
+                              final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, parsed);
+                              if (!success) {
+                                _qtyCtrl.text = item.maxQuantity.toString();
+                                ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.maxQuantity);
+                              }
+                            }
+                          },
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      DropdownButton<String>(
+                        value: item.packagingUnit,
+                        isDense: true,
+                        items: {'Tablets', 'Strips', 'Grams', 'Bottles', 'Ml', 'Capsules', item.packagingUnit}
+                            .map((u) => DropdownMenuItem(value: u, child: Text(u, style: TextStyle(fontSize: 13, color: context.colors.textPrimary))))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) {
+                            ref.read(cartProvider.notifier).updatePackagingUnit(item.batchId, val);
+                          }
+                        },
+                        underline: SizedBox(),
+                        icon: Icon(Icons.arrow_drop_down, color: context.colors.textMuted),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(width: 8),

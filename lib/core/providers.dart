@@ -142,3 +142,27 @@ final profitLossStatsProvider = StreamProvider.family<ProfitLossStats, int>((ref
   final from = DateTime.now().subtract(Duration(days: days));
   return ref.watch(salesDaoProvider).watchProfitLossStats(from, DateTime.now());
 });
+
+// ── Custom Product Types ────────────────────────────────────────────────────────
+final customProductTypesProvider = StateNotifierProvider<CustomProductTypesNotifier, List<String>>((ref) {
+  final prefs = ref.read(sharedPreferencesProvider);
+  return CustomProductTypesNotifier(prefs);
+});
+
+class CustomProductTypesNotifier extends StateNotifier<List<String>> {
+  final SharedPreferences prefs;
+  
+  CustomProductTypesNotifier(this.prefs) : super(_loadTypes(prefs));
+
+  static List<String> _loadTypes(SharedPreferences prefs) {
+    return prefs.getStringList('custom_product_types') ?? [];
+  }
+
+  void addType(String type) {
+    if (!state.contains(type)) {
+      state = [...state, type];
+      prefs.setStringList('custom_product_types', state);
+    }
+  }
+}
+

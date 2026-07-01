@@ -10,6 +10,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/utils/receipt_composer.dart';
 import '../../core/utils/pdf_invoice_generator.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:go_router/go_router.dart';
 import 'new_sale_screen.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
@@ -167,10 +168,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     // ── Success state ────────────────────────────────────────
     if (_result != null) {
-      return Scaffold(
-        backgroundColor: context.colors.background,
-        appBar: AppBar(title: Text('Invoice Saved')),
-        body: SafeArea(
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop) {
+            context.go('/sales');
+          }
+        },
+        child: Scaffold(
+          backgroundColor: context.colors.background,
+          appBar: AppBar(title: Text('Invoice Saved')),
+          body: SafeArea(
           child: Padding(
             padding: EdgeInsets.all(24),
             child: FutureBuilder<String?>(
@@ -289,7 +297,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             _checkedOutItems = null;
                             _receiptTextFuture = null;
                           });
-                          Navigator.of(context).pop();
+                          context.go('/sales');
                         },
                         style: OutlinedButton.styleFrom(
                             minimumSize: Size.fromHeight(48)),
@@ -300,6 +308,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 }
               ),
           ),
+        ),
         ),
       );
     }

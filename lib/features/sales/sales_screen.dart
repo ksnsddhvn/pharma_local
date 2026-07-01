@@ -10,7 +10,6 @@ import 'package:share_plus/share_plus.dart';
 import '../../core/utils/receipt_composer.dart';
 import '../../core/utils/pdf_invoice_generator.dart';
 import 'package:printing/printing.dart';
-import 'package:fl_chart/fl_chart.dart';
 
 class SalesScreen extends ConsumerStatefulWidget {
   const SalesScreen({super.key});
@@ -53,13 +52,10 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
           ],
         ),
       ),
-      body: Column(
-        children: [
+      body: SafeArea(
+        child: Column(
+          children: [
           _HighContrastDashboardCard(),
-          SizedBox(
-            height: 150,
-            child: _WeeklySalesChart(),
-          ),
           Expanded(
             child: TabBarView(
               controller: _tab,
@@ -71,6 +67,7 @@ class _SalesScreenState extends ConsumerState<SalesScreen>
             ),
           ),
         ],
+      ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/sales/new'),
@@ -556,9 +553,13 @@ class _HighContrastDashboardCard extends ConsumerWidget {
               children: [
                 Text('Overall Debt', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
                 SizedBox(height: 4),
-                Text(
-                  AppFormatters.currency(debt),
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                Flexible(
+                  child: Text(
+                    AppFormatters.currency(debt),
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
               ],
             ),
@@ -571,9 +572,13 @@ class _HighContrastDashboardCard extends ConsumerWidget {
               children: [
                 Text('Monthly Revenue', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
                 SizedBox(height: 4),
-                Text(
-                  AppFormatters.currency(revenue),
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                Flexible(
+                  child: Text(
+                    AppFormatters.currency(revenue),
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 ),
               ],
             ),
@@ -640,87 +645,3 @@ class _ShortbookTab extends ConsumerWidget {
     );
   }
 }
-
-class _WeeklySalesChart extends ConsumerWidget {
-  const _WeeklySalesChart();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final weeklySalesAsync = ref.watch(weeklySalesProvider);
-
-    return weeklySalesAsync.when(
-      data: (sales) {
-        if (sales.isEmpty) return SizedBox.shrink();
-        
-        final sortedKeys = sales.keys.toList()..sort();
-        if (sortedKeys.isEmpty) return SizedBox.shrink();
-
-        double maxVal = 0;
-        for (final val in sales.values) {
-          if (val > maxVal) maxVal = val;
-        }
-
-        return Container(
-          margin: EdgeInsets.symmetric(horizontal: 16),
-          padding: EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: context.colors.surfaceElevated,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: context.colors.surfaceBorder),
-          ),
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: maxVal > 0 ? maxVal * 1.2 : 100,
-              barTouchData: BarTouchData(enabled: false),
-              titlesData: FlTitlesData(
-                show: true,
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      final index = value.toInt();
-                      if (index < 0 || index >= sortedKeys.length) return SizedBox.shrink();
-                      final date = sortedKeys[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 8.0),
-                        child: Text(
-                          '${date.day}/${date.month}',
-                          style: TextStyle(color: context.colors.textMuted, fontSize: 10),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-              ),
-              borderData: FlBorderData(show: false),
-              gridData: FlGridData(show: false),
-              barGroups: sortedKeys.asMap().entries.map((entry) {
-                final idx = entry.key;
-                final date = entry.value;
-                final val = sales[date] ?? 0.0;
-                return BarChartGroupData(
-                  x: idx,
-                  barRods: [
-                    BarChartRodData(
-                      toY: val,
-                      color: context.colors.primary,
-                      width: 12,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-        );
-      },
-      loading: () => Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Chart Error: $e')),
-    );
-  }
-}
-
