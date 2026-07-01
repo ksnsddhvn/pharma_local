@@ -213,42 +213,46 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Display Section
               Text('Display', style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
               SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                padding: EdgeInsets.all(16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Theme Mode', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
-                    Consumer(
-                      builder: (context, ref, child) {
-                        final currentTheme = ref.watch(themeModeProvider);
-                        return SegmentedButton<ThemeMode>(
-                          style: SegmentedButton.styleFrom(
-                            selectedBackgroundColor: context.colors.primary.withValues(alpha: 0.2),
-                            selectedForegroundColor: context.colors.primary,
-                            backgroundColor: context.colors.background,
-                            foregroundColor: context.colors.textSecondary,
-                            side: BorderSide(color: context.colors.surfaceBorder),
-                          ),
-                          segments: [
-                            ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode, size: 18), label: Text('Light')),
-                            ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode, size: 18), label: Text('Dark')),
-                            ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.brightness_auto, size: 18), label: Text('Auto')),
-                          ],
-                          selected: {currentTheme},
-                          onSelectionChanged: (set) {
-                            if (set.isNotEmpty) {
-                              ref.read(themeModeProvider.notifier).setThemeMode(set.first);
-                            }
-                          },
-                        );
-                      }
-                    ),
-                  ],
+              Material(
+                color: context.colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Theme Mode', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
+                      SizedBox(height: 12),
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final currentTheme = ref.watch(themeModeProvider);
+                          return SizedBox(
+                            width: double.infinity,
+                            child: SegmentedButton<ThemeMode>(
+                              style: SegmentedButton.styleFrom(
+                                selectedBackgroundColor: context.colors.primary.withValues(alpha: 0.2),
+                                selectedForegroundColor: context.colors.primary,
+                                backgroundColor: context.colors.background,
+                                foregroundColor: context.colors.textSecondary,
+                                side: BorderSide(color: context.colors.surfaceBorder),
+                              ),
+                              segments: [
+                                ButtonSegment(value: ThemeMode.light, icon: Icon(Icons.light_mode, size: 18), label: Text('Light')),
+                                ButtonSegment(value: ThemeMode.dark, icon: Icon(Icons.dark_mode, size: 18), label: Text('Dark')),
+                                ButtonSegment(value: ThemeMode.system, icon: Icon(Icons.brightness_auto, size: 18), label: Text('Auto')),
+                              ],
+                              selected: {currentTheme},
+                              onSelectionChanged: (set) {
+                                if (set.isNotEmpty) {
+                                  ref.read(themeModeProvider.notifier).setThemeMode(set.first);
+                                }
+                              },
+                            ),
+                          );
+                        }
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
@@ -257,13 +261,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Security Section
               Text('Security', style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
               SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              Material(
+                color: context.colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
+                clipBehavior: Clip.antiAlias,
                 child: Column(
                   children: [
+                    SwitchListTile(
+                      title: Text('Enable Auto Backup', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
+                      subtitle: Text('Silently encrypt and save backup on background', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
+                      value: ref.watch(sharedPreferencesProvider).getBool('enable_auto_backup') ?? false,
+                      activeColor: context.colors.primary,
+                      onChanged: (v) async {
+                        await ref.read(sharedPreferencesProvider).setBool('enable_auto_backup', v);
+                        setState(() {});
+                      },
+                    ),
+                    Divider(height: 1, indent: 16, endIndent: 16, color: context.colors.surfaceBorder),
                     SwitchListTile(
                       title: Text('Enable App Lock', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
                       subtitle: Text('Require PIN to open the app', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
@@ -319,11 +333,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Data Management Section
               Text('Data Management', style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
               SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              Material(
+                clipBehavior: Clip.antiAlias,
+                color: context.colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
                 child: Column(
                   children: [
                     ListTile(

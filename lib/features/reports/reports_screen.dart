@@ -4,7 +4,8 @@ import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/database/tables/inventory_adjustments_table.dart';
-
+import 'package:share_plus/share_plus.dart';
+import '../../core/services/csv_export_service.dart';
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -413,14 +414,42 @@ class _BackupTabState extends ConsumerState<_BackupTab> {
           );
       setState(() => _lastBackupPath = path);
       if (mounted) {
+        await Share.shareXFiles(
+          [XFile(path)],
+          subject: 'Pharma Local Encrypted Backup',
+        );
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Backup saved: $path'),
+            content: Text('Backup ready'),
             backgroundColor: context.colors.success));
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Backup failed: $e'),
+            backgroundColor: context.colors.error));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _exportCsv() async {
+    setState(() => _loading = true);
+    try {
+      final path = await ref.read(csvExportServiceProvider).exportToCsvZip();
+      if (mounted) {
+        await Share.shareXFiles(
+          [XFile(path)],
+          subject: 'Pharma Local CSV Export',
+        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('CSV Export ready'),
+            backgroundColor: context.colors.success));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('CSV Export failed: $e'),
             backgroundColor: context.colors.error));
       }
     } finally {
@@ -479,31 +508,46 @@ class _BackupTabState extends ConsumerState<_BackupTab> {
                 ),
               ),
               SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: _loading ? null : _export,
-                icon: Icon(Icons.download_outlined, size: 18),
-                label: _loading
-                    ? SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: Colors.black))
-                    : Text('Export Backup'),
-                style: ElevatedButton.styleFrom(
-                    minimumSize: Size.fromHeight(48)),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _loading ? null : _export,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: context.colors.primary,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: _loading
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                  color: Colors.white, strokeWidth: 2))
+                          : Icon(Icons.lock_outline, size: 18),
+                      label: _loading
+                          ? Text('Exporting...')
+                          : Text('Encrypted Backup'),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _loading ? null : _exportCsv,
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: context.colors.primary),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      icon: Icon(Icons.table_chart_outlined, size: 18, color: context.colors.primary),
+                      label: Text('Export to CSV', style: TextStyle(color: context.colors.primary)),
+                    ),
+                  ),
+                ],
               ),
-              if (_lastBackupPath != null) ...[
-                SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => ref
-                      .read(backupServiceProvider)
-                      .shareBackup(_lastBackupPath!),
-                  icon: Icon(Icons.share_outlined, size: 18),
-                  label: Text('Share Backup File'),
-                  style: OutlinedButton.styleFrom(
-                      minimumSize: Size.fromHeight(48)),
-                ),
-              ],
             ],
           ),
         ),

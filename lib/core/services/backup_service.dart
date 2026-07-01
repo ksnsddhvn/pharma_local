@@ -6,6 +6,7 @@ import 'package:encrypt/encrypt.dart' as enc;
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Handles encrypted backup export and import of the SQLite database file.
 class BackupService {
@@ -25,7 +26,7 @@ class BackupService {
 
   /// Exports the active database as an AES-256-CBC encrypted ZIP archive.
   /// Returns the path to the created backup file.
-  Future<String> exportBackup({required String passphrase}) async {
+  Future<String> exportBackup({required String passphrase, bool isAutoBackup = false}) async {
     final docsDir = await getApplicationDocumentsDirectory();
 
     // Locate the SQLite db file created by drift_flutter
@@ -59,9 +60,28 @@ class BackupService {
 
     final ts =
         DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
-    final outFile =
-        File(path.join(docsDir.path, 'pharma_backup_$ts.pharmaenc'));
-    await outFile.writeAsBytes(outputBytes);
+    
+    File outFile;
+    if (isAutoBackup) {
+      final autoDir = Directory(path.join(docsDir.path, 'auto_backups'));
+      if (!autoDir.existsSync()) {
+        autoDir.createSync(recursive: true);
+      }
+      outFile = File(path.join(autoDir.path, 'pharma_auto_backup_$ts.pharmaenc'));
+      await outFile.writeAsBytes(outputBytes);
+      
+      // Cleanup: keep only latest 5
+      final files = autoDir.listSync().whereType<File>().toList();
+      files.sort((a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()));
+      for (var i = 5; i < files.length; i++) {
+        try {
+          files[i].deleteSync();
+        } catch (_) {}
+      }
+    } else {
+      outFile = File(path.join(docsDir.path, 'pharma_backup_$ts.pharmaenc'));
+      await outFile.writeAsBytes(outputBytes);
+    }
 
     return outFile.path;
   }
@@ -128,11 +148,15 @@ class AutoBackupObserver extends WidgetsBindingObserver {
 
   Future<void> _performAutoBackup() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('enable_auto_backup') != true) return;
+      
       final backupService = BackupService();
-      final backupPath = await backupService.exportBackup(passphrase: 'PharmaAutoBackup');
+      final backupPath = await backupService.exportBackup(passphrase: 'PharmaAutoBackup', isAutoBackup: true);
       print('Auto-backup completed securely: $backupPath');
     } catch (e) {
       print('Auto-backup failed: $e');
     }
   }
 }
+
