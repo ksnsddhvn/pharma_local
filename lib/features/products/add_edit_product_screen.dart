@@ -32,7 +32,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController();
-    _packagingCtrl = TextEditingController(text: "10's");
+    _packagingCtrl = TextEditingController(text: "Tablets");
     _hsnCtrl = TextEditingController();
     _typeCtrl = TextEditingController(text: 'Tablet');
   }
@@ -58,9 +58,20 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     if (product != null && mounted) {
       setState(() {
         _nameCtrl.text = product.name;
-        _packagingCtrl.text = product.packagingUnit;
         _hsnCtrl.text = product.hsnCode;
         _typeCtrl.text = product.productType;
+
+        switch(product.productType) {
+          case 'Tablet': _packagingCtrl.text = "Tablets"; break;
+          case 'Capsule': _packagingCtrl.text = "Capsules"; break;
+          case 'Syrup': _packagingCtrl.text = "ml"; break;
+          case 'Injection': _packagingCtrl.text = "Vials"; break;
+          case 'Cream / Ointment': _packagingCtrl.text = "grams"; break;
+          case 'Diaper': _packagingCtrl.text = "Packs"; break;
+          case 'Powder':
+          case 'Toothpaste': _packagingCtrl.text = "grams"; break;
+          default: _packagingCtrl.text = "Units"; break;
+        }
       });
     }
   }
@@ -216,6 +227,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                             ref.read(customProductTypesProvider.notifier).addType(newType);
                             setState(() {
                               _typeCtrl.text = newType;
+                              _packagingCtrl.text = 'Units';
                             });
                           }
                           return;
@@ -223,20 +235,17 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
 
                         setState(() {
                           _typeCtrl.text = value;
-                          // Smartly update packaging unit if it's currently a default
-                          final defaults = ["10's", "100ml", "1 Vial", "15g", "1 Pack", "50g", "1 Unit"];
-                          if (_packagingCtrl.text.trim().isEmpty || defaults.contains(_packagingCtrl.text.trim())) {
-                              switch(value) {
-                               case 'Tablet': 
-                               case 'Capsule': _packagingCtrl.text = "10's"; break;
-                               case 'Syrup': _packagingCtrl.text = "100ml"; break;
-                               case 'Injection': _packagingCtrl.text = "1 Vial"; break;
-                               case 'Cream / Ointment': _packagingCtrl.text = "15g"; break;
-                               case 'Diaper': _packagingCtrl.text = "1 Pack"; break;
-                               case 'Powder':
-                               case 'Toothpaste': _packagingCtrl.text = "50g"; break;
-                               default: _packagingCtrl.text = "1 Unit"; break;
-                             }
+                          // Strictly set packaging unit based on product type
+                          switch(value) {
+                            case 'Tablet': _packagingCtrl.text = "Tablets"; break;
+                            case 'Capsule': _packagingCtrl.text = "Capsules"; break;
+                            case 'Syrup': _packagingCtrl.text = "ml"; break;
+                            case 'Injection': _packagingCtrl.text = "Vials"; break;
+                            case 'Cream / Ointment': _packagingCtrl.text = "grams"; break;
+                            case 'Diaper': _packagingCtrl.text = "Packs"; break;
+                            case 'Powder':
+                            case 'Toothpaste': _packagingCtrl.text = "grams"; break;
+                            default: _packagingCtrl.text = "Units"; break;
                           }
                         });
                       },
@@ -257,10 +266,11 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                   validator: (v) => v!.trim().isEmpty ? 'Product type is required' : null,
                 ),
                 SizedBox(height: 12),
-                _field('Packaging Unit *', _packagingCtrl,
-                    hint: "e.g. 10's, 15's, 100ml",
+                _field('Unit *', _packagingCtrl,
+                    hint: "e.g. grams, ml, Tablets",
+                    readOnly: true,
                     validator: (v) =>
-                        v!.trim().isEmpty ? 'Packaging Unit is required' : null),
+                        v!.trim().isEmpty ? 'Unit is required' : null),
               ],
             ),
             SizedBox(height: 16),
@@ -302,16 +312,23 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
       {String? hint,
       TextInputType? keyboardType,
       TextCapitalization textCapitalization = TextCapitalization.characters,
+      bool readOnly = false,
       String? Function(String?)? validator}) {
     return TextFormField(
       controller: ctrl,
+      readOnly: readOnly,
       keyboardType: keyboardType,
       textCapitalization: textCapitalization,
       textInputAction: TextInputAction.next,
       onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
       validator: validator,
-      style: TextStyle(color: context.colors.textPrimary),
-      decoration: InputDecoration(labelText: label, hintText: hint),
+      style: TextStyle(color: readOnly ? context.colors.textMuted : context.colors.textPrimary),
+      decoration: InputDecoration(
+        labelText: label, 
+        hintText: hint,
+        filled: readOnly,
+        fillColor: readOnly ? Colors.black12 : null,
+      ),
     );
   }
 }
