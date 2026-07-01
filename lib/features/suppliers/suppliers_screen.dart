@@ -158,6 +158,11 @@ class SuppliersScreen extends ConsumerWidget {
             Center(child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => Center(child: Text('Error: $e')),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddSupplier(context, ref),
+        backgroundColor: context.colors.primary,
+        child: Icon(Icons.add, color: Colors.white),
+      ),
     );
   }
 
