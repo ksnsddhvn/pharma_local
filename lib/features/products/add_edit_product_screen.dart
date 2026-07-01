@@ -64,6 +64,77 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     }
   }
 
+  Future<String?> _showModernDropdown({
+    required String title,
+    required List<String> items,
+    required String? selectedValue,
+    bool showCombo = false,
+  }) async {
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.6,
+          decoration: BoxDecoration(
+            color: context.colors.surfaceElevated,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -5))],
+          ),
+          child: Column(
+            children: [
+              SizedBox(height: 12),
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: context.colors.textMuted.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(2))),
+              Padding(
+                padding: EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Text(title, style: TextStyle(color: context.colors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold)),
+                    Spacer(),
+                    IconButton(icon: Icon(Icons.close, color: context.colors.textMuted), onPressed: () => Navigator.pop(ctx)),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: context.colors.surfaceBorder),
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  itemCount: items.length,
+                  itemBuilder: (ctx, i) {
+                    final item = items[i];
+                    if (item == '+ Add Custom Type' || item == '+ Add Custom Unit') {
+                      return ListTile(
+                        leading: Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(color: context.colors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                          child: Icon(Icons.add, color: context.colors.primary, size: 20),
+                        ),
+                        title: Text(item, style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold)),
+                        onTap: () => Navigator.pop(ctx, item),
+                      );
+                    }
+                    
+                    final isSelected = item == selectedValue;
+                    final unit = showCombo ? _getDefaultUnitForType(item) : '';
+                    final display = showCombo ? '$item ($unit)' : item;
+                    
+                    return ListTile(
+                      contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                      title: Text(display, style: TextStyle(color: isSelected ? context.colors.primary : context.colors.textPrimary, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                      trailing: isSelected ? Icon(Icons.check_circle, color: context.colors.primary) : null,
+                      onTap: () => Navigator.pop(ctx, item),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<void> _loadProduct() async {
     if (_initialized || widget.productId == null) {
       _initialized = true;
@@ -200,80 +271,69 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                 SizedBox(height: 12),
                 TextFormField(
                   controller: _typeCtrl,
-                  textCapitalization: TextCapitalization.words,
+                  readOnly: true,
+                  onTap: () async {
+                    final customTypes = ref.read(customProductTypesProvider);
+                    final allTypes = [..._productTypes, ...customTypes, '+ Add Custom Type'];
+                    final selected = await _showModernDropdown(
+                      title: 'Select Product Type',
+                      items: allTypes,
+                      selectedValue: _typeCtrl.text,
+                      showCombo: true,
+                    );
+                    if (selected != null) {
+                      if (selected == '+ Add Custom Type') {
+                        final newType = await showDialog<String>(
+                          context: context,
+                          builder: (ctx) {
+                            final ctrl = TextEditingController();
+                            return AlertDialog(
+                              backgroundColor: context.colors.surfaceElevated,
+                              title: Text('Add Custom Type'),
+                              content: TextField(
+                                controller: ctrl,
+                                decoration: InputDecoration(hintText: 'e.g. Inhaler, Patches'),
+                                textCapitalization: TextCapitalization.words,
+                              ),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel')),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    final val = ctrl.text.trim();
+                                    if (val.isNotEmpty) Navigator.pop(ctx, val);
+                                  },
+                                  child: Text('Save'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                        if (newType != null && newType.isNotEmpty) {
+                          ref.read(customProductTypesProvider.notifier).addType(newType);
+                          setState(() {
+                            _typeCtrl.text = newType;
+                            _packagingUnitCtrl.text = 'Units';
+                          });
+                        }
+                      } else {
+                        setState(() {
+                          _typeCtrl.text = selected;
+                          _packagingUnitCtrl.text = _getDefaultUnitForType(selected);
+                        });
+                      }
+                    }
+                  },
                   style: TextStyle(color: context.colors.textPrimary),
                   decoration: InputDecoration(
                     labelText: 'Product Type *',
-                    hintText: 'e.g. Tablet, Drops',
+                    hintText: 'Select or add type',
                     suffixIcon: Container(
                       margin: EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: context.colors.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: PopupMenuButton<String>(
-                        icon: Icon(Icons.arrow_drop_down, color: context.colors.primary, size: 28),
-                        color: context.colors.surfaceElevated,
-                        onSelected: (String value) async {
-                          if (value == '+ Add Custom Type') {
-                            final newType = await showDialog<String>(
-                              context: context,
-                              builder: (ctx) {
-                                final ctrl = TextEditingController();
-                                return AlertDialog(
-                                  backgroundColor: context.colors.surfaceElevated,
-                                  title: Text('Add Custom Type'),
-                                  content: TextField(
-                                    controller: ctrl,
-                                    decoration: InputDecoration(hintText: 'e.g. Inhaler, Patches'),
-                                    textCapitalization: TextCapitalization.words,
-                                  ),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel')),
-                                    ElevatedButton(
-                                      onPressed: () {
-                                        final val = ctrl.text.trim();
-                                        if (val.isNotEmpty) {
-                                          Navigator.pop(ctx, val);
-                                        }
-                                      },
-                                      child: Text('Save'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                            if (newType != null && newType.isNotEmpty) {
-                              ref.read(customProductTypesProvider.notifier).addType(newType);
-                              setState(() {
-                                _typeCtrl.text = newType;
-                                _packagingUnitCtrl.text = 'Units';
-                              });
-                            }
-                            return;
-                          }
-
-                          setState(() {
-                            _typeCtrl.text = value;
-                            _packagingUnitCtrl.text = _getDefaultUnitForType(value);
-                          });
-                        },
-                        itemBuilder: (BuildContext context) {
-                          final customTypes = ref.watch(customProductTypesProvider);
-                          final allTypes = [..._productTypes, ...customTypes, '+ Add Custom Type'];
-                          return allTypes.map((String choice) {
-                            final unit = choice != '+ Add Custom Type' ? _getDefaultUnitForType(choice) : '';
-                            final display = choice == '+ Add Custom Type' ? choice : '$choice ($unit)';
-                            
-                            return PopupMenuItem<String>(
-                              value: choice,
-                              child: choice == '+ Add Custom Type' 
-                                  ? Row(children: [Icon(Icons.add, size: 18, color: context.colors.primary), SizedBox(width: 8), Text(choice, style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold))])
-                                  : Text(display, style: TextStyle(color: context.colors.textPrimary)),
-                            );
-                          }).toList();
-                        },
-                      ),
+                      child: Icon(Icons.arrow_drop_down, color: context.colors.primary, size: 28),
                     ),
                   ),
                   validator: (v) => v!.trim().isEmpty ? 'Product type is required' : null,
@@ -293,20 +353,67 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                       flex: 2,
                       child: TextFormField(
                         controller: _packagingUnitCtrl,
-                        textCapitalization: TextCapitalization.words,
+                        readOnly: true,
+                        onTap: () async {
+                          final customUnits = ref.read(customProductUnitsProvider);
+                          final baseUnits = ['Tablets', 'Capsules', 'ml', 'grams', 'vials', 'Packs', 'Units', 'Large', 'Medium', 'Small'];
+                          final allUnits = [...baseUnits, ...customUnits, '+ Add Custom Unit'];
+                          final selected = await _showModernDropdown(
+                            title: 'Select Unit',
+                            items: allUnits,
+                            selectedValue: _packagingUnitCtrl.text,
+                          );
+                          if (selected != null) {
+                            if (selected == '+ Add Custom Unit') {
+                              final newUnit = await showDialog<String>(
+                                context: context,
+                                builder: (ctx) {
+                                  final ctrl = TextEditingController();
+                                  return AlertDialog(
+                                    backgroundColor: context.colors.surfaceElevated,
+                                    title: Text('Add Custom Unit'),
+                                    content: TextField(
+                                      controller: ctrl,
+                                      decoration: InputDecoration(hintText: 'e.g. Box, Strips'),
+                                      textCapitalization: TextCapitalization.words,
+                                    ),
+                                    actions: [
+                                      TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Cancel')),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          final val = ctrl.text.trim();
+                                          if (val.isNotEmpty) Navigator.pop(ctx, val);
+                                        },
+                                        child: Text('Save'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+                              if (newUnit != null && newUnit.isNotEmpty) {
+                                ref.read(customProductUnitsProvider.notifier).addUnit(newUnit);
+                                setState(() {
+                                  _packagingUnitCtrl.text = newUnit;
+                                });
+                              }
+                            } else {
+                              setState(() {
+                                _packagingUnitCtrl.text = selected;
+                              });
+                            }
+                          }
+                        },
                         style: TextStyle(color: context.colors.textPrimary),
                         decoration: InputDecoration(
                           labelText: 'Unit *',
-                          hintText: 'e.g. grams, ml, Tablets',
-                          suffixIcon: PopupMenuButton<String>(
-                            icon: Icon(Icons.arrow_drop_down, color: context.colors.textMuted),
-                            color: context.colors.surfaceElevated,
-                            onSelected: (val) {
-                              setState(() {
-                                _packagingUnitCtrl.text = val;
-                              });
-                            },
-                            itemBuilder: (ctx) => ['Tablets', 'Capsules', 'ml', 'grams', 'vials', 'Packs', 'Units', 'Large', 'Medium', 'Small'].map((u) => PopupMenuItem(value: u, child: Text(u, style: TextStyle(color: context.colors.textPrimary)))).toList(),
+                          hintText: 'Select unit',
+                          suffixIcon: Container(
+                            margin: EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: context.colors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(Icons.arrow_drop_down, color: context.colors.primary, size: 28),
                           ),
                         ),
                         validator: (v) => v!.trim().isEmpty ? 'Required' : null,

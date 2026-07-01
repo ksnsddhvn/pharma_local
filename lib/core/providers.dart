@@ -166,3 +166,25 @@ class CustomProductTypesNotifier extends StateNotifier<List<String>> {
   }
 }
 
+
+final customProductUnitsProvider = StateNotifierProvider<CustomProductUnitsNotifier, List<String>>((ref) {
+  final prefs = ref.read(sharedPreferencesProvider);
+  return CustomProductUnitsNotifier(prefs);
+});
+
+class CustomProductUnitsNotifier extends StateNotifier<List<String>> {
+  final SharedPreferences prefs;
+  
+  CustomProductUnitsNotifier(this.prefs) : super(_loadUnits(prefs));
+
+  static List<String> _loadUnits(SharedPreferences prefs) {
+    return prefs.getStringList('custom_product_units') ?? [];
+  }
+
+  void addUnit(String unit) {
+    if (!state.contains(unit)) {
+      state = [...state, unit];
+      prefs.setStringList('custom_product_units', state);
+    }
+  }
+}
