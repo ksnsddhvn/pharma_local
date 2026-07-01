@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:drift/drift.dart' hide Column;
 import '../../core/theme/app_theme.dart';
@@ -26,6 +27,20 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _pinCtrl = TextEditingController();
+  String? _backupPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBackupPath();
+  }
+
+  Future<void> _loadBackupPath() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _backupPath = prefs.getString('auto_backup_path');
+    });
+  }
 
   @override
   void dispose() {
@@ -277,7 +292,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         setState(() {});
                       },
                     ),
+                    if (ref.watch(sharedPreferencesProvider).getBool('enable_auto_backup') ?? false) ...[
+                      Divider(height: 1, indent: 16, endIndent: 16, color: context.colors.surfaceBorder),
+                      ListTile(
+                        leading: Icon(Icons.folder_outlined, color: context.colors.textPrimary),
+                        title: Text('Backup Location', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
+                        subtitle: Text(
+                          _backupPath != null && _backupPath!.isNotEmpty ? _backupPath! : 'Default (App Documents)',
+                          style: TextStyle(color: context.colors.textMuted, fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: TextButton(
+                          onPressed: () async {
+                            final dir = await FilePicker.getDirectoryPath(dialogTitle: 'Select Auto-Backup Folder');
+                            if (dir != null) {
+                              final prefs = await SharedPreferences.getInstance();
+                              await prefs.setString('auto_backup_path', dir);
+                              setState(() {
+                                _backupPath = dir;
+                              });
+                            }
+                          },
+                          child: Text('Change'),
+                        ),
+                      ),
+                    ],
                     Divider(height: 1, indent: 16, endIndent: 16, color: context.colors.surfaceBorder),
+                    if (ref.watch(sharedPreferencesProvider).getBool('enable_auto_backup') ?? false) ...[
+                      ListTile(
+                        leading: Icon(Icons.schedule, color: context.colors.textPrimary),
+                        title: Text('Backup Frequency', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
+                        trailing: DropdownButton<String>(
+                          value: ref.watch(sharedPreferencesProvider).getString('auto_backup_frequency') ?? 'always',
+                          underline: SizedBox(),
+                          items: [
+                            DropdownMenuItem(value: 'always', child: Text('On App Close')),
+                            DropdownMenuItem(value: 'daily', child: Text('Daily')),
+                            DropdownMenuItem(value: 'weekly', child: Text('Weekly')),
+                          ],
+                          onChanged: (v) async {
+                            if (v != null) {
+                              await ref.read(sharedPreferencesProvider).setString('auto_backup_frequency', v);
+                              setState(() {});
+                            }
+                          },
+                        ),
+                      ),
+                      Divider(height: 1, indent: 16, endIndent: 16, color: context.colors.surfaceBorder),
+                    ],
                     SwitchListTile(
                       title: Text('Enable App Lock', style: TextStyle(color: context.colors.textPrimary, fontSize: 14)),
                       subtitle: Text('Require PIN to open the app', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),

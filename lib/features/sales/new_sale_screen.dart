@@ -541,7 +541,8 @@ class _ProductResultTile extends ConsumerWidget {
                     style: TextStyle(
                         color: context.colors.textPrimary,
                         fontSize: 13,
-                        fontWeight: FontWeight.w500)),
+                        fontWeight: FontWeight.w500),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
             ],
           ),
@@ -665,7 +666,8 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                           style: TextStyle(
                               color: context.colors.textPrimary,
                               fontWeight: FontWeight.w600,
-                              fontSize: 14)),
+                              fontSize: 14),
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
                       Text(
                         'Batch: ${item.batchNumber} | MRP: ${AppFormatters.currency(item.mrp)}',
                         style: TextStyle(

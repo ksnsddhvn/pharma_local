@@ -155,13 +155,13 @@ class _PaidTransactionsTabState extends ConsumerState<_PaidTransactionsTab> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(inv.invoiceNumber, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold)),
+                            Text(inv.invoiceNumber, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis),
                             Text(AppFormatters.currency(inv.totalAmount), style: TextStyle(color: context.colors.success, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         SizedBox(height: 8),
-                        Text('Customer: ${inv.customerName}', style: TextStyle(color: context.colors.textSecondary, fontSize: 13)),
-                        Text('Mobile: ${inv.customerMobile}', style: TextStyle(color: context.colors.textSecondary, fontSize: 13)),
+                        Text('Customer: ${inv.customerName}', style: TextStyle(color: context.colors.textSecondary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text('Mobile: ${inv.customerMobile}', style: TextStyle(color: context.colors.textSecondary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text('Date: ${AppFormatters.date(inv.createdAt)}', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
                         SizedBox(height: 8),
                         Container(
@@ -266,7 +266,7 @@ class _OutstandingAccountsTabState extends ConsumerState<_OutstandingAccountsTab
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(inv.customerName, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
+                                Text(inv.customerName, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16), maxLines: 1, overflow: TextOverflow.ellipsis),
                                 Text(AppFormatters.currency(inv.creditBalanceAdded), style: TextStyle(color: context.colors.error, fontWeight: FontWeight.bold, fontSize: 16)),
                               ],
                             ),
@@ -275,7 +275,7 @@ class _OutstandingAccountsTabState extends ConsumerState<_OutstandingAccountsTab
                               children: [
                                 Icon(Icons.phone, size: 14, color: context.colors.textMuted),
                                 SizedBox(width: 4),
-                                Text(inv.customerMobile, style: TextStyle(color: context.colors.textSecondary, fontSize: 13)),
+                                Text(inv.customerMobile, style: TextStyle(color: context.colors.textSecondary, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
                               ],
                             ),
                             SizedBox(height: 4),
@@ -528,6 +528,7 @@ class _HighContrastDashboardCard extends ConsumerWidget {
     final revenue = revenueAsync.valueOrNull ?? 0.0;
 
     return Container(
+      width: double.infinity,
       margin: EdgeInsets.all(16),
       padding: EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -617,7 +618,7 @@ class _ShortbookTab extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(payload.product.name, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w600)),
+                        Text(payload.product.name, style: TextStyle(color: context.colors.textPrimary, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
                         Text('Current Stock: ${payload.currentStock} / Min: ${payload.threshold.toStringAsFixed(0)}', style: TextStyle(color: context.colors.textMuted, fontSize: 12)),
                       ],
                     ),

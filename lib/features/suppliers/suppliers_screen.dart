@@ -115,7 +115,8 @@ class SuppliersScreen extends ConsumerWidget {
                         title: Text(s.name,
                             style: TextStyle(
                                 color: context.colors.textPrimary,
-                                fontWeight: FontWeight.w600)),
+                                fontWeight: FontWeight.w600),
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -123,7 +124,8 @@ class SuppliersScreen extends ConsumerWidget {
                               Text(s.phone!,
                                   style: TextStyle(
                                       color: context.colors.textMuted,
-                                      fontSize: 12)),
+                                      fontSize: 12),
+                                  maxLines: 1, overflow: TextOverflow.ellipsis),
                             SizedBox(height: 4),
                             Text(
                               s.currentBalance == 0

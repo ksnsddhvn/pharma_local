@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GithubUpdaterService {
   static const bool isProduction = bool.fromEnvironment('prod', defaultValue: false);
@@ -16,6 +17,10 @@ class GithubUpdaterService {
       final dio = Dio();
       final response = await dio.get(_latestReleaseUrl);
 
+      // Check if the user has previously skipped this version
+      final prefs = await SharedPreferences.getInstance();
+      final lastSkipped = prefs.getString('last_skipped_version');
+
       if (response.statusCode == 200) {
         final data = response.data;
         final String tagName = data['tag_name'] ?? '';
@@ -28,7 +33,7 @@ class GithubUpdaterService {
           final cleanTag = tagName.replaceAll('v', '').trim();
           final cleanCurrent = currentVersion.replaceAll('v', '').trim();
 
-          if (_isNewerVersion(cleanTag, cleanCurrent)) {
+          if (_isNewerVersion(cleanTag, cleanCurrent) && cleanTag != lastSkipped) {
             final apkAsset = assets.firstWhere(
                 (asset) => asset['name'].toString().endsWith('.apk'),
                 orElse: () => null);
@@ -64,7 +69,7 @@ class GithubUpdaterService {
       BuildContext context, String newVersion, String downloadUrl) {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (ctx) {
         return _UpdateDialogContent(
           newVersion: newVersion,
@@ -143,7 +148,7 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Version ${widget.newVersion} is now available. You must update to continue.', style: TextStyle(fontSize: 16)),
+          Text('A new version (v${widget.newVersion}) is available. Would you like to update now?', style: TextStyle(fontSize: 16)),
           SizedBox(height: 20),
           if (_isDownloading)
             Column(
@@ -154,14 +159,27 @@ class _UpdateDialogContentState extends State<_UpdateDialogContent> {
               ],
             )
           else
-            ElevatedButton(
-              onPressed: _startDownload,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1E40AF),
-                foregroundColor: Colors.white,
-                minimumSize: Size(double.infinity, 52),
-              ),
-              child: Text('Download & Install', style: TextStyle(fontSize: 16)),
+            Column(
+              children: [
+                ElevatedButton(
+                  onPressed: _startDownload,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1E40AF),
+                    foregroundColor: Colors.white,
+                    minimumSize: Size(double.infinity, 52),
+                  ),
+                  child: Text('Download & Install', style: TextStyle(fontSize: 16)),
+                ),
+                SizedBox(height: 8),
+                TextButton(
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('last_skipped_version', widget.newVersion);
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                  child: Text('Later', style: TextStyle(fontSize: 14)),
+                ),
+              ],
             ),
         ],
       ),

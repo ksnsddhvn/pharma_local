@@ -53,6 +53,7 @@ class ProductDetailScreen extends ConsumerWidget {
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 12),
                     Row(
@@ -137,6 +138,7 @@ class ProductDetailScreen extends ConsumerWidget {
                                               fontWeight: FontWeight.w600,
                                               fontSize: 15,
                                               color: context.colors.textPrimary),
+                                          maxLines: 1, overflow: TextOverflow.ellipsis,
                                         ),
                                         SizedBox(height: 4),
                                         Container(

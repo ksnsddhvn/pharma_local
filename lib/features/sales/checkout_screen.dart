@@ -203,12 +203,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             color: context.colors.primary,
                             fontSize: 32,
                             fontWeight: FontWeight.w800),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 8),
                       Text(
                         _result!.invoiceNumber,
                         style: TextStyle(
                             color: context.colors.textSecondary, fontSize: 14),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                       ),
                       SizedBox(height: 24),
                       if (receiptText != null) ...[
@@ -337,7 +339,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                     style: TextStyle(
                                         color: context.colors.textPrimary,
                                         fontSize: 13,
-                                        fontWeight: FontWeight.w500)),
+                                        fontWeight: FontWeight.w500),
+                                    maxLines: 1, overflow: TextOverflow.ellipsis),
                                 Text(
                                   '${item.quantity} × ${AppFormatters.currency(item.mrp)}',
                                   style: TextStyle(

@@ -1,6 +1,37 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [1.0.3+4] - 2026-07-01
+
+### Added
+- **Backup Location:** Users can now specify a custom backup folder for Auto-Backup in the settings screen.
+- **Backup Frequency:** Added the ability to choose the auto-backup frequency (On App Close, Daily, Weekly) in the settings screen.
+- **UI Overflow Protection:** Added TextOverflow.ellipsis and maxLines across sales, inventory, and supplier screens to prevent rendering crashes on small screens when data values are unusually long.
+
+### Changed
+- **Toolchain Upgrade:** Upgraded Gradle wrapper to 8.14, AGP to 8.11.1, and Kotlin to 2.2.20 for improved build stability.
+- **Dependencies Bump:** Upgraded `shared_preferences`, `package_info_plus`, and `share_plus` to modern versions, resolving ecosystem conflicts.
+- **Dashboard Refactor:** Removed the weekly sales chart from the dashboard to save space and expanded the High Contrast Debt/Revenue Dashboard Card to full width.
+- **Updater Flow:** Modified the Github Updater Service dialog to be permissive instead of forced. Users can now choose "Later" and skip updates for the current latest version.
+
+
+## [1.0.2+3] - 2026-07-01
+
+### Added
+- **Supplier FAB:** Added a Floating Action Button on the Suppliers screen for quicker data entry.
+- **Deployment Docs:** Added "App Workflow & Deployment Pipeline" section to `README.md` documenting the staging → production release process.
+- **Changelog Rule:** Codified a permanent rule in `.agents/AGENTS.md` to always update the changelog after every set of changes.
+
+### Changed
+- **Reports Tabs:** Switched the Reports screen tab bar from a vertical icon+text layout to a horizontal scrollable layout (`isScrollable: true`) to prevent text clipping on smaller screens.
+- **Sales Unit Display:** Replaced the editable unit `DropdownButton` in the POS cart with a static read-only `Text` label. Units are now locked to whatever was set during product entry, preventing accidental overrides.
+- **Checkout Button:** Renamed "New Sale" to "Sale" on the checkout confirmation screen.
+- **Test Cases:** Updated `test/unit_tests.dart` — the Tablet Fractional Math test group now validates the new product-type-aware strip calculation logic (Tablets/Capsules divide by perStrip; Syrups, Creams, etc. use quantity directly).
+
+### Fixed
+- **Product Detail Crash:** Fixed `StateError` when viewing products with no stock batches by changing `innerJoin` to `leftOuterJoin` on `stockBatches` in `products_dao.dart`, and using `readTableOrNull` + `whereType<StockBatch>()` to safely filter null batch rows.
+- **Inventory Adjustment Buttons:** Removed the manual increment/decrement (`+`/`-`) `IconButton` widgets from the product detail screen. Stock adjustments should only go through auditable flows (Receive Stock, Expiry Processing).
+- **Invoice Calculation:** Fixed `_autoCalculateInvoiceAmount` in `receive_stock_screen.dart` to only apply strip-division logic for Tablets and Capsules. Non-strip product types (Syrups, Creams, Injections, etc.) now correctly use the raw quantity × rate formula.
 
 ## [1.0.1+2] - 2026-07-01
 

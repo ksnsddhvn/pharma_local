@@ -144,6 +144,7 @@ class _ProductInventoryCard extends ConsumerWidget {
                           color: context.colors.textPrimary,
                           fontWeight: FontWeight.w600,
                           fontSize: 15),
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
                     ),
                     SizedBox(height: 4),
                     batchesAsync.when(

@@ -63,7 +63,15 @@ class BackupService {
     
     File outFile;
     if (isAutoBackup) {
-      final autoDir = Directory(path.join(docsDir.path, 'auto_backups'));
+      // Check for a custom auto-backup path in SharedPreferences
+      var baseDir = docsDir.path;
+      final prefs = await SharedPreferences.getInstance();
+      final customPath = prefs.getString('auto_backup_path');
+      if (customPath != null && customPath.isNotEmpty && Directory(customPath).existsSync()) {
+        baseDir = customPath;
+      }
+
+      final autoDir = Directory(path.join(baseDir, 'auto_backups'));
       if (!autoDir.existsSync()) {
         autoDir.createSync(recursive: true);
       }
@@ -151,8 +159,22 @@ class AutoBackupObserver extends WidgetsBindingObserver {
       final prefs = await SharedPreferences.getInstance();
       if (prefs.getBool('enable_auto_backup') != true) return;
       
+      final frequency = prefs.getString('auto_backup_frequency') ?? 'always';
+      if (frequency != 'always') {
+        final lastBackupStr = prefs.getString('last_auto_backup_timestamp');
+        if (lastBackupStr != null) {
+          final lastBackup = DateTime.tryParse(lastBackupStr);
+          if (lastBackup != null) {
+            final now = DateTime.now();
+            if (frequency == 'daily' && now.difference(lastBackup).inDays < 1) return;
+            if (frequency == 'weekly' && now.difference(lastBackup).inDays < 7) return;
+          }
+        }
+      }
+
       final backupService = BackupService();
       final backupPath = await backupService.exportBackup(passphrase: 'PharmaAutoBackup', isAutoBackup: true);
+      await prefs.setString('last_auto_backup_timestamp', DateTime.now().toIso8601String());
       print('Auto-backup completed securely: $backupPath');
     } catch (e) {
       print('Auto-backup failed: $e');

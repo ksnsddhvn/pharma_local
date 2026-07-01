@@ -91,10 +91,6 @@ class DashboardScreen extends ConsumerWidget {
                   ],
                 ),
                 SizedBox(height: 24),
-
-                // 7-day sales chart
-                _WeeklySalesChart(weeklySales: weeklySales),
-                SizedBox(height: 24),
                 
                 // Payment Breakdown Chart
                 _PaymentModePieChart(breakdown: paymentBreakdown),
@@ -227,114 +223,7 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _WeeklySalesChart extends StatelessWidget {
-  final AsyncValue<Map<DateTime, double>> weeklySales;
-  const _WeeklySalesChart({required this.weeklySales});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.colors.surfaceElevated,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: context.colors.surfaceBorder),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '7-Day Sales',
-            style: TextStyle(
-              color: context.colors.textPrimary,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          SizedBox(height: 16),
-          SizedBox(
-            height: 120,
-            child: weeklySales.when(
-              data: (data) => _buildChart(context, data),
-              loading: () => Center(
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: context.colors.primary)),
-              error: (_, __) =>
-                  Center(child: Text('Chart unavailable')),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildChart(BuildContext context, Map<DateTime, double> data) {
-    final days = List.generate(7, (i) {
-      final d = DateTime.now().subtract(Duration(days: 6 - i));
-      return DateTime(d.year, d.month, d.day);
-    });
-
-    final bars = days.asMap().entries.map((e) {
-      final val = data[e.value] ?? 0.0;
-      return BarChartGroupData(
-        x: e.key,
-        barRods: [
-          BarChartRodData(
-            toY: val,
-            color: context.colors.primary,
-            width: 24,
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          )
-        ],
-      );
-    }).toList();
-
-    return BarChart(
-      BarChartData(
-        barGroups: bars,
-        gridData: FlGridData(
-          show: true,
-          drawVerticalLine: false,
-          getDrawingHorizontalLine: (_) => FlLine(
-            color: context.colors.surfaceBorder,
-            strokeWidth: 1,
-          ),
-        ),
-        borderData: FlBorderData(show: false),
-        titlesData: FlTitlesData(
-          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (val, meta) {
-                final day = days[val.toInt()];
-                return Text(
-                  DateFormat('E').format(day),
-                  style: TextStyle(
-                      color: context.colors.textSecondary, fontSize: 11),
-                );
-              },
-            ),
-          ),
-        ),
-        barTouchData: BarTouchData(
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipColor: (_) => context.colors.surfaceBorder,
-            getTooltipItem: (group, _, rod, __) => BarTooltipItem(
-              AppFormatters.currency(rod.toY),
-              TextStyle(color: context.colors.primary, fontSize: 12),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _QuickActionsSection extends StatelessWidget {
   @override
