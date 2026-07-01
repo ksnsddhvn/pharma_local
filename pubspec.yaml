@@ -1,7 +1,7 @@
 name: pharma_local
 description: "PharmaLocal — 100% offline pharmacy management system. Zero cloud, zero cost."
 publish_to: 'none'
-version: 1.0.3+4
+version: 1.0.3+5
 
 environment:
   sdk: ^3.8.1
