@@ -63,6 +63,21 @@ You can find the generated APK at: `build/app/outputs/flutter-apk/app-release.ap
 - **Theming:** Custom `AppThemeExtension` for tailored colors, semantic tokens, and typography (Inter font).
 - **UI Components:** Glassmorphism dialogs, intuitive bottom sheets, and safety barriers for destructive actions.
 
+## App Workflow & Deployment Pipeline
+
+This project follows a strict branching and deployment workflow to ensure that the production app remains stable and data-safe for end users:
+
+1. **Development & Bug Fixes:** 
+   All active development, UI tweaks, and logic updates (like modifying calculations or fixing data entry errors) are performed and tested locally.
+2. **Staging Remote (`Kanishk-C/pharma_local`):**
+   Once a feature is ready, it is first pushed to the `staging` remote. This serves as the integration environment where test builds can be generated and run on physical devices.
+3. **Explicit Approvals:**
+   No code is pushed without explicit confirmation. Every update must be verified on staging before moving forward.
+4. **Production Release (`ksnsddhvn/pharma_local`):**
+   Only after the changes in `staging` are validated and deemed completely stable do we push to the `production` remote. The final release APKs are then built and distributed from this branch.
+5. **Database Integrity:**
+   The SQLite database schema is strictly locked at `schemaVersion 14`. No new tables or columns are added directly; updates utilize existing structures (like `SharedPreferences` for custom UI states) to prevent migration corruption in offline mode.
+
 ## License
 
 Copyright © 2026 Pharma Local. All rights reserved.
