@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 class GithubUpdaterService {
   static const String _latestReleaseUrl =
-      'https://api.github.com/repos/kanishk-c/pharma_local/releases/latest';
+      'https://api.github.com/repos/ksnsddhvn/pharma_local/releases/latest';
 
   static Future<void> checkForUpdates(BuildContext context) async {
     try {

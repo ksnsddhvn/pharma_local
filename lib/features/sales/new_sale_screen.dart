@@ -563,12 +563,48 @@ class _ProductResultTile extends ConsumerWidget {
   }
 }
 
-class _CartItemTile extends ConsumerWidget {
+class _CartItemTile extends ConsumerStatefulWidget {
   final CartItem item;
-  const _CartItemTile({required this.item});
+  const _CartItemTile({required this.item, super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CartItemTile> createState() => _CartItemTileState();
+}
+
+class _CartItemTileState extends ConsumerState<_CartItemTile> {
+  late TextEditingController _qtyCtrl;
+  late TextEditingController _discountCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _qtyCtrl = TextEditingController(text: widget.item.quantity.toString());
+    _discountCtrl = TextEditingController(text: widget.item.discountPercent.toString());
+  }
+
+  @override
+  void didUpdateWidget(covariant _CartItemTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.item.quantity != widget.item.quantity && 
+        _qtyCtrl.text != widget.item.quantity.toString()) {
+      _qtyCtrl.text = widget.item.quantity.toString();
+    }
+    if (oldWidget.item.discountPercent != widget.item.discountPercent &&
+        _discountCtrl.text != widget.item.discountPercent.toString()) {
+      _discountCtrl.text = widget.item.discountPercent.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _qtyCtrl.dispose();
+    _discountCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
     return Slidable(
       key: ValueKey(item.batchId),
       endActionPane: ActionPane(
@@ -616,99 +652,68 @@ class _CartItemTile extends ConsumerWidget {
                 ),
               ],
             ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              // Quantity control
-              _QtyButton(
-                icon: Icons.remove,
-                onTap: () => ref
-                    .read(cartProvider.notifier)
-                    .updateQuantity(item.batchId, item.quantity - 1),
-              ),
-              GestureDetector(
-                onTap: () async {
-                  final qty = await showModalBottomSheet<int>(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: context.colors.surfaceElevated,
-                    builder: (ctx) => TabletCalculatorSheet(
-                      productName: item.productName, 
-                      packagingUnit: item.packagingUnit,
-                      productType: item.productType,
+            SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: _qtyCtrl,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.none,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Qty (Max: ${item.maxQuantity})',
+                      isDense: true,
                     ),
-                  );
-                  if (qty != null) {
-                    final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, qty);
-                    if (!success && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Cannot exceed available stock (${item.maxQuantity}) for this batch.'),
-                        backgroundColor: context.colors.error,
-                      ));
-                    }
-                  }
-                },
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12),
-                  child: Text('${item.quantity}',
-                      style: TextStyle(
-                          color: context.colors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 16,
-                          decoration: TextDecoration.underline)),
+                    onChanged: (val) {
+                      final parsed = int.tryParse(val) ?? 0;
+                      if (parsed > 0) {
+                        final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, parsed);
+                        if (!success) {
+                          _qtyCtrl.text = item.maxQuantity.toString();
+                          ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.maxQuantity);
+                        }
+                      }
+                    },
+                  ),
                 ),
-              ),
-              _QtyButton(
-                icon: Icons.add,
-                onTap: () {
-                  final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.quantity + 1);
-                  if (!success && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: Text('Cannot exceed available stock (${item.maxQuantity})'),
-                      backgroundColor: context.colors.error,
-                    ));
-                  }
-                },
-              ),
-              Spacer(),
-              // Line total
-              Text(
-                AppFormatters.currency(item.lineTotal),
-                style: TextStyle(
-                    color: context.colors.primary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15),
-              ),
-            ],
-          ),
-        ],
-      ),
-    ),
-  );
-}
-}
-
-class _QtyButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _QtyButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: context.colors.surface,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: context.colors.surfaceBorder),
+                SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: TextFormField(
+                    controller: _discountCtrl,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.none,
+                    keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Disc %',
+                      isDense: true,
+                    ),
+                    onChanged: (val) {
+                      final parsed = double.tryParse(val) ?? 0.0;
+                      ref.read(cartProvider.notifier).updateDiscount(item.batchId, parsed);
+                    },
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text(
+                  AppFormatters.currency(item.lineTotal),
+                  style: TextStyle(
+                      color: context.colors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15),
+                ),
+              ],
+            ),
+          ],
         ),
-        child: Icon(icon, size: 16, color: context.colors.primary),
       ),
     );
   }
 }
+
+
 
 class _EmptyCartPlaceholder extends StatelessWidget {
   @override

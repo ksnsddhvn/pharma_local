@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/daos/products_dao.dart';
+import '../../core/database/tables/inventory_adjustments_table.dart';
 import '../../core/providers.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/formatters.dart';
@@ -160,14 +161,20 @@ class ProductDetailScreen extends ConsumerWidget {
                                       children: [
                                         IconButton(
                                           icon: Icon(Icons.remove_circle_outline, color: context.colors.primary),
-                                          onPressed: () {
+                                          onPressed: () async {
                                             if (b.currentStock > 0) {
-                                              ref.read(stockBatchesDaoProvider).updateBatch(
-                                                StockBatchesCompanion(
-                                                  id: drift.Value(b.id),
-                                                  currentStock: drift.Value(b.currentStock - 1),
-                                                )
-                                              );
+                                              try {
+                                                await ref.read(inventoryAdjustmentDaoProvider).processAdjustment(
+                                                  batchId: b.id,
+                                                  quantity: 1, // deduct 1
+                                                  type: AdjustmentType.correction,
+                                                  notes: 'Quick manual deduction',
+                                                );
+                                              } catch (e) {
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                                                }
+                                              }
                                             }
                                           },
                                         ),
@@ -192,13 +199,19 @@ class ProductDetailScreen extends ConsumerWidget {
                                         ),
                                         IconButton(
                                           icon: Icon(Icons.add_circle_outline, color: context.colors.primary),
-                                          onPressed: () {
-                                            ref.read(stockBatchesDaoProvider).updateBatch(
-                                              StockBatchesCompanion(
-                                                id: drift.Value(b.id),
-                                                currentStock: drift.Value(b.currentStock + 1),
-                                              )
-                                            );
+                                          onPressed: () async {
+                                            try {
+                                              await ref.read(inventoryAdjustmentDaoProvider).processAdjustment(
+                                                batchId: b.id,
+                                                quantity: -1, // add 1
+                                                type: AdjustmentType.correction,
+                                                notes: 'Quick manual addition',
+                                              );
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
+                                              }
+                                            }
                                           },
                                         ),
                                       ],
