@@ -5,8 +5,11 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 
 class GithubUpdaterService {
-  static const String _latestReleaseUrl =
-      'https://api.github.com/repos/ksnsddhvn/pharma_local/releases/latest';
+  static const bool isProduction = bool.fromEnvironment('prod', defaultValue: false);
+  
+  static String get _latestReleaseUrl => isProduction
+      ? 'https://api.github.com/repos/ksnsddhvn/pharma_local/releases/latest'
+      : 'https://api.github.com/repos/Kanishk-C/pharma_local/releases/latest';
 
   static Future<void> checkForUpdates(BuildContext context) async {
     try {
