@@ -78,10 +78,15 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
     }
 
     int perStrip = 1;
-    final unitStr = _selectedProduct!.packagingUnit.toLowerCase();
-    if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
-      final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
-      perStrip = int.tryParse(numStr) ?? 1;
+    final match = RegExp(r'^([\d\.]+)\s*(.*)$').firstMatch(_selectedProduct!.packagingUnit);
+    if (match != null) {
+      perStrip = int.tryParse(match.group(1) ?? '1') ?? 1;
+    } else {
+      final unitStr = _selectedProduct!.packagingUnit.toLowerCase();
+      if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
+        final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
+        perStrip = int.tryParse(numStr) ?? 1;
+      }
     }
     if (perStrip <= 0) perStrip = 1;
 
@@ -355,8 +360,8 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                       Expanded(
                         child: TextFormField(
                           controller: _qtyCtrl,
-                          readOnly: true,
-                          onTap: () async {
+                          readOnly: _selectedProduct == null || _selectedProduct!.productType == 'Tablet' || _selectedProduct!.productType == 'Capsule',
+                          onTap: (_selectedProduct == null || _selectedProduct!.productType == 'Tablet' || _selectedProduct!.productType == 'Capsule') ? () async {
                             if (_selectedProduct == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Please select a product first', style: TextStyle(color: context.colors.textPrimary)), backgroundColor: context.colors.warning),
@@ -376,7 +381,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                             if (qty != null) {
                               _qtyCtrl.text = qty.toString();
                             }
-                          },
+                          } : null,
                           keyboardType: TextInputType.number,
                           style: TextStyle(color: context.colors.textPrimary),
                           decoration: InputDecoration(
@@ -384,8 +389,8 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                                 ? 'Quantity *' 
                                 : (_selectedProduct!.productType == 'Tablet' || _selectedProduct!.productType == 'Capsule')
                                     ? 'Total Tablets/Capsules *'
-                                    : 'Total ${_selectedProduct!.productType}s *',
-                            hintText: 'Tap to calculate',
+                                    : 'Total Quantity (${_selectedProduct!.packagingUnit}) *',
+                            hintText: (_selectedProduct?.productType == 'Tablet' || _selectedProduct?.productType == 'Capsule') ? 'Tap to calculate' : 'Enter quantity',
                           ),
                           validator: (v) =>
                               int.tryParse(v ?? '') == null ? 'Invalid' : null,

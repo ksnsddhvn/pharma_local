@@ -12,19 +12,26 @@ class TabletCalculatorSheet extends StatefulWidget {
 }
 
 class _TabletCalculatorSheetState extends State<TabletCalculatorSheet> {
-  final _stripsCtrl = TextEditingController(text: '0');
+  final _stripsCtrl = TextEditingController(text: '');
   late final TextEditingController _perStripCtrl;
-  final _looseCtrl = TextEditingController(text: '0');
+  final _looseCtrl = TextEditingController(text: '');
 
   @override
   void initState() {
     super.initState();
     int perStrip = 1;
-    final unitStr = widget.packagingUnit.toLowerCase();
-    if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
-      final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
-      perStrip = int.tryParse(numStr) ?? 1;
+    
+    final match = RegExp(r'^([\d\.]+)\s*(.*)$').firstMatch(widget.packagingUnit);
+    if (match != null) {
+      perStrip = int.tryParse(match.group(1) ?? '1') ?? 1;
+    } else {
+      final unitStr = widget.packagingUnit.toLowerCase();
+      if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
+        final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
+        perStrip = int.tryParse(numStr) ?? 1;
+      }
     }
+    
     if (perStrip <= 0) perStrip = 1;
     _perStripCtrl = TextEditingController(text: perStrip.toString());
   }

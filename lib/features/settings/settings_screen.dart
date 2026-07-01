@@ -370,11 +370,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // Developer Section
               Text('Developer Tools', style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.bold, fontSize: 14)),
               SizedBox(height: 16),
-              Container(
-                decoration: BoxDecoration(
-                  color: context.colors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+              Material(
+                clipBehavior: Clip.antiAlias,
+                color: context.colors.surfaceElevated,
+                borderRadius: BorderRadius.circular(12),
                 child: Column(
                   children: [
                     ListTile(
