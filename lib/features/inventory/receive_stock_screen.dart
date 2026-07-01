@@ -77,20 +77,25 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
       return;
     }
 
-    int perStrip = 1;
-    final match = RegExp(r'^([\d\.]+)\s*(.*)$').firstMatch(_selectedProduct!.packagingUnit);
-    if (match != null) {
-      perStrip = int.tryParse(match.group(1) ?? '1') ?? 1;
-    } else {
-      final unitStr = _selectedProduct!.packagingUnit.toLowerCase();
-      if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
-        final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
-        perStrip = int.tryParse(numStr) ?? 1;
+    double totalStrips = 0.0;
+    
+    if (_selectedProduct!.productType == 'Tablet' || _selectedProduct!.productType == 'Capsule') {
+      int perStrip = 1;
+      final match = RegExp(r'^([\d\.]+)\s*(.*)$').firstMatch(_selectedProduct!.packagingUnit);
+      if (match != null) {
+        perStrip = int.tryParse(match.group(1) ?? '1') ?? 1;
+      } else {
+        final unitStr = _selectedProduct!.packagingUnit.toLowerCase();
+        if (unitStr.endsWith("'s") || unitStr.endsWith("s")) {
+          final numStr = unitStr.replaceAll(RegExp(r"[^0-9]"), "");
+          perStrip = int.tryParse(numStr) ?? 1;
+        }
       }
+      if (perStrip <= 0) perStrip = 1;
+      totalStrips = qty / perStrip;
+    } else {
+      totalStrips = qty.toDouble();
     }
-    if (perStrip <= 0) perStrip = 1;
-
-    final double totalStrips = qty / perStrip;
     
     if (qty > 0 && rate > 0) {
       final invoiceAmt = totalStrips * rate + (totalStrips * rate * gst / 100);

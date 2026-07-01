@@ -159,25 +159,6 @@ class ProductDetailScreen extends ConsumerWidget {
                                     ),
                                     Row(
                                       children: [
-                                        IconButton(
-                                          icon: Icon(Icons.remove_circle_outline, color: context.colors.primary),
-                                          onPressed: () async {
-                                            if (b.currentStock > 0) {
-                                              try {
-                                                await ref.read(inventoryAdjustmentDaoProvider).processAdjustment(
-                                                  batchId: b.id,
-                                                  quantity: 1, // deduct 1
-                                                  type: AdjustmentType.correction,
-                                                  notes: 'Quick manual deduction',
-                                                );
-                                              } catch (e) {
-                                                if (context.mounted) {
-                                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
-                                                }
-                                              }
-                                            }
-                                          },
-                                        ),
                                         Container(
                                           padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                                           decoration: BoxDecoration(
@@ -196,23 +177,6 @@ class ProductDetailScreen extends ConsumerWidget {
                                               fontSize: 13,
                                             ),
                                           ),
-                                        ),
-                                        IconButton(
-                                          icon: Icon(Icons.add_circle_outline, color: context.colors.primary),
-                                          onPressed: () async {
-                                            try {
-                                              await ref.read(inventoryAdjustmentDaoProvider).processAdjustment(
-                                                batchId: b.id,
-                                                quantity: -1, // add 1
-                                                type: AdjustmentType.correction,
-                                                notes: 'Quick manual addition',
-                                              );
-                                            } catch (e) {
-                                              if (context.mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed: $e')));
-                                              }
-                                            }
-                                          },
                                         ),
                                       ],
                                     ),

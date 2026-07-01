@@ -70,7 +70,7 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
     // Join the product profile row with its corresponding category and batch rows
     final query = select(products).join([
       leftOuterJoin(productCategories, productCategories.id.equalsExp(products.categoryId)),
-      innerJoin(stockBatches, stockBatches.productId.equalsExp(products.id)),
+      leftOuterJoin(stockBatches, stockBatches.productId.equalsExp(products.id)),
     ])..where(products.id.equals(productId));
 
     return query.watch().map((rows) {
@@ -82,7 +82,7 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
       final categoryRecord = firstRow.readTableOrNull(productCategories);
       
       // Extract all batch entries associated with this product ID
-      final batchList = rows.map((row) => row.readTable(stockBatches)).toList();
+      final batchList = rows.map((row) => row.readTableOrNull(stockBatches)).whereType<StockBatch>().toList();
       
       return ProductDetailedPayload(
         product: productRecord,

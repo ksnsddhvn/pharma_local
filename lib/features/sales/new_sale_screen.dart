@@ -706,19 +706,16 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                         ),
                       ),
                       SizedBox(width: 4),
-                      DropdownButton<String>(
-                        value: item.packagingUnit,
-                        isDense: true,
-                        items: {'Tablets', 'Strips', 'Grams', 'Bottles', 'Ml', 'Capsules', item.packagingUnit}
-                            .map((u) => DropdownMenuItem(value: u, child: Text(u, style: TextStyle(fontSize: 13, color: context.colors.textPrimary))))
-                            .toList(),
-                        onChanged: (val) {
-                          if (val != null) {
-                            ref.read(cartProvider.notifier).updatePackagingUnit(item.batchId, val);
-                          }
-                        },
-                        underline: SizedBox(),
-                        icon: Icon(Icons.arrow_drop_down, color: context.colors.textMuted),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: Text(
+                          item.packagingUnit,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: context.colors.textSecondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ],
                   ),
