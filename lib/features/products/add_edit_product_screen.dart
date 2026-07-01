@@ -50,6 +50,20 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     super.dispose();
   }
 
+  String _getDefaultUnitForType(String type) {
+    switch(type) {
+      case 'Tablet': return "Tablets";
+      case 'Capsule': return "Capsules";
+      case 'Syrup': return "ml";
+      case 'Injection': return "vials";
+      case 'Cream / Ointment': return "grams";
+      case 'Diaper': return "Packs";
+      case 'Powder':
+      case 'Toothpaste': return "grams";
+      default: return "Units";
+    }
+  }
+
   Future<void> _loadProduct() async {
     if (_initialized || widget.productId == null) {
       _initialized = true;
@@ -184,22 +198,6 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                     validator: (v) =>
                         v!.trim().isEmpty ? 'Name is required' : null),
                 SizedBox(height: 12),
-  String _getDefaultUnitForType(String type) {
-    switch(type) {
-      case 'Tablet': return "Tablets";
-      case 'Capsule': return "Capsules";
-      case 'Syrup': return "ml";
-      case 'Injection': return "vials";
-      case 'Cream / Ointment': return "grams";
-      case 'Diaper': return "Packs";
-      case 'Powder':
-      case 'Toothpaste': return "grams";
-      default: return "Units";
-    }
-  }
-
-...
-
                 TextFormField(
                   controller: _typeCtrl,
                   textCapitalization: TextCapitalization.words,
