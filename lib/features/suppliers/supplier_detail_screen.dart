@@ -561,7 +561,7 @@ class _PurchasedProductsTab extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Stock: ${item.batch.currentStock} ${item.product.packagingUnit}',
+                      Text('Stock: ${item.batch.currentStock} ${item.product.packagingUnit.split('|').first}',
                           style: TextStyle(
                               color: context.colors.textSecondary, fontSize: 13)),
                       Text('Exp: ${AppFormatters.date(item.batch.expiryDate)}',

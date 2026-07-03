@@ -336,7 +336,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${item.productName} (${item.packagingUnit})',
+                                Text('${item.productName} (${item.packagingUnit.split('|').first})',
                                     style: TextStyle(
                                         color: context.colors.textPrimary,
                                         fontSize: 13,

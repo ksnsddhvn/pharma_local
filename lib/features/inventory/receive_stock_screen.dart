@@ -394,7 +394,7 @@ class _ReceiveStockScreenState extends ConsumerState<ReceiveStockScreen> {
                                 ? 'Quantity *' 
                                 : (_selectedProduct!.productType == 'Tablet' || _selectedProduct!.productType == 'Capsule')
                                     ? 'Total Tablets/Capsules *'
-                                    : 'Total Quantity (${_selectedProduct!.packagingUnit}) *',
+                                    : 'Total Quantity (${_selectedProduct!.packagingUnit.split('|').first}) *',
                             hintText: (_selectedProduct?.productType == 'Tablet' || _selectedProduct?.productType == 'Capsule') ? 'Tap to calculate' : 'Enter quantity',
                           ),
                           validator: (v) =>

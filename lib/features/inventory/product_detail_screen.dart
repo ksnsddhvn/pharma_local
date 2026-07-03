@@ -80,7 +80,7 @@ class ProductDetailScreen extends ConsumerWidget {
                           style: TextStyle(color: context.colors.textMuted, fontSize: 14),
                         ),
                         Text(
-                          'Pack: ${p.packagingUnit}',
+                          'Pack: ${p.packagingUnit.split('|').first}',
                           style: TextStyle(color: context.colors.textSecondary, fontSize: 14, fontWeight: FontWeight.w600),
                         ),
                       ],

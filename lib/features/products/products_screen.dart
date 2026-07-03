@@ -149,7 +149,7 @@ class _ProductTile extends ConsumerWidget {
           children: [
             SizedBox(height: 4),
             Text(
-              'HSN: ${product.hsnCode} | Unit: ${product.packagingUnit}',
+              'HSN: ${product.hsnCode} | Unit: ${product.packagingUnit.split('|').first}',
               style: TextStyle(
                   color: context.colors.textSecondary, fontSize: 12),
             ),

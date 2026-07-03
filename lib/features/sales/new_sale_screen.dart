@@ -590,7 +590,7 @@ class _ProductResultTile extends ConsumerWidget {
               Icon(ProductIconUtils.getIconForType(product.productType), size: 16, color: context.colors.primary),
               SizedBox(width: 6),
               Expanded(
-                child: Text('${product.name} (${product.packagingUnit})',
+                child: Text('${product.name} (${product.packagingUnit.split('|').first})',
                     style: TextStyle(
                         color: context.colors.textPrimary,
                         fontSize: 13,
@@ -717,7 +717,7 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${item.productName} (${item.packagingUnit})',
+                      Text('${item.productName} (${item.packagingUnit.split('|').first})',
                           style: TextStyle(
                               color: context.colors.textPrimary,
                               fontWeight: FontWeight.w600,

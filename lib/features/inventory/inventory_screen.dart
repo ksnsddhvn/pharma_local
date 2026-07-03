@@ -139,7 +139,7 @@ class _ProductInventoryCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${product.name} (${product.packagingUnit})',
+                      '${product.name} (${product.packagingUnit.split('|').first})',
                       style: TextStyle(
                           color: context.colors.textPrimary,
                           fontWeight: FontWeight.w600,
