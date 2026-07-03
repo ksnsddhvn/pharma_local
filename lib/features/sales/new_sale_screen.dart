@@ -710,8 +710,10 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
         child: Column(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
+                  flex: 4,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -721,91 +723,74 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                               fontWeight: FontWeight.w600,
                               fontSize: 14),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
+                      SizedBox(height: 2),
                       Text(
                         'Batch: ${item.batchNumber} | MRP: ${AppFormatters.currency(item.mrp)}',
                         style: TextStyle(
                             color: context.colors.textMuted, fontSize: 11),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                       ),
+                      if (item.pricingJson != null) ...[
+                        SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: DropdownButtonFormField<String>(
+                            value: item.selectedTier,
+                            decoration: InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8)),
+                            items: [
+                              DropdownMenuItem(value: 'unit', child: Text('Unit', style: TextStyle(fontSize: 12))),
+                              if (item.productType == 'Tablet' || item.productType == 'Capsule')
+                                DropdownMenuItem(value: 'sheet', child: Text('Sheet', style: TextStyle(fontSize: 12))),
+                              DropdownMenuItem(value: 'pack', child: Text('Pack', style: TextStyle(fontSize: 12))),
+                            ],
+                            onChanged: (val) {
+                              if (val != null) {
+                                int mul = 1;
+                                if (val == 'sheet') {
+                                  final match = RegExp(r'^([\d\.]+)').firstMatch(item.packagingUnit);
+                                  if (match != null) mul = double.parse(match.group(1)!).toInt();
+                                  else mul = 10;
+                                } else if (val == 'pack') {
+                                  final match = RegExp(r'^([\d\.]+)').firstMatch(item.packagingUnit);
+                                  int sMul = 10;
+                                  if (match != null) sMul = double.parse(match.group(1)!).toInt();
+                                  if (item.productType == 'Tablet' || item.productType == 'Capsule') mul = sMul * 10;
+                                  else mul = sMul;
+                                }
+                                ref.read(cartProvider.notifier).updateTier(item.batchId, val, mul);
+                              }
+                            },
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-              ],
-            ),
-            SizedBox(height: 8),
-            Row(
-              children: [
-                if (item.pricingJson != null) ...[
-                  Expanded(
-                    flex: 2,
-                    child: DropdownButtonFormField<String>(
-                      value: item.selectedTier,
-                      decoration: InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
-                      items: [
-                        DropdownMenuItem(value: 'unit', child: Text('Unit', style: TextStyle(fontSize: 12))),
-                        if (item.productType == 'Tablet' || item.productType == 'Capsule')
-                          DropdownMenuItem(value: 'sheet', child: Text('Sheet', style: TextStyle(fontSize: 12))),
-                        DropdownMenuItem(value: 'pack', child: Text('Pack', style: TextStyle(fontSize: 12))),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) {
-                          int mul = 1;
-                          if (val == 'sheet') {
-                            final match = RegExp(r'^([\d\.]+)').firstMatch(item.packagingUnit);
-                            if (match != null) mul = double.parse(match.group(1)!).toInt();
-                            else mul = 10;
-                          } else if (val == 'pack') {
-                            final match = RegExp(r'^([\d\.]+)').firstMatch(item.packagingUnit);
-                            int sMul = 10;
-                            if (match != null) sMul = double.parse(match.group(1)!).toInt();
-                            if (item.productType == 'Tablet' || item.productType == 'Capsule') mul = sMul * 10;
-                            else mul = sMul; // For syrup, maybe pack is just multiple units. Let's say 10.
-                          }
-                          ref.read(cartProvider.notifier).updateTier(item.batchId, val, mul);
-                        }
-                      },
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                ],
+                SizedBox(width: 8),
                 Expanded(
-                  flex: 3,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _qtyCtrl,
-                          textInputAction: TextInputAction.next,
-                          textCapitalization: TextCapitalization.none,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: 'Qty (Max: ${item.maxQuantity ~/ item.tierMultiplier})',
-                            isDense: true,
-                          ),
-                          onChanged: (val) {
-                            final parsed = int.tryParse(val) ?? 0;
-                            if (parsed > 0) {
-                              final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, parsed);
-                              if (!success) {
-                                _qtyCtrl.text = (item.maxQuantity ~/ item.tierMultiplier).toString();
-                                ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.maxQuantity ~/ item.tierMultiplier);
-                              }
-                            }
-                          },
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: Text(
-                          item.packagingUnit,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: context.colors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
+                  flex: 2,
+                  child: TextFormField(
+                    controller: _qtyCtrl,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.none,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Qty',
+                      hintText: 'Max: ${item.maxQuantity ~/ item.tierMultiplier}',
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                      border: OutlineInputBorder(),
+                    ),
+                    onChanged: (val) {
+                      final parsed = int.tryParse(val) ?? 0;
+                      if (parsed > 0) {
+                        final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, parsed);
+                        if (!success) {
+                          _qtyCtrl.text = (item.maxQuantity ~/ item.tierMultiplier).toString();
+                          ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.maxQuantity ~/ item.tierMultiplier);
+                        }
+                      }
+                    },
                   ),
                 ),
                 SizedBox(width: 8),
@@ -819,6 +804,8 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                     decoration: InputDecoration(
                       labelText: 'Disc %',
                       isDense: true,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                      border: OutlineInputBorder(),
                     ),
                     onChanged: (val) {
                       final parsed = double.tryParse(val) ?? 0.0;
@@ -826,13 +813,17 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                     },
                   ),
                 ),
-                SizedBox(width: 12),
-                Text(
-                  AppFormatters.currency(item.lineTotal),
-                  style: TextStyle(
-                      color: context.colors.primary,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15),
+                SizedBox(width: 8),
+                SizedBox(
+                  width: 50,
+                  child: Text(
+                    AppFormatters.currency(item.lineTotal),
+                    style: TextStyle(
+                        color: context.colors.primary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14),
+                    textAlign: TextAlign.right,
+                  ),
                 ),
               ],
             ),

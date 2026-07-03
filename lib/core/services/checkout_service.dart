@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart';
+import 'dart:convert';
 import '../database/app_database.dart';
 import '../database/tables/sales_tables.dart';
 
@@ -17,6 +18,9 @@ class CartItem {
   final String packagingUnit;
   final String productType;
   final String? alternativeName;
+  final String? pricingJson;
+  String selectedTier;
+  int tierMultiplier;
 
   CartItem({
     required this.batchId,
@@ -32,9 +36,23 @@ class CartItem {
     this.packagingUnit = "10's",
     this.productType = 'Tablet',
     this.alternativeName,
+    this.pricingJson,
+    this.selectedTier = 'unit',
+    this.tierMultiplier = 1,
   });
 
-  double get baseTotal => mrp * quantity * (1 - discountPercent / 100);
+  double get baseTotal {
+    double price = mrp;
+    if (pricingJson != null) {
+      try {
+        final Map<String, dynamic> pricing = jsonDecode(pricingJson!);
+        if (pricing.containsKey(selectedTier)) {
+          price = (pricing[selectedTier] as num).toDouble();
+        }
+      } catch (_) {}
+    }
+    return price * quantity * (1 - discountPercent / 100);
+  }
   double get gstAmount => baseTotal * (gstPercentage / 100);
   double get lineTotal => baseTotal + gstAmount;
 }
@@ -83,16 +101,16 @@ class CheckoutService {
           throw Exception(
               'Batch ${item.batchId} not found for ${item.productName}');
         }
-        if (batch.first.currentStock < item.quantity) {
+        if (batch.first.currentStock < (item.quantity * item.tierMultiplier)) {
           throw Exception(
               'Insufficient stock for ${item.productName}: '
-              'have ${batch.first.currentStock}, need ${item.quantity}');
+              'have ${batch.first.currentStock}, need ${item.quantity * item.tierMultiplier}');
         }
       }
 
       // Step 2: Deduct stock
       for (final item in items) {
-        await db.stockBatchesDao.deductStock(item.batchId, item.quantity);
+        await db.stockBatchesDao.deductStock(item.batchId, item.quantity * item.tierMultiplier);
       }
 
       // Step 3: Build invoice
@@ -134,7 +152,7 @@ class CheckoutService {
                 productName: i.productName,
                 packagingUnit: Value(i.packagingUnit),
                 batchNumber: i.batchNumber,
-                totalTabletsSold: Value(i.quantity),
+                totalTabletsSold: Value(i.quantity * i.tierMultiplier),
                 mrpPerTablet: Value(i.mrp),
                 gstPercentage: i.gstPercentage,
                 discountPercent: Value(i.discountPercent),

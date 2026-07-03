@@ -15,7 +15,6 @@ class DashboardScreen extends ConsumerWidget {
     final todaysSales = ref.watch(todaysSalesTotalProvider);
     final shortbookCount = ref.watch(shortbookCountProvider);
     final expiringCount = ref.watch(expiringBatchesCountProvider);
-    final weeklySales = ref.watch(weeklySalesProvider);
     final paymentBreakdown = ref.watch(paymentModeBreakdownProvider);
 
     return Scaffold(
@@ -200,12 +199,16 @@ class _SummaryCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                color: color,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
             SizedBox(height: 2),

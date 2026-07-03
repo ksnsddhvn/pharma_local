@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -126,7 +126,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         return;
       }
 
-      final result = await FilePicker.getDirectoryPath(dialogTitle: 'Select Backup Folder');
+      final result = await getDirectoryPath(confirmButtonText: 'Select Backup Folder');
       if (result != null) {
         final backupFile = File(p.join(result, 'pharma_local_backup_${DateTime.now().millisecondsSinceEpoch}.sqlite'));
         await dbFile.copy(backupFile.path);
@@ -139,17 +139,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _restoreDB() async {
     try {
-      final result = await FilePicker.pickFiles(
-        dialogTitle: 'Select Database Backup',
-        type: FileType.any,
+      final result = await openFile(
+        acceptedTypeGroups: [
+          XTypeGroup(
+            label: 'Database Backup',
+            extensions: ['sqlite', 'db', 'sqlite3'],
+          )
+        ],
       );
 
-      if (result != null && result.files.single.path != null) {
-        final sourceFile = File(result.files.single.path!);
+      if (result != null && result.path.isNotEmpty) {
+        final backupFile = File(result.path);
         final dbFolder = await getApplicationDocumentsDirectory();
         final dbFile = File(p.join(dbFolder.path, 'pharma_local.sqlite'));
 
-        await sourceFile.copy(dbFile.path);
+        await backupFile.copy(dbFile.path);
         
         if (mounted) {
           showDialog(
@@ -317,7 +321,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                         trailing: TextButton(
                           onPressed: () async {
-                            final dir = await FilePicker.getDirectoryPath(dialogTitle: 'Select Auto-Backup Folder');
+                            final dir = await getDirectoryPath(confirmButtonText: 'Select Auto-Backup Folder');
                             if (dir != null) {
                               final prefs = await SharedPreferences.getInstance();
                               await prefs.setString('auto_backup_path', dir);

@@ -554,11 +554,13 @@ class _HighContrastDashboardCard extends ConsumerWidget {
               children: [
                 Text('Overall Debt', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
                 SizedBox(height: 4),
-                Text(
-                  AppFormatters.currency(debt),
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    AppFormatters.currency(debt),
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),
@@ -571,11 +573,13 @@ class _HighContrastDashboardCard extends ConsumerWidget {
               children: [
                 Text('Monthly Revenue', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600)),
                 SizedBox(height: 4),
-                Text(
-                  AppFormatters.currency(revenue),
-                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    AppFormatters.currency(revenue),
+                    style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ],
             ),

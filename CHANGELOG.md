@@ -1,6 +1,21 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+
+## [1.0.3+6] - 2026-07-03
+
+### Added
+- **Metric Scaling:** Implemented `FittedBox` scaling on Dashboard currency labels to gracefully handle multi-digit balances without clipping.
+
+### Changed
+- **POS Input Layout:** Re-architected cart input rows (`new_sale_screen.dart`) using explicit Expanded flex allocations (4:2:2) and compact, dense input padding.
+- **Pricing Matrix Space:** Converted the horizontal multi-tier pricing inputs in `add_edit_product_screen.dart` to a vertically stacked column to eliminate horizontal overflow.
+
+### Fixed
+- **Windows Plugin Build Crash:** Migrated away from `file_picker` (which lacked modern `win32` v6 support) to the official `file_selector` package for backup paths. This fixed the kernel snapshot compiler crash during `flutter run`.
+- **Downgrade Data Wipe:** Bumped app version to `1.0.3+6` to permanently disable the Android local data wipe triggered by `flutter run` when it detects a version downgrade.
+
+
 ## [1.0.3+5] - 2026-07-03
 
 ### Added

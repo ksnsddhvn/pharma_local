@@ -1,7 +1,7 @@
 name: pharma_local
 description: "PharmaLocal — 100% offline pharmacy management system. Zero cloud, zero cost."
 publish_to: 'none'
-version: 1.0.3+5
+version: 1.0.3+6
 
 environment:
   sdk: ^3.8.1
@@ -31,7 +31,7 @@ dependencies:
   encrypt: ^5.0.3
 
   # ── Sharing & Deep-Link ───────────────────────────────────
-  share_plus: ^12.0.2
+  share_plus: ^13.2.0
   url_launcher: ^6.3.2
 
   # ── Formatting ────────────────────────────────────────────
@@ -42,12 +42,12 @@ dependencies:
   fl_chart: ^0.70.2
   cupertino_icons: ^1.0.8
   google_fonts: ^6.2.1
-  file_picker: ^11.0.2
+  file_selector: ^1.0.0
   shared_preferences: ^2.5.5
   pdf: ^3.11.3
   printing: ^5.14.3
   http: ^1.6.0
-  package_info_plus: ^9.0.1
+  package_info_plus: ^10.2.0
   open_file: ^4.0.0
   dio: ^5.10.0
   csv: ^8.0.0
@@ -81,3 +81,4 @@ flutter:
 
   assets:
     - assets/logo.png
+

@@ -1,4 +1,5 @@
 import 'package:drift/drift.dart' as drift;
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/database/app_database.dart';
@@ -22,6 +23,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
   late TextEditingController _packagingAmountCtrl;
   late TextEditingController _packagingUnitCtrl;
   late TextEditingController _hsnCtrl;
+  late TextEditingController _priceUnitCtrl;
+  late TextEditingController _priceSheetCtrl;
+  late TextEditingController _pricePackCtrl;
 
   // category removed
   final _productTypes = ['Tablet', 'Capsule', 'Syrup', 'Injection', 'Cream / Ointment', 'Diaper', 'Powder', 'Toothpaste'];
@@ -36,6 +40,18 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _packagingAmountCtrl = TextEditingController(text: "10");
     _packagingUnitCtrl = TextEditingController(text: "Tablets");
     _hsnCtrl = TextEditingController();
+    _priceUnitCtrl = TextEditingController();
+    _priceSheetCtrl = TextEditingController();
+    _pricePackCtrl = TextEditingController();
+
+    _priceUnitCtrl.addListener(() {
+      if (_priceUnitCtrl.text.isNotEmpty) {
+        final u = double.tryParse(_priceUnitCtrl.text) ?? 0.0;
+        final amt = double.tryParse(_packagingAmountCtrl.text) ?? 10.0;
+        if (_priceSheetCtrl.text.isEmpty) _priceSheetCtrl.text = (u * amt).toStringAsFixed(2);
+        if (_pricePackCtrl.text.isEmpty) _pricePackCtrl.text = (u * amt * 10).toStringAsFixed(2);
+      }
+    });
     _typeCtrl = TextEditingController(text: 'Tablet');
   }
 
@@ -45,6 +61,9 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _packagingAmountCtrl.dispose();
     _packagingUnitCtrl.dispose();
     _hsnCtrl.dispose();
+    _priceUnitCtrl.dispose();
+    _priceSheetCtrl.dispose();
+    _pricePackCtrl.dispose();
     _typeCtrl.dispose();
     _nameFocus.dispose();
     super.dispose();
@@ -149,13 +168,25 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         _hsnCtrl.text = product.hsnCode;
         _typeCtrl.text = product.productType;
 
-        final match = RegExp(r'^([\d\.]+)\s*(.*)$').firstMatch(product.packagingUnit);
+        final fullPackaging = product.packagingUnit;
+        String displayPackaging = fullPackaging;
+        if (fullPackaging.contains('|{')) {
+          final parts = fullPackaging.split('|');
+          displayPackaging = parts[0];
+          try {
+            final Map<String, dynamic> pricing = jsonDecode(parts.sublist(1).join('|'));
+            _priceUnitCtrl.text = pricing['unit']?.toString() ?? '';
+            _priceSheetCtrl.text = pricing['sheet']?.toString() ?? '';
+            _pricePackCtrl.text = pricing['pack']?.toString() ?? '';
+          } catch (_) {}
+        }
+        final match = RegExp(r'^([\d\.]+)\s*(.*)$').firstMatch(displayPackaging);
         if (match != null) {
           _packagingAmountCtrl.text = match.group(1) ?? '';
           _packagingUnitCtrl.text = match.group(2) ?? '';
         } else {
           _packagingAmountCtrl.text = '';
-          _packagingUnitCtrl.text = product.packagingUnit;
+          _packagingUnitCtrl.text = displayPackaging;
         }
       });
     }
@@ -172,7 +203,19 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
             ? drift.Value(widget.productId!)
             : const drift.Value.absent(),
         name: drift.Value(_nameCtrl.text.trim()),
-        packagingUnit: drift.Value('${_packagingAmountCtrl.text.trim()} ${_packagingUnitCtrl.text.trim()}'.trim()),
+        packagingUnit: drift.Value(() {
+        String pricingJson = '';
+        final isTablet = _typeCtrl.text == 'Tablet' || _typeCtrl.text == 'Capsule';
+        final u = double.tryParse(_priceUnitCtrl.text) ?? 0.0;
+        final p = double.tryParse(_pricePackCtrl.text) ?? 0.0;
+        if (isTablet) {
+          final s = double.tryParse(_priceSheetCtrl.text) ?? 0.0;
+          pricingJson = '|{"unit":$u,"sheet":$s,"pack":$p}';
+        } else {
+          pricingJson = '|{"unit":$u,"pack":$p}';
+        }
+        return '${_packagingAmountCtrl.text.trim()} ${_packagingUnitCtrl.text.trim()}'.trim() + pricingJson;
+      }()),
         productType: drift.Value(_typeCtrl.text.trim()),
         hsnCode: drift.Value(_hsnCtrl.text.trim()),
         categoryId: const drift.Value(null),
@@ -419,6 +462,23 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                         validator: (v) => v!.trim().isEmpty ? 'Required' : null,
                       ),
                     ),
+                  ],
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            _FormSection(
+              title: 'Pricing Tiers',
+              children: [
+                Column(
+                  children: [
+                    _field('Unit (₹) *', _priceUnitCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true)),
+                    if (_typeCtrl.text == 'Tablet' || _typeCtrl.text == 'Capsule') ...[
+                      SizedBox(height: 12),
+                      _field('Sheet (₹)', _priceSheetCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true)),
+                    ],
+                    SizedBox(height: 12),
+                    _field('Pack (₹)', _pricePackCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true)),
                   ],
                 ),
               ],
