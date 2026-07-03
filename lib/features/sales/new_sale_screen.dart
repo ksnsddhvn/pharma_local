@@ -27,7 +27,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
     if (idx >= 0) {
       final updated = List<CartItem>.from(state);
       final totalQty = updated[idx].quantity + item.quantity;
-      if (totalQty > item.maxQuantity) return false;
+      if ((totalQty * item.tierMultiplier) > item.maxQuantity) return false;
       
       updated[idx] = CartItem(
         batchId: item.batchId,
@@ -42,10 +42,13 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
         hsnCode: item.hsnCode,
         packagingUnit: item.packagingUnit,
         alternativeName: item.alternativeName,
-      );
+          pricingJson: item.pricingJson,
+          selectedTier: item.selectedTier,
+          tierMultiplier: item.tierMultiplier,
+        );
       state = updated;
     } else {
-      if (item.quantity > item.maxQuantity) return false;
+      if ((item.quantity * item.tierMultiplier) > item.maxQuantity) return false;
       state = [...state, item];
     }
     return true;
@@ -70,6 +73,9 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           hsnCode: i.hsnCode,
           packagingUnit: i.packagingUnit,
           alternativeName: i.alternativeName,
+          pricingJson: i.pricingJson,
+          selectedTier: i.selectedTier,
+          tierMultiplier: i.tierMultiplier,
         );
       }
       return i;
@@ -84,7 +90,7 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
     bool success = true;
     state = state.map((i) {
       if (i.batchId == batchId) {
-        if (qty > i.maxQuantity) {
+        if ((qty * i.tierMultiplier) > i.maxQuantity) {
           success = false;
           return i;
         }
@@ -101,6 +107,9 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           hsnCode: i.hsnCode,
           packagingUnit: i.packagingUnit,
           alternativeName: i.alternativeName,
+          pricingJson: i.pricingJson,
+          selectedTier: i.selectedTier,
+          tierMultiplier: i.tierMultiplier,
         );
       }
       return i;
@@ -124,6 +133,40 @@ class CartNotifier extends StateNotifier<List<CartItem>> {
           hsnCode: i.hsnCode,
           packagingUnit: unit,
           alternativeName: i.alternativeName,
+          pricingJson: i.pricingJson,
+          selectedTier: i.selectedTier,
+          tierMultiplier: i.tierMultiplier,
+        );
+      }
+      return i;
+    }).toList();
+  }
+
+  
+  void updateTier(int batchId, String tier, int multiplier) {
+    state = state.map((i) {
+      if (i.batchId == batchId) {
+        // Adjust quantity to roughly match previous total tablets
+        int totalTablets = i.quantity * i.tierMultiplier;
+        int newQty = totalTablets ~/ multiplier;
+        if (newQty < 1) newQty = 1;
+        
+        return CartItem(
+          batchId: i.batchId,
+          productId: i.productId,
+          productName: i.productName,
+          batchNumber: i.batchNumber,
+          quantity: newQty,
+          maxQuantity: i.maxQuantity,
+          mrp: i.mrp,
+          gstPercentage: i.gstPercentage,
+          discountPercent: i.discountPercent,
+          hsnCode: i.hsnCode,
+          packagingUnit: i.packagingUnit,
+          alternativeName: i.alternativeName,
+          pricingJson: i.pricingJson,
+          selectedTier: tier,
+          tierMultiplier: multiplier,
         );
       }
       return i;
@@ -169,8 +212,11 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
       isScrollControlled: true,
       backgroundColor: context.colors.surfaceElevated,
       builder: (ctx) => TabletCalculatorSheet(
-        productName: product.name, 
-        packagingUnit: product.packagingUnit,
+        productName: product.name,
+        packagingUnit: () {
+          final full = product.packagingUnit;
+          return full.contains('|{') ? full.split('|').first : full;
+        }(),
         productType: product.productType,
       ),
     );
@@ -201,7 +247,14 @@ class _NewSaleScreenState extends ConsumerState<NewSaleScreen> {
                 mrp: batch.mrp,
                 gstPercentage: batch.gstPercentage,
                 hsnCode: product.hsnCode,
-                packagingUnit: product.packagingUnit,
+                packagingUnit: () {
+                  final full = product.packagingUnit;
+                  return full.contains('|{') ? full.split('|').first : full;
+                }(),
+                pricingJson: () {
+                  final full = product.packagingUnit;
+                  return full.contains('|{') ? '|' + full.split('|').skip(1).join('|') : null;
+                }(),
                 productType: product.productType,
                 alternativeName: null,
               ),
@@ -681,6 +734,39 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
             SizedBox(height: 8),
             Row(
               children: [
+                if (item.pricingJson != null) ...[
+                  Expanded(
+                    flex: 2,
+                    child: DropdownButtonFormField<String>(
+                      value: item.selectedTier,
+                      decoration: InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8)),
+                      items: [
+                        DropdownMenuItem(value: 'unit', child: Text('Unit', style: TextStyle(fontSize: 12))),
+                        if (item.productType == 'Tablet' || item.productType == 'Capsule')
+                          DropdownMenuItem(value: 'sheet', child: Text('Sheet', style: TextStyle(fontSize: 12))),
+                        DropdownMenuItem(value: 'pack', child: Text('Pack', style: TextStyle(fontSize: 12))),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) {
+                          int mul = 1;
+                          if (val == 'sheet') {
+                            final match = RegExp(r'^([\d\.]+)').firstMatch(item.packagingUnit);
+                            if (match != null) mul = double.parse(match.group(1)!).toInt();
+                            else mul = 10;
+                          } else if (val == 'pack') {
+                            final match = RegExp(r'^([\d\.]+)').firstMatch(item.packagingUnit);
+                            int sMul = 10;
+                            if (match != null) sMul = double.parse(match.group(1)!).toInt();
+                            if (item.productType == 'Tablet' || item.productType == 'Capsule') mul = sMul * 10;
+                            else mul = sMul; // For syrup, maybe pack is just multiple units. Let's say 10.
+                          }
+                          ref.read(cartProvider.notifier).updateTier(item.batchId, val, mul);
+                        }
+                      },
+                    ),
+                  ),
+                  SizedBox(width: 8),
+                ],
                 Expanded(
                   flex: 3,
                   child: Row(
@@ -692,7 +778,7 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                           textCapitalization: TextCapitalization.none,
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
-                            labelText: 'Qty (Max: ${item.maxQuantity})',
+                            labelText: 'Qty (Max: ${item.maxQuantity ~/ item.tierMultiplier})',
                             isDense: true,
                           ),
                           onChanged: (val) {
@@ -700,8 +786,8 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                             if (parsed > 0) {
                               final success = ref.read(cartProvider.notifier).updateQuantity(item.batchId, parsed);
                               if (!success) {
-                                _qtyCtrl.text = item.maxQuantity.toString();
-                                ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.maxQuantity);
+                                _qtyCtrl.text = (item.maxQuantity ~/ item.tierMultiplier).toString();
+                                ref.read(cartProvider.notifier).updateQuantity(item.batchId, item.maxQuantity ~/ item.tierMultiplier);
                               }
                             }
                           },

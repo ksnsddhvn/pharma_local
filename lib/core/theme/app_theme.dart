@@ -175,11 +175,11 @@ class AppTheme {
     primaryLight: Color(0xFF93C5FD),
     background: Color(0xFF0F172A), // slate-900
     surface: Color(0xFF1E293B), // slate-800
-    surfaceElevated: Color(0xFF334155), // slate-700
+    surfaceElevated: Color(0xFF1E293B), // Same as surface for better contrast
     surfaceBorder: Color(0xFF475569), // slate-600
-    textPrimary: Color(0xFFF8FAFC), // slate-50 (almost white)
-    textSecondary: Color(0xFFCBD5E1), // slate-300 (light gray)
-    textMuted: Color(0xFF94A3B8), // slate-400 (medium gray, better contrast)
+    textPrimary: Color(0xFFFFFFFF), // Pure white
+    textSecondary: Color(0xFFF1F5F9), // Lighter gray
+    textMuted: Color(0xFFCBD5E1), // Brighter muted
     success: Color(0xFF34D399), // lighter emerald
     warning: Color(0xFFFBBF24), // lighter amber
     error: Color(0xFFF87171), // lighter red

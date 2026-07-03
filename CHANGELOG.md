@@ -1,6 +1,17 @@
 # Changelog
 
 All notable changes to this project will be documented in this file.
+## [1.0.3+5] - 2026-07-03
+
+### Added
+- **Multi-Tier Pricing:** Added a dynamic multi-tier pricing system for products (Unit, Sheet/Strip, Pack/Box) in the Add/Edit Product screen, embedded via JSON without database schema changes.
+- **Cart Tier Selection:** Added a dropdown in the POS cart tile to select the desired pricing tier (Unit, Sheet, Pack) at runtime, automatically scaling prices and stock deduction logic.
+
+### Changed
+- **Receipts:** WhatsApp text receipts now parse the dynamic pricing tier and output readable units (e.g., '2 Strip(s)', '1 Pack(s)') instead of raw numeric totals.
+- **Theme:** Updated Dark Mode color schema to use purer whites for primary text, solving the issue where text blended with dark card backgrounds.
+- **Auto-Update Permissions:** Added android.permission.INTERNET to AndroidManifest.xml to ensure in-app updater check triggers correctly.
+
 ## [1.0.3+4] - 2026-07-01
 
 ### Added

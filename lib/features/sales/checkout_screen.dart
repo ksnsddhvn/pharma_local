@@ -128,6 +128,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           hsnCode: i.hsnCode,
           packagingUnit: i.packagingUnit,
           alternativeName: i.alternativeName,
+          selectedTier: i.selectedTier,
         )).toList();
 
     return ReceiptComposer.generateWhatsAppInvoice(

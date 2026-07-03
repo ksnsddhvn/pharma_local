@@ -14,6 +14,7 @@ class ReceiptLineItem {
   final String hsnCode;
   final String packagingUnit;
   final String? alternativeName;
+  final String selectedTier;
 
   ReceiptLineItem({
     required this.productName,
@@ -26,6 +27,7 @@ class ReceiptLineItem {
     required this.hsnCode,
     this.packagingUnit = "10's Pack",
     this.alternativeName,
+    this.selectedTier = 'unit',
   });
 }
 
@@ -61,7 +63,13 @@ class ReceiptComposer {
     for (var item in items) {
       buffer.writeln("💊 ${item.productName} (${item.packagingUnit})");
       buffer.writeln("   HSN: ${item.hsnCode} | Batch: ${item.batchNumber}");
-      buffer.writeln("   Qty: ${item.quantity} | Amount: ₹${item.lineTotal.toStringAsFixed(2)}");
+      
+      String tierName = item.selectedTier;
+      if (tierName == 'sheet') tierName = 'Strip(s)';
+      else if (tierName == 'pack') tierName = 'Pack(s)';
+      else tierName = 'Unit(s)';
+      buffer.writeln("   Qty: ${item.quantity} $tierName | Amount: ₹${item.lineTotal.toStringAsFixed(2)}");
+    
       buffer.writeln();
     }
     
