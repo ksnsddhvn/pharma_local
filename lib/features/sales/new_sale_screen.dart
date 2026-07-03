@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/database/app_database.dart';
@@ -737,12 +738,22 @@ class _CartItemTileState extends ConsumerState<_CartItemTile> {
                           child: DropdownButtonFormField<String>(
                             value: item.selectedTier,
                             decoration: InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 6, vertical: 8)),
-                            items: [
-                              DropdownMenuItem(value: 'unit', child: Text('Unit', style: TextStyle(fontSize: 12))),
-                              if (item.productType == 'Tablet' || item.productType == 'Capsule')
-                                DropdownMenuItem(value: 'sheet', child: Text('Sheet', style: TextStyle(fontSize: 12))),
-                              DropdownMenuItem(value: 'pack', child: Text('Pack', style: TextStyle(fontSize: 12))),
-                            ],
+                            items: () {
+                                final List<DropdownMenuItem<String>> menuItems = [];
+                                if (item.pricingJson != null && item.pricingJson!.isNotEmpty) {
+                                  try {
+                                    final Map<String, dynamic> pricing = jsonDecode(item.pricingJson!);
+                                    if (pricing.containsKey('unit')) menuItems.add(DropdownMenuItem(value: 'unit', child: Text('Unit', style: TextStyle(fontSize: 12))));
+                                    if (pricing.containsKey('sheet')) menuItems.add(DropdownMenuItem(value: 'sheet', child: Text('Secondary', style: TextStyle(fontSize: 12))));
+                                    if (pricing.containsKey('pack')) menuItems.add(DropdownMenuItem(value: 'pack', child: Text('Pack', style: TextStyle(fontSize: 12))));
+                                  } catch (_) {
+                                    menuItems.add(DropdownMenuItem(value: 'unit', child: Text('Unit', style: TextStyle(fontSize: 12))));
+                                  }
+                                } else {
+                                  menuItems.add(DropdownMenuItem(value: 'unit', child: Text('Unit', style: TextStyle(fontSize: 12))));
+                                }
+                                return menuItems;
+                            }(),
                             onChanged: (val) {
                               if (val != null) {
                                 int mul = 1;

@@ -44,14 +44,7 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
     _priceSheetCtrl = TextEditingController();
     _pricePackCtrl = TextEditingController();
 
-    _priceUnitCtrl.addListener(() {
-      if (_priceUnitCtrl.text.isNotEmpty) {
-        final u = double.tryParse(_priceUnitCtrl.text) ?? 0.0;
-        final amt = double.tryParse(_packagingAmountCtrl.text) ?? 10.0;
-        if (_priceSheetCtrl.text.isEmpty) _priceSheetCtrl.text = (u * amt).toStringAsFixed(2);
-        if (_pricePackCtrl.text.isEmpty) _pricePackCtrl.text = (u * amt * 10).toStringAsFixed(2);
-      }
-    });
+
     _typeCtrl = TextEditingController(text: 'Tablet');
   }
 
@@ -205,15 +198,14 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
         name: drift.Value(_nameCtrl.text.trim()),
         packagingUnit: drift.Value(() {
         String pricingJson = '';
-        final isTablet = _typeCtrl.text == 'Tablet' || _typeCtrl.text == 'Capsule';
-        final u = double.tryParse(_priceUnitCtrl.text) ?? 0.0;
-        final p = double.tryParse(_pricePackCtrl.text) ?? 0.0;
-        if (isTablet) {
-          final s = double.tryParse(_priceSheetCtrl.text) ?? 0.0;
-          pricingJson = '|{"unit":$u,"sheet":$s,"pack":$p}';
-        } else {
-          pricingJson = '|{"unit":$u,"pack":$p}';
-        }
+        final uText = _priceUnitCtrl.text.trim();
+        final sText = _priceSheetCtrl.text.trim();
+        final pText = _pricePackCtrl.text.trim();
+        final Map<String, dynamic> pricing = {};
+        if (uText.isNotEmpty) pricing['unit'] = double.tryParse(uText) ?? 0.0;
+        if (sText.isNotEmpty) pricing['sheet'] = double.tryParse(sText) ?? 0.0;
+        if (pText.isNotEmpty) pricing['pack'] = double.tryParse(pText) ?? 0.0;
+        pricingJson = pricing.isNotEmpty ? '|' + jsonEncode(pricing) : '';
         return '${_packagingAmountCtrl.text.trim()} ${_packagingUnitCtrl.text.trim()}'.trim() + pricingJson;
       }()),
         productType: drift.Value(_typeCtrl.text.trim()),
@@ -473,10 +465,8 @@ class _AddEditProductScreenState extends ConsumerState<AddEditProductScreen> {
                 Column(
                   children: [
                     _field('Unit (₹) *', _priceUnitCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true)),
-                    if (_typeCtrl.text == 'Tablet' || _typeCtrl.text == 'Capsule') ...[
-                      SizedBox(height: 12),
-                      _field('Sheet (₹)', _priceSheetCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true)),
-                    ],
+                    SizedBox(height: 12),
+                    _field('Secondary (e.g. Sheet/Box) (₹)', _priceSheetCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true)),
                     SizedBox(height: 12),
                     _field('Pack (₹)', _pricePackCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true)),
                   ],
