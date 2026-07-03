@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3+7] - 2026-07-03
+
+### Changed
+- **Dynamic Pricing Tiers:** Refactored product pricing so that all tiers (Secondary/Sheet, Pack) are now optional and not strictly auto-populated with zeros.
+- **Universal Tiers:** Unlocked the Secondary/Sheet middle tier for all product types (not just Tablets/Capsules) to support custom product configurations like boxes.
+- **Smart POS Cart:** The cart tier selection dropdown in `new_sale_screen.dart` now dynamically reads the available pricing JSON and only displays the exact tiers populated by the user.
+
 ## [1.0.3+6] - 2026-07-03
 
 ### Added
@@ -15,10 +22,6 @@ All notable changes to this project will be documented in this file.
 - **Windows Plugin Build Crash:** Migrated away from `file_picker` (which lacked modern `win32` v6 support) to the official `file_selector` package for backup paths. This fixed the kernel snapshot compiler crash during `flutter run`.
 - **Downgrade Data Wipe:** Bumped app version to `1.0.3+6` to permanently disable the Android local data wipe triggered by `flutter run` when it detects a version downgrade.
 
-### Changed
-- **Dynamic Pricing Tiers:** Refactored product pricing so that all tiers (Secondary/Sheet, Pack) are now optional and not strictly auto-populated with zeros.
-- **Universal Tiers:** Unlocked the Secondary/Sheet middle tier for all product types (not just Tablets/Capsules) to support custom product configurations like boxes.
-- **Smart POS Cart:** The cart tier selection dropdown in `new_sale_screen.dart` now dynamically reads the available pricing JSON and only displays the exact tiers populated by the user.
 
 
 ## [1.0.3+5] - 2026-07-03
